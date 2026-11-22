@@ -33,7 +33,7 @@
   import { projectSettings, formatLength, formatArea } from '$lib/stores/settings';
   import type { ProjectSettings } from '$lib/stores/settings';
   import { snapStatus } from '$lib/utils/snapStep';
-  import { angleSnapWithin, resizeFurnitureFromHandle, snap as _snap, type CanvasState } from '$lib/utils/canvasInteraction';
+  import { angleSnapWithin, cameraAfterResize, resizeFurnitureFromHandle, snap as _snap, type CanvasState } from '$lib/utils/canvasInteraction';
   import { drawWall as _drawWall, drawDoorOnWall as _drawDoorOnWall, drawWindowOnWall as _drawWindowOnWall, drawDoorDistanceDimensions as _drawDoorDistanceDimensions, drawWindowDistanceDimensions as _drawWindowDistanceDimensions, drawFurnitureItem, drawStair as _drawStair, drawColumn as _drawColumn, drawGuides as _drawGuides, drawPersistedMeasurements as _drawPersistedMeasurements, drawTextAnnotations as _drawTextAnnotations, drawAnnotation as _drawAnnotation, drawAnnotations as _drawAnnotations, drawRooms as _drawRooms, drawWallJoints as _drawWallJoints, drawSnapPoints as _drawSnapPoints, drawMinimap as _drawMinimap, drawEntourageItems as _drawEntourageItems, drawEntourageGhost as _drawEntourageGhost, drawFloorBelowGhost as _drawFloorBelowGhost, entourageAspect } from '$lib/utils/canvasRenderer';
   import { getEntourageDef } from '$lib/utils/entourageCatalog';
   import { translatedOpeningPosition } from '$lib/utils/openingTranslation';
@@ -449,9 +449,16 @@
     return end;
   }
 
+  let canvasBox: DOMRect | null = null;
+
   function resize() {
     const parent = canvas?.parentElement;
     if (!parent) return;
+    // Keep every plan point where it was on the page when the box moves or changes size, such as
+    // when selecting opens the properties panel mid-drag; otherwise the dragged piece jumps.
+    const box = parent.getBoundingClientRect();
+    ({ x: camX, y: camY } = cameraAfterResize({ x: camX, y: camY }, zoom, canvasBox, box));
+    canvasBox = box;
     width = parent.clientWidth;
     height = parent.clientHeight;
     if (canvas) {
