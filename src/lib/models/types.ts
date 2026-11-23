@@ -284,6 +284,7 @@ export interface DisplaySettings {
   showDimensions?: boolean;
   showExternalDimensions?: boolean;
   showInternalDimensions?: boolean;
+  showObjectSizes?: boolean;
   [key: string]: unknown;
 }
 

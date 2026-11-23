@@ -107,6 +107,7 @@ describe('native project reader', () => {
     ['display settings list', p => p.displaySettings = [], 'displaySettings'],
     ['unsupported units', p => p.displaySettings.units = 'furlongs', 'displaySettings.units'],
     ['non-boolean display flag', p => p.displaySettings.showDimensions = 'no', 'displaySettings.showDimensions'],
+    ['non-boolean object sizes flag', p => p.displaySettings.showObjectSizes = 'no', 'displaySettings.showObjectSizes'],
   ];
   it.each(bad)('rejects %s before changing the input', (_, change, path) => {
     const project = completeProject(); change(project); const before = structuredClone(project);

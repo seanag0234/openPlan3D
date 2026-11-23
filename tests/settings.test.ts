@@ -63,8 +63,8 @@ describe('editor settings', () => {
   it('applies a plan file\'s display settings as if picked in Settings, ignoring unknown and other keys', async () => {
     const data = mockStorage();
     const { projectSettings, applyDisplaySettings } = await import('../src/lib/stores/settings');
-    applyDisplaySettings({ units: 'imperial', showDimensions: false, gridSize: 5, future: true } as any);
-    expect(get(projectSettings)).toMatchObject({ units: 'imperial', showDimensions: false, showExternalDimensions: true, gridSize: 25 });
+    applyDisplaySettings({ units: 'imperial', showDimensions: false, showObjectSizes: false, gridSize: 5, future: true } as any);
+    expect(get(projectSettings)).toMatchObject({ units: 'imperial', showDimensions: false, showExternalDimensions: true, showObjectSizes: false, gridSize: 25 });
     expect(get(projectSettings)).not.toHaveProperty('future');
     expect(JSON.parse(data.get('o3d_settings')!)).toMatchObject({ units: 'imperial', showDimensions: false });
   });
@@ -75,7 +75,7 @@ describe('editor settings', () => {
     projectSettings.set({ ...get(projectSettings), units: 'imperial', showInternalDimensions: true });
     const project = { id: 'plan', displaySettings: { units: 'metric', future: 'kept' } } as any;
     expect(withDisplaySettings(project, get(projectSettings)).displaySettings).toEqual({
-      units: 'imperial', showDimensions: true, showExternalDimensions: true, showInternalDimensions: true, future: 'kept',
+      units: 'imperial', showDimensions: true, showExternalDimensions: true, showInternalDimensions: true, showObjectSizes: true, future: 'kept',
     });
     expect(project.displaySettings).toEqual({ units: 'metric', future: 'kept' });
   });

@@ -68,7 +68,7 @@ function createSettingsStore() {
 
 export const projectSettings = createSettingsStore();
 
-const displayKeys = ['units', 'showDimensions', 'showExternalDimensions', 'showInternalDimensions'] as const;
+const displayKeys = ['units', 'showDimensions', 'showExternalDimensions', 'showInternalDimensions', 'showObjectSizes'] as const;
 
 /** Apply a plan file's display choices as if picked in Settings, for every plan in this browser. */
 export function applyDisplaySettings(values: DisplaySettings) {

@@ -60,7 +60,7 @@ export function readProject(value: unknown): Project {
   if (project!.displaySettings !== undefined) {
     const display = record(project!.displaySettings, 'displaySettings');
     if (display.units !== undefined) choice(display.units, ['metric', 'imperial'], 'displaySettings.units');
-    booleans(display, ['showDimensions', 'showExternalDimensions', 'showInternalDimensions'], 'displaySettings');
+    booleans(display, ['showDimensions', 'showExternalDimensions', 'showInternalDimensions', 'showObjectSizes'], 'displaySettings');
   }
   if (project!.attachmentNames !== undefined) {
     record(project!.attachmentNames, 'attachmentNames');
