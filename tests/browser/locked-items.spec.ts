@@ -42,6 +42,18 @@ async function exported(page: Page) {
   return JSON.parse(await readFile((await (await pending).path())!, 'utf8')).floors[0];
 }
 
+// The view fits the plan after the label's first paint, so wait until its painted position settles.
+async function labelPoint(page: Page): Promise<{ x: number; y: number }> {
+  let last = '';
+  await expect.poll(async () => {
+    const now = JSON.stringify(await page.evaluate(() => (window as any).__label));
+    const settled = now !== undefined && now === last;
+    last = now;
+    return settled;
+  }).toBe(true);
+  return JSON.parse(last);
+}
+
 const ids = (items: { id: string }[] = []) => items.map(item => item.id).sort();
 
 test('locked pieces, symbols and text labels survive Delete and dragging, and unlock with Select All', async ({ page }) => {
@@ -62,8 +74,7 @@ test('locked pieces, symbols and text labels survive Delete and dragging, and un
 
   // A locked label does not move when dragged, and the export keeps its lock.
   await save.press('ControlOrMeta+d');
-  await expect.poll(() => page.evaluate(() => !!(window as any).__label)).toBe(true);
-  const label = await page.evaluate(() => (window as any).__label);
+  const label = await labelPoint(page);
   await page.mouse.move(label.x, label.y);
   await page.mouse.down();
   await page.mouse.move(label.x + 80, label.y + 60, { steps: 6 });
@@ -91,8 +102,7 @@ test('a plain click passes through locked items to what lies under them', async 
   test.setTimeout(90_000);
   await openLockedPlan(page, true);
   const save = page.getByRole('button', { name: 'Save', exact: true });
-  await expect.poll(() => page.evaluate(() => !!(window as any).__label)).toBe(true);
-  const label = await page.evaluate(() => (window as any).__label);
+  const label = await labelPoint(page);
   // The click lands on the unlocked piece under the locked label and symbol: Delete removes only it.
   await page.mouse.click(label.x, label.y);
   await expect(page.locator('[data-plan-properties]')).toBeVisible();
@@ -102,7 +112,7 @@ test('a plain click passes through locked items to what lies under them', async 
   expect(ids(floor.entourage)).toEqual(['symbol']);
   expect(ids(floor.textAnnotations)).toEqual(['label']);
   // With only locked items under the pointer, a click selects nothing.
-  const again = await page.evaluate(() => (window as any).__label);
+  const again = await labelPoint(page);
   await page.mouse.click(again.x, again.y);
   await expect(page.locator('[data-plan-properties]')).toBeHidden();
   floor = await exported(page);
