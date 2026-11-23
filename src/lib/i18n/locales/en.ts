@@ -21,6 +21,7 @@ export const en = {
   "settings.internalDimensions": "Internal Dimensions",
   "settings.extensionLines": "Extension Lines",
   "settings.objectDistance": "Object Distance",
+  "settings.objectSizes": "Object Sizes",
   "settings.lineColor": "Line Color",
   "settings.whiteLineColor": "White line color",
   "settings.darkLineColor": "Dark line color",

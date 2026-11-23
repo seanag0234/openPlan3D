@@ -34,6 +34,7 @@
   import type { ProjectSettings } from '$lib/stores/settings';
   import { snapStatus } from '$lib/utils/snapStep';
   import { angleSnapWithin, cameraAfterResize, resizeFurnitureFromHandle, snap as _snap, type CanvasState } from '$lib/utils/canvasInteraction';
+  import { furnitureSizeLabel } from '$lib/utils/furnitureCaption';
   import { drawWall as _drawWall, drawDoorOnWall as _drawDoorOnWall, drawWindowOnWall as _drawWindowOnWall, drawDoorDistanceDimensions as _drawDoorDistanceDimensions, drawWindowDistanceDimensions as _drawWindowDistanceDimensions, drawFurnitureItem, drawStair as _drawStair, drawColumn as _drawColumn, drawGuides as _drawGuides, drawPersistedMeasurements as _drawPersistedMeasurements, drawTextAnnotations as _drawTextAnnotations, drawAnnotation as _drawAnnotation, drawAnnotations as _drawAnnotations, drawRooms as _drawRooms, drawWallJoints as _drawWallJoints, drawSnapPoints as _drawSnapPoints, drawMinimap as _drawMinimap, drawEntourageItems as _drawEntourageItems, drawEntourageGhost as _drawEntourageGhost, drawFloorBelowGhost as _drawFloorBelowGhost, entourageAspect } from '$lib/utils/canvasRenderer';
   import { getEntourageDef } from '$lib/utils/entourageCatalog';
   import { translatedOpeningPosition } from '$lib/utils/openingTranslation';
@@ -186,12 +187,13 @@
   let dimSettings: ProjectSettings = $state({
     units: 'metric', showDimensions: true, showExternalDimensions: true,
     showInternalDimensions: false, showExtensionLines: true,
-    showObjectDistance: true, dimensionLineColor: '#1e293b',
+    showObjectDistance: true, showObjectSizes: true, dimensionLineColor: '#1e293b',
     wallMeasureMode: 'centerline', snapToGrid: true, snapToWalls: true, gridSize: 25,
   });
   onDestroy(projectSettings.subscribe((s) => {
     dimSettings = s;
     showDimensions = s.showDimensions;
+    markDirty();
   }));
   let showStairs = $derived(layerVis.stairs);
   let showLayerPanel = $state(false);
@@ -603,7 +605,8 @@
   }
 
   function drawFurniture(item: FurnitureItem, selected: boolean) {
-    drawFurnitureItem(getCS(), item, selected, customModelName(item, get(currentProject)) ?? (getCatalogItem(item.catalogId) ? furnitureName(item.catalogId, get(locale)) : undefined));
+    drawFurnitureItem(getCS(), item, selected, customModelName(item, get(currentProject)) ?? (getCatalogItem(item.catalogId) ? furnitureName(item.catalogId, get(locale)) : undefined),
+      dimSettings.showObjectSizes ? furnitureSizeLabel(item, dimSettings.units) : undefined);
   }
 
   // Track wall snap during placement preview

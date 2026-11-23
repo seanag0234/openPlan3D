@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import type { FurnitureItem } from '$lib/models/types';
 import { drawFurnitureItem } from '$lib/utils/canvasRenderer';
-import { furnitureCaptionBounds, furnitureCaptionLayout } from '$lib/utils/furnitureCaption';
+import { furnitureCaptionBounds, furnitureCaptionLayout, furnitureSizeLabel } from '$lib/utils/furnitureCaption';
 import { recordingContext } from './fixtures/recording-context';
 
 const base: FurnitureItem = { id: 'item', catalogId: 'unknown-model', position: { x: 120, y: -40 }, rotation: 0, scale: { x: 1, y: 1, z: 1 }, width: 90, depth: 60 };
@@ -24,6 +24,37 @@ it.each([
   const xs = drawn.corners.map(p => p.x / zoom), ys = drawn.corners.map(p => p.y / zoom);
   expect(bounds.minX).toBeCloseTo(Math.min(...xs), 9); expect(bounds.maxX).toBeCloseTo(Math.max(...xs), 9);
   expect(bounds.minY).toBeCloseTo(Math.min(...ys), 9); expect(bounds.maxY).toBeCloseTo(Math.max(...ys), 9);
+});
+
+// Fix 5: with Object sizes on, the editor draws the name and the real footprint in 12 px text.
+const fourByThree: FurnitureItem = { ...base, name: 'Lego table', width: 121.92, depth: 91.44 };
+const sizedTexts = (item: FurnitureItem, zoom: number) => {
+  const { context, texts } = recordingContext();
+  drawFurnitureItem({ ctx: context, width: 0, height: 0, zoom, camX: 0, camY: 0 }, item, false, item.name, furnitureSizeLabel(item, 'imperial'));
+  return texts;
+};
+
+it('labels a piece with its real footprint, scale included, in the current units', () => {
+  expect(furnitureSizeLabel(fourByThree, 'imperial')).toBe(`4' × 3'`);
+  expect(furnitureSizeLabel({ ...fourByThree, scale: { x: -2, y: 1, z: 1 } }, 'imperial')).toBe(`8' × 3'`);
+  expect(furnitureSizeLabel(fourByThree, 'metric')).toBe('1.22 m × 91 cm');
+});
+
+it.each([0.3, 1, 4])('draws the name over the size in 12 px text at zoom %s', zoom => {
+  const texts = sizedTexts(fourByThree, zoom);
+  expect(texts.map(t => [t.text, t.font])).toEqual([['Lego table', '12px sans-serif'], [`4' × 3'`, '12px sans-serif']]);
+  // Inside the piece when both lines fit, under it otherwise.
+  const d = 91.44 * zoom, centre = fourByThree.position.y * zoom;
+  const [name, size] = texts.map(t => (t.corners[0].y + t.corners[2].y) / 2 - centre);
+  expect(size).toBeGreaterThan(name);
+  if (zoom >= 1) { expect(name).toBeGreaterThan(-d / 2); expect(size).toBeLessThan(d / 2); }
+  else expect(name).toBeGreaterThan(d / 2);
+});
+
+it('keeps the tiny one-line caption when no size label is asked for', () => {
+  const { context, texts } = recordingContext();
+  drawFurnitureItem({ ctx: context, width: 0, height: 0, zoom: 1, camX: 0, camY: 0 }, fourByThree, false, 'Lego table');
+  expect(texts.map(t => [t.text, t.font])).toEqual([['Lego table', `${furnitureCaptionLayout(fourByThree)!.size}px sans-serif`]]);
 });
 
 it('reports no caption where drawFurnitureItem draws none', () => {

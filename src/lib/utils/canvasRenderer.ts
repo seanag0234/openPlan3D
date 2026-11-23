@@ -15,6 +15,7 @@ import type { ProjectSettings } from '$lib/stores/settings';
 import { formatLength, formatArea } from '$lib/stores/settings';
 import { getCatalogItem, getFurnitureSize } from '$lib/utils/furnitureCatalog';
 import { drawFurnitureIcon } from '$lib/utils/furnitureIcons';
+import { READABLE_CAPTION_PX, readableCaptionLines } from '$lib/utils/furnitureCaption';
 import { getRoomPolygon, roomCentroid, roomLabelPosition } from '$lib/utils/roomDetection';
 import { getWallTextureCanvas, getFloorTextureCanvas } from '$lib/utils/textureGenerator';
 import { getEntourageDef } from '$lib/utils/entourageCatalog';
@@ -900,7 +901,8 @@ export function drawWindowDistanceDimensions(cs: CanvasState, wall: Wall, window
 
 // ── Furniture drawing ────────────────────────────────────────────────
 
-export function drawFurnitureItem(cs: CanvasState, item: FurnitureItem, selected: boolean, caption?: string): void {
+/** A `sizeLabel` switches to the editor's readable two-line caption; exports omit it and keep the small one. */
+export function drawFurnitureItem(cs: CanvasState, item: FurnitureItem, selected: boolean, caption?: string, sizeLabel?: string): void {
   const { ctx, zoom } = cs;
   const cat = getCatalogItem(item.catalogId);
   const s = wts(cs, item.position.x, item.position.y);
@@ -922,7 +924,22 @@ export function drawFurnitureItem(cs: CanvasState, item: FurnitureItem, selected
   drawFurnitureIcon(ctx, item.catalogId, w, d, itemColor, strokeColor);
 
   const fontSize = Math.max(8, Math.min(12, Math.min(w, d) * 0.2));
-  if (Math.min(w, d) > 20) {
+  if (sizeLabel !== undefined) {
+    const lines = [caption ?? cat?.name ?? 'Unknown furniture', sizeLabel];
+    ctx.save();
+    ctx.scale(Math.sign(sx) || 1, Math.sign(sy) || 1);
+    ctx.font = `${READABLE_CAPTION_PX}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const offsets = readableCaptionLines(w, d, Math.max(...lines.map(line => ctx.measureText(line).width)));
+    // Dark ink on a light halo stays legible over zone colours.
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.fillStyle = '#111827';
+    lines.forEach((line, i) => { ctx.strokeText(line, 0, offsets[i]); ctx.fillText(line, 0, offsets[i]); });
+    ctx.restore();
+  } else if (Math.min(w, d) > 20) {
     ctx.save();
     // Mirror the symbol, while keeping its caption readable.
     ctx.scale(Math.sign(sx) || 1, Math.sign(sy) || 1);

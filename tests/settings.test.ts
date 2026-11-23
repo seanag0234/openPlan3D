@@ -80,6 +80,10 @@ describe('editor settings', () => {
     expect(project.displaySettings).toEqual({ units: 'metric', future: 'kept' });
   });
 
+  it('shows object sizes by default', async () => {
+    expect(get(await load()).showObjectSizes).toBe(true);
+  });
+
   it('remembers changes across reloads when storage works', async () => {
     const data = mockStorage();
     const settings = await load();

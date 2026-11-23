@@ -1,5 +1,22 @@
 import type { FurnitureItem } from '$lib/models/types';
+import { formatLength } from '$lib/stores/settings';
 import { getCatalogItem, getFurnitureSize } from './furnitureCatalog';
+
+/** Width × depth of the piece's real footprint, as Settings → Object sizes shows it under the name. */
+export function furnitureSizeLabel(item: FurnitureItem, units: 'metric' | 'imperial') {
+  const { width, depth } = getFurnitureSize(item);
+  return `${formatLength(width, units)} × ${formatLength(depth, units)}`;
+}
+
+/** Screen px of the editor's two-line caption, whatever the zoom. */
+export const READABLE_CAPTION_PX = 12;
+
+/** Middle-line offsets of the name and size lines: inside a `w` × `d` px piece when both fit, else under it. */
+export function readableCaptionLines(w: number, d: number, textWidth: number): [number, number] {
+  const line = READABLE_CAPTION_PX * 1.25;
+  if (textWidth + 8 <= w && line * 2 + 6 <= d) return [-line / 2, line / 2];
+  return [d / 2 + 4 + line / 2, d / 2 + 4 + line * 1.5];
+}
 
 /**
  * Where drawFurnitureItem and the SVG export put a furniture caption at `zoom` drawing units per cm:
