@@ -60,6 +60,10 @@ describe('editor settings', () => {
     expect(data.has('o3d_settings')).toBe(false);
   });
 
+  it('shows object sizes by default', async () => {
+    expect(get(await load()).showObjectSizes).toBe(true);
+  });
+
   it('remembers changes across reloads when storage works', async () => {
     const data = mockStorage();
     const settings = await load();

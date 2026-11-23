@@ -21,6 +21,7 @@ export const pt = {
   "settings.internalDimensions": "Dimensões Internas",
   "settings.extensionLines": "Linhas de Extensão",
   "settings.objectDistance": "Distância entre Objetos",
+  "settings.objectSizes": "Tamanhos dos Objetos",
   "settings.lineColor": "Cor da Linha",
   "settings.whiteLineColor": "Cor de linha branca",
   "settings.darkLineColor": "Cor de linha escura",

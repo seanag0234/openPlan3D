@@ -7,6 +7,7 @@ export interface ProjectSettings {
   showInternalDimensions: boolean;       // inside-room dimensions
   showExtensionLines: boolean;           // perpendicular tick marks on dimension lines
   showObjectDistance: boolean;            // distance from objects to walls
+  showObjectSizes: boolean;              // name and width × depth on every piece, in 12 px text
   dimensionLineColor: string;            // color for dimension lines/text
   wallMeasureMode: 'centerline' | 'edge'; // measure walls center-to-center or edge-to-edge (clear span)
   snapToGrid: boolean;                   // snap elements to grid when dragging
@@ -21,6 +22,7 @@ const defaultSettings: ProjectSettings = {
   showInternalDimensions: false,
   showExtensionLines: true,
   showObjectDistance: true,
+  showObjectSizes: true,
   dimensionLineColor: '#1e293b',
   wallMeasureMode: 'centerline',
   snapToGrid: true,
