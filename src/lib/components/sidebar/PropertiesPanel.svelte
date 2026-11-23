@@ -970,7 +970,9 @@
       </label>
       <div class="flex gap-2">
         <button onclick={() => { if (selectedEntourage) updateEntourageItem(selectedEntourage.id, { locked: !selectedEntourage.locked }); }} class="flex-1 px-2 py-1.5 border rounded text-sm transition-colors {selectedEntourage.locked ? 'bg-amber-50 border-amber-300 text-amber-700' : 'border-gray-200 hover:bg-gray-50'}">{selectedEntourage.locked ? $t('symbolProperties.locked') : $t('symbolProperties.unlocked')}</button>
-        <button onclick={() => { if (selectedEntourage) { removeElement(selectedEntourage.id); selectedElementId.set(null); } }} class="flex-1 px-2 py-1.5 border border-red-200 text-red-600 rounded text-sm hover:bg-red-50 transition-colors">{$t('symbolProperties.delete')}</button>
+        {#if !selectedEntourage.locked}
+          <button onclick={() => { if (selectedEntourage) { removeElement(selectedEntourage.id); selectedElementId.set(null); } }} class="flex-1 px-2 py-1.5 border border-red-200 text-red-600 rounded text-sm hover:bg-red-50 transition-colors">{$t('symbolProperties.delete')}</button>
+        {/if}
       </div>
     </div>
 
@@ -1091,6 +1093,7 @@
         <span class="text-xs text-gray-500">Y</span>
         <input type="number" value={selectedTextAnnotation.y} oninput={(e) => scalarInput(e, selectedTextAnnotation!.y, value => updateTextAnnotation(selectedTextAnnotation!.id, { y: value }))} onblur={(e) => scalarInput(e, selectedTextAnnotation!.y, value => updateTextAnnotation(selectedTextAnnotation!.id, { y: value }))} step="any" class="w-full px-2 py-1 border border-gray-200 rounded text-sm" />
       </label>
+      <button onclick={() => { if (selectedTextAnnotation) updateTextAnnotation(selectedTextAnnotation.id, { locked: !selectedTextAnnotation.locked }); }} class="w-full px-2 py-1.5 border rounded text-sm transition-colors {selectedTextAnnotation.locked ? 'bg-amber-50 border-amber-300 text-amber-700' : 'border-gray-200 hover:bg-gray-50'}">{selectedTextAnnotation.locked ? $t('symbolProperties.locked') : $t('symbolProperties.unlocked')}</button>
     </div>
   {/if}
 

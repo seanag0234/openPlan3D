@@ -166,6 +166,7 @@ export function readProject(value: unknown): Project {
       number(item.x, `${path}.x`); number(item.y, `${path}.y`); text(item.text, `${path}.text`);
       defaults(item, { fontSize: 16, color: '#1e293b', rotation: 0 });
       positive(item.fontSize, `${path}.fontSize`); number(item.rotation, `${path}.rotation`); text(item.color, `${path}.color`);
+      booleans(item, ['locked'], path);
     });
     elements('groups', (item, path) => { ids(item.elementIds, `${path}.elementIds`); });
     // Avoid adding optional attachment arrays to otherwise unchanged current files.
