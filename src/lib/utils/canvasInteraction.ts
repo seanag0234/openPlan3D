@@ -27,6 +27,17 @@ export function worldToScreen(cs: CanvasState, wx: number, wy: number): { x: num
   return { x: (wx - cs.camX) * cs.zoom + cs.width / 2, y: (wy - cs.camY) * cs.zoom + cs.height / 2 };
 }
 
+type Box = { left: number; top: number; width: number; height: number };
+
+/** Camera that keeps every plan point at the same page position when the canvas box changes. */
+export function cameraAfterResize(cam: Point, zoom: number, before: Box | null, after: Box): Point {
+  if (!before || before.width <= 0 || before.height <= 0) return cam;
+  return {
+    x: cam.x + (after.left + after.width / 2 - (before.left + before.width / 2)) / zoom,
+    y: cam.y + (after.top + after.height / 2 - (before.top + before.height / 2)) / zoom,
+  };
+}
+
 export function snap(v: number, enabled: boolean, snapToGrid: boolean, gridSize: number): number {
   if (!enabled) return v;
   const step = snapToGrid ? gridSize : SNAP;
