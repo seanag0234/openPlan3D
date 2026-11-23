@@ -5,6 +5,8 @@ import { renderLabAsset } from './tooling/render-lab-asset';
 import { catalogAssets } from './tooling/catalog-assets.mjs';
 
 export default defineConfig({
+	// Fixed at build time, so a running server's environment cannot switch the online library on.
+	define: { 'import.meta.env.PUBLIC_CLOUD_LIBRARY': JSON.stringify(process.env.PUBLIC_CLOUD_LIBRARY ?? '') },
 	plugins: [
     {
       name: 'require-production-build',

@@ -12,7 +12,7 @@
   import { currentProject, viewMode, selectedElementId, selectedRoomId, createDefaultProject, loadProject, selectedTool, placingFurnitureId, elevationWallId, elevationPickMode } from '$lib/stores/project';
   import { USER_GUIDE_URL } from '$lib/stores/exportNotice';
   import { interchangeProjectName } from '$lib/utils/interchange';
-  import { localStore, storageErrorMessage, downloadLibraryBackup } from '$lib/services/datastore';
+  import { dataStore, storageErrorMessage, downloadLibraryBackup } from '$lib/services/datastore';
   import { autoSave, markClean, saveState } from '$lib/stores/saveStatus';
   import { startAgentBridge } from '$lib/services/agentBridge';
   import { createProjectFromRoomPlan, isRoomPlanJson } from '$lib/utils/roomplanImport';
@@ -154,7 +154,7 @@
         // A new/imported project may exist only in memory if its first save failed.
         const pending = get(currentProject);
         if (pending?.id === id && get(saveState) !== 'saved') { ready = true; return; }
-        const project = await localStore.load(id);
+        const project = await dataStore.load(id);
         if (project) {
           loadProject(project);
           markClean();

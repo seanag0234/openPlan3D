@@ -1215,6 +1215,8 @@ export const en = {
   "projectService.storageUnavailable": "Browser storage is unavailable. Allow site storage or download your project as JSON.",
   "projectService.storageFailed": "Could not save to browser storage. Download your project as JSON to keep a copy.",
   "projectService.conflict": "This project changed or was deleted in another tab. Save your version as a copy or download a JSON backup to keep both versions.",
+  "projectService.libraryTooLarge": "This plan is too large for the online library, so it is kept in this browser only. Download a JSON backup to move it to another device.",
+  "projectService.libraryUnreachable": "The online library could not be reached, so this change is kept in this browser only. Retry when you are online.",
   "projectService.openUnsaved": "Your current plan could not be saved.",
   "projectService.openRetry": "Retry saving or download a JSON backup before opening another plan.",
   "projectService.newId": "Could not choose a new project ID. Try opening the file again.",

@@ -199,3 +199,162 @@ export function createLocalStore(): DataStore {
 }
 
 export const localStore = createLocalStore();
+
+export const LIBRARY_TOO_LARGE = 'This plan is too large for the online library, so it is kept in this browser only. Download a JSON backup to move it to another device.';
+export const LIBRARY_UNREACHABLE = 'The online library could not be reached, so this change is kept in this browser only. Retry when you are online.';
+
+/** The browser copy is saved; the online library did not take the change. */
+export class LibraryLocalOnlyError extends Error {
+  constructor(message: string) { super(message); this.name = 'LibraryLocalOnlyError'; }
+}
+
+type RemoteEntry = { id: string; name: string; updatedAt: string; revision: number; thumbnail: string | null };
+/** Per plan: the library revision this browser's copy came from, and whether it holds edits the library lacks. */
+type Sync = Record<string, { revision?: number; pending?: boolean }>;
+const LIBRARY_SYNC_KEY = 'o3d_library_sync';
+
+const time = (value: unknown) => new Date(value as string).getTime();
+const revisionOf = (response: Response) => Number(response.headers.get('ETag')?.replaceAll('"', ''));
+
+/**
+ * The browser library plus the site's online library (functions/api/library). Every change lands in the
+ * browser first, then online; a stale online save is a ProjectConflictError, as a stale tab's is.
+ */
+export function createLibraryStore(local: DataStore, options: {
+  url?: string; fetch?: typeof fetch; storage?: Pick<Storage, 'getItem' | 'setItem'> | null;
+} = {}): DataStore {
+  const url = options.url ?? '/api/library';
+  const send: typeof fetch = options.fetch ?? ((input, init) => fetch(input, init));
+  const storage = () => options.storage !== undefined ? options.storage : globalThis.localStorage;
+  let listed = new Map<string, RemoteEntry>();
+
+  const sync = (): Sync => { try { return JSON.parse(storage()?.getItem(LIBRARY_SYNC_KEY) ?? '{}') ?? {}; } catch { return {}; } };
+  const remember = (id: string, state: Sync[string] | undefined) => {
+    const all = sync();
+    if (state) all[id] = state; else delete all[id];
+    try { storage()?.setItem(LIBRARY_SYNC_KEY, JSON.stringify(all)); } catch {}
+  };
+
+  /** null: the library could not be reached, or refused the sign-in. */
+  async function call(path: string, init?: RequestInit): Promise<Response | null> {
+    try { return await send(`${url}${path}`, { cache: 'no-store', ...init }); } catch { return null; }
+  }
+  const at = (id: string) => `/${encodeURIComponent(id)}`;
+
+  async function remoteList(): Promise<RemoteEntry[] | null> {
+    const response = await call('');
+    if (!response?.ok) return null;
+    const entries = (await response.json()) as RemoteEntry[];
+    listed = new Map(entries.map(entry => [entry.id, entry]));
+    return entries;
+  }
+
+  /** undefined when unreachable, null when the library has no such plan. */
+  async function remoteGet(id: string): Promise<{ project: Project; revision: number } | null | undefined> {
+    const response = await call(at(id));
+    if (response?.status === 404) return null;
+    if (!response?.ok) return undefined;
+    const project = readProject(await response.json());
+    if (project.id !== id) throw new Error('The saved project ID does not match its library entry. Download a library backup before recovery.');
+    return { project, revision: revisionOf(response) };
+  }
+
+  /** The newer copy wins, except that a browser copy with nothing new gives way to any later library revision. */
+  function remoteWins(id: string, remote: { revision: number; updatedAt: unknown }, mine?: { updatedAt: unknown }) {
+    if (!mine) return true;
+    const state = sync()[id];
+    if (state?.revision === remote.revision) return false;
+    return state && !state.pending ? true : time(remote.updatedAt) > time(mine.updatedAt);
+  }
+
+  async function upload(project: Project) {
+    const known = sync()[project.id]?.revision;
+    const response = await call(at(project.id), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...(known === undefined ? { 'If-None-Match': '*' } : { 'If-Match': `"${known}"` }) },
+      body: JSON.stringify(project),
+    });
+    if (response?.ok) { remember(project.id, { revision: revisionOf(response) }); return; }
+    remember(project.id, { revision: known, pending: true });
+    if (response?.status === 412) throw new ProjectConflictError();
+    throw new LibraryLocalOnlyError(response?.status === 413 ? LIBRARY_TOO_LARGE : LIBRARY_UNREACHABLE);
+  }
+
+  return {
+    async has(id) { return await local.has(id) || !!(await remoteList())?.some(entry => entry.id === id); },
+
+    assertCurrent: id => local.assertCurrent(id),
+
+    async save(project) {
+      await local.save(project);
+      await upload(project);
+    },
+
+    async saveCopy(project, suffix) {
+      const copy = await local.saveCopy(project, suffix);
+      // The edits now live in the copy, so the original follows the library again on its next open.
+      const original = sync()[project.id];
+      if (original?.pending) remember(project.id, { revision: original.revision });
+      // shortcut: a copy the library did not take is uploaded by its next save, which needs an edit.
+      await upload(copy).catch(() => {});
+      return copy;
+    },
+
+    async load(id) {
+      const remote = await remoteGet(id);
+      const mine = await local.load(id);
+      if (!remote || !remoteWins(id, { revision: remote.revision, updatedAt: remote.project.updatedAt }, mine ?? undefined)) return mine;
+      await local.save(remote.project);
+      remember(id, { revision: remote.revision });
+      return remote.project;
+    },
+
+    async list() {
+      const mine = await local.list(), remote = await remoteList();
+      if (!remote) return mine;
+      const merged = new Map(mine.map(entry => [entry.id, entry]));
+      for (const entry of remote) {
+        if (remoteWins(entry.id, entry, merged.get(entry.id))) merged.set(entry.id, { id: entry.id, name: entry.name, updatedAt: entry.updatedAt });
+      }
+      return [...merged.values()];
+    },
+
+    async delete(id) {
+      await local.delete(id);
+      const revision = listed.get(id)?.revision ?? sync()[id]?.revision;
+      if (revision === undefined) return;
+      const response = await call(at(id), { method: 'DELETE', headers: { 'If-Match': `"${revision}"` } });
+      if (response?.status === 412) throw new ProjectConflictError();
+      if (!response?.ok) throw new LibraryLocalOnlyError(LIBRARY_UNREACHABLE);
+      listed.delete(id);
+      remember(id, undefined);
+    },
+
+    async duplicate(id) {
+      const remote = await remoteGet(id);
+      const mine = remote ? (await local.list()).find(entry => entry.id === id) : undefined;
+      const copy = remote && remoteWins(id, { revision: remote.revision, updatedAt: remote.project.updatedAt }, mine)
+        ? await local.saveCopy(remote.project, 'Copy')
+        : await local.duplicate(id);
+      if (copy) await upload(copy).catch(() => {});
+      return copy;
+    },
+
+    async saveThumbnail(id, dataUrl) {
+      await local.saveThumbnail(id, dataUrl);
+      // Previews are optional, as in the browser library.
+      void call(`${at(id)}/thumbnail`, { method: 'PUT', body: dataUrl });
+    },
+
+    async getThumbnail(id) { return (await local.getThumbnail(id)) ?? listed.get(id)?.thumbnail ?? null; },
+
+    async getThumbnails() {
+      const thumbnails = await local.getThumbnails();
+      for (const [id, entry] of listed) if (entry.thumbnail && !thumbnails[id]) thumbnails[id] = entry.thumbnail;
+      return thumbnails;
+    },
+  };
+}
+
+/** PUBLIC_CLOUD_LIBRARY=true at build time (vite.config.ts) adds the online library; otherwise plans stay in the browser. */
+export const dataStore: DataStore = import.meta.env.PUBLIC_CLOUD_LIBRARY === 'true' ? createLibraryStore(localStore) : localStore;

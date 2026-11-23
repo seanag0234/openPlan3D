@@ -13,7 +13,7 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
-		"build:static": "OPENPLAN_STATIC=true vite build",
+		"build:static": "OPENPLAN_STATIC=true PUBLIC_CLOUD_LIBRARY=true vite build",
 		"pages:dev": "wrangler pages dev build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",

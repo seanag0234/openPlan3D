@@ -4,15 +4,15 @@ import { currentProject, loadProject } from '$lib/stores/project';
 import { autoSave, markClean, saveError, saveState } from '$lib/stores/saveStatus';
 import { applyDisplaySettings } from '$lib/stores/settings';
 import { readProject } from '$lib/utils/projectValidation';
-import { localStore, ProjectConflictError } from './datastore';
+import { dataStore, ProjectConflictError } from './datastore';
 import { prepareToLeave } from './deployment';
 
 let latestRequest = 0;
 
 /** An ID the library lacks stays taken while this tab remembers a revision of it: the store refuses to recreate a deleted plan. */
 async function taken(id: string): Promise<boolean> {
-  if (await localStore.has(id)) return true;
-  try { await localStore.assertCurrent(id); return false; }
+  if (await dataStore.has(id)) return true;
+  try { await dataStore.assertCurrent(id); return false; }
   catch (error) { if (error instanceof ProjectConflictError) return true; throw error; }
 }
 
@@ -76,7 +76,7 @@ export async function openStoredProject(id: string, signal?: AbortSignal): Promi
   const request = ++latestRequest;
   const superseded = () => signal?.aborted || request !== latestRequest;
   try {
-    const project = await localStore.load(id);
+    const project = await dataStore.load(id);
     if (superseded()) return null;
     if (!project) throw new Error('This project is no longer in your library.');
     if (!await prepareToLeave()) {
