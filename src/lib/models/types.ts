@@ -183,6 +183,7 @@ export interface TextAnnotation {
   fontSize: number;
   color: string;
   rotation: number;
+  locked?: boolean;
 }
 
 export interface GuideLine {

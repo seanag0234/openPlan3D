@@ -19,7 +19,7 @@ function completeProject(): any {
   floor.guides = [{ id: 'guide', orientation: 'vertical', position: -2.5 }];
   floor.measurements = [{ id: 'measurement', x1: 0, y1: 0, x2: 10.25, y2: -4.5 }];
   floor.annotations = [{ id: 'dimension', x1: 0, y1: 0, x2: 50.75, y2: 0, offset: -40.25, label: 'Entry' }];
-  floor.textAnnotations = [{ id: 'text', x: 20.25, y: 30.75, text: 'Kitchen notes', fontSize: 16, color: '#111', rotation: 90 }];
+  floor.textAnnotations = [{ id: 'text', x: 20.25, y: 30.75, text: 'Kitchen notes', fontSize: 16, color: '#111', rotation: 90, locked: true }];
   floor.groups = [{ id: 'group', elementIds: ['chair', 'column'] }];
   floor.backgroundImage = { dataUrl: 'data:image/png;base64,AA==', position: { x: -30, y: 10 }, scale: 0.5, opacity: 0, rotation: -25, locked: true };
   floor.entourage = [{ id: 'symbol', defId: 'custom-tree', position: { x: 20, y: 30 }, rotation: 45, width: 70.125, opacity: 0, locked: true }];
@@ -93,6 +93,7 @@ describe('native project reader', () => {
     ['invalid measurement', p => p.floors[0].measurements[0].x1 = '0', 'measurements[0].x1'],
     ['invalid annotation', p => p.floors[0].annotations[0].offset = null, 'annotations[0].offset'],
     ['invalid text size', p => p.floors[0].textAnnotations[0].fontSize = -16, 'textAnnotations[0].fontSize'],
+    ['invalid text lock', p => p.floors[0].textAnnotations[0].locked = 'yes', 'textAnnotations[0].locked'],
     ['invalid group', p => p.floors[0].groups[0].elementIds = 'chair', 'groups[0].elementIds'],
     ['invalid image scale', p => p.floors[0].backgroundImage.scale = 0, 'backgroundImage.scale'],
     ['invalid symbol opacity', p => p.floors[0].entourage[0].opacity = 2, 'entourage[0].opacity'],

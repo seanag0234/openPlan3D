@@ -692,8 +692,15 @@ export function removeRoom(id: string) {
   }
 }
 
+/** Pieces, symbols and text labels that can be locked. */
+export function lockableItems(floor: Floor) {
+  return [...floor.furniture, ...floor.entourage ?? [], ...floor.textAnnotations ?? []];
+}
+
+/** A locked piece, symbol or text label stays; in a mixed selection only the unlocked items go. */
 export function removeElement(id: string) {
   mutate((f) => {
+    if (lockableItems(f).some(item => item.id === id && item.locked)) return;
     // Check if the element being removed is a wall — if so, also remove associated doors/windows
     const isWall = f.walls.some((w) => w.id === id);
     const removedIds = new Set([id]);
@@ -1475,7 +1482,7 @@ export function removeTextAnnotation(id: string) {
   removeElement(id);
 }
 
-export function updateTextAnnotation(id: string, updates: Partial<{ x: number; y: number; text: string; fontSize: number; color: string; rotation: number }>) {
+export function updateTextAnnotation(id: string, updates: Partial<{ x: number; y: number; text: string; fontSize: number; color: string; rotation: number; locked: boolean }>) {
   mutate(f => {
     if (!f.textAnnotations) return;
     const t = f.textAnnotations.find(t => t.id === id);
@@ -1508,11 +1515,11 @@ export const layerVisibility = writable<{ walls: boolean; doors: boolean; window
 export function toggleSelectionLock(ids: ReadonlySet<string>) {
   const floor = get(activeFloor);
   if (!floor) return;
-  const items = [...floor.furniture, ...floor.entourage ?? []].filter(item => ids.has(item.id));
+  const items = lockableItems(floor).filter(item => ids.has(item.id));
   if (!items.length) return;
   const locked = items.some(item => !item.locked);
   mutate(f => {
-    for (const item of [...f.furniture, ...f.entourage ?? []]) {
+    for (const item of lockableItems(f)) {
       if (ids.has(item.id)) item.locked = locked;
     }
   }, locked ? 'Locked selection' : 'Unlocked selection');

@@ -10,7 +10,7 @@
   import { planContentBounds, hasPlanContent } from '$lib/utils/planContentBounds';
   import { connectedWallEndpoints } from '$lib/utils/wallEditing';
   import { createDrawScheduler } from '$lib/utils/drawScheduler';
-  import { activeFloor, selectedTool, selectedElementId, selectedElementIds, selectedRoomId, addWall, addDoor, addWindow, updateWall, moveWallEndpoint, moveWallGeometryDuringDrag, updateDoor, updateWindow, addFurniture, moveFurniture, transformFurnitureDuringDrag, rotateFurniture, rotateSelection, setFurnitureRotation, scaleFurniture, removeElement, placingFurnitureId, placingRotation, placingDoorType, placingWindowType, detectedRoomsStore, duplicateDoor, duplicateWindow, duplicateFurniture, duplicateSelection, pasteSelection, moveWallParallel, splitWall, wallSplitIntersectsOpening, snapEnabled, placingStair, addStair, moveStair, updateStair, placingColumn, placingColumnShape, addColumn, moveColumn, updateColumn, calibrationMode, calibrationPoints, updateBackgroundImage, setBackgroundImage, canvasZoom, canvasMinimumZoom, canvasCamX, canvasCamY, panMode, showFurnitureStore, addGuide, moveGuide, removeGuide, beginUndoGroup, endUndoGroup, layerVisibility, updateRoom, addMeasurement, updateMeasurement, removeMeasurement, addAnnotation, removeAnnotation, updateAnnotation, addTextAnnotation, removeTextAnnotation, updateTextAnnotation, moveTextAnnotation, toggleFurnitureLock, toggleSelectionLock, createGroup, ungroupElements, findGroupForElement, placingEntourageId, addEntourageItem, moveEntourage, resizeEntourage, currentProject, elevationWallId, elevationPickMode, doorJoinMode, joinScanDoors } from '$lib/stores/project';
+  import { activeFloor, selectedTool, selectedElementId, selectedElementIds, selectedRoomId, addWall, addDoor, addWindow, updateWall, moveWallEndpoint, moveWallGeometryDuringDrag, updateDoor, updateWindow, addFurniture, moveFurniture, transformFurnitureDuringDrag, rotateFurniture, rotateSelection, setFurnitureRotation, scaleFurniture, removeElement, placingFurnitureId, placingRotation, placingDoorType, placingWindowType, detectedRoomsStore, duplicateDoor, duplicateWindow, duplicateFurniture, duplicateSelection, pasteSelection, moveWallParallel, splitWall, wallSplitIntersectsOpening, snapEnabled, placingStair, addStair, moveStair, updateStair, placingColumn, placingColumnShape, addColumn, moveColumn, updateColumn, calibrationMode, calibrationPoints, updateBackgroundImage, setBackgroundImage, canvasZoom, canvasMinimumZoom, canvasCamX, canvasCamY, panMode, showFurnitureStore, addGuide, moveGuide, removeGuide, beginUndoGroup, endUndoGroup, layerVisibility, updateRoom, addMeasurement, updateMeasurement, removeMeasurement, addAnnotation, removeAnnotation, updateAnnotation, addTextAnnotation, removeTextAnnotation, updateTextAnnotation, moveTextAnnotation, toggleFurnitureLock, toggleSelectionLock, createGroup, ungroupElements, findGroupForElement, placingEntourageId, addEntourageItem, moveEntourage, resizeEntourage, currentProject, elevationWallId, elevationPickMode, doorJoinMode, joinScanDoors, lockableItems } from '$lib/stores/project';
   import type { Point, Wall, Door, Window as Win, FurnitureItem, Stair, Column, GuideLine, Measurement, Annotation, TextAnnotation, CustomEntourageDef } from '$lib/models/types';
   import type { Floor, Room } from '$lib/models/types';
   import { resolveRoomGeometry, roomLabelPosition, roomCentroid } from '$lib/utils/roomDetection';
@@ -324,7 +324,7 @@
             continue;
           }
           const note = currentFloor.textAnnotations?.find(item => item.id === id);
-          if (note) { origPositions.set(id, { position: { x: note.x, y: note.y } }); continue; }
+          if (note) { if (!note.locked) origPositions.set(id, { position: { x: note.x, y: note.y } }); continue; }
           const dimension = [...currentFloor.measurements ?? [], ...currentFloor.annotations ?? []].find(item => item.id === id);
           if (dimension) { origPositions.set(id, { start: { x: dimension.x1, y: dimension.y1 }, end: { x: dimension.x2, y: dimension.y2 } }); continue; }
           const fi = currentFloor.furniture.find(f => f.id === id);
@@ -340,6 +340,13 @@
       }
     }
     return false;
+  }
+
+  /** Delete would do nothing, so the bin is not offered. */
+  function selectionAllLocked() {
+    const ids = currentSelectedIds.size ? [...currentSelectedIds] : currentSelectedId ? [currentSelectedId] : [];
+    const items = currentFloor ? lockableItems(currentFloor) : [];
+    return ids.length > 0 && ids.every(id => items.some(item => item.id === id && item.locked));
   }
 
   function selectAllPlanElements() {
@@ -2412,7 +2419,7 @@
       if (textHitId && (e.ctrlKey || e.metaKey || !(currentSelectedIds.size >= 2 && currentSelectedIds.has(textHitId)))) {
         if (selectAnnotationTarget('text',textHitId,e,wp)) return;
         const ta = currentFloor.textAnnotations?.find(t => t.id === textHitId);
-        if (ta) {
+        if (ta && !ta.locked) {
           draggingTextAnnotationId = textHitId;
           textAnnotationDragOffset = { x: wp.x - ta.x, y: wp.y - ta.y };
         }
@@ -4238,6 +4245,7 @@
         {#if currentSelectedId && currentSelectedIds.size === 0}
           <MoveToFloorMenu ids={new Set([currentSelectedId])} />
         {/if}
+        {#if !selectionAllLocked()}
         <div class="w-px h-5 bg-gray-200 mx-0.5"></div>
         <button
           class="w-7 h-7 flex items-center justify-center rounded hover:bg-red-50 text-gray-400 hover:text-red-600"
@@ -4258,6 +4266,7 @@
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14"/></svg>
         </button>
+        {/if}
       </div>
     {/if}
   {/if}

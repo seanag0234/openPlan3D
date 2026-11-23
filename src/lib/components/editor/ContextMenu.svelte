@@ -124,10 +124,12 @@
       <button class="ctx-item" role="menuitem" onclick={() => clickItem('properties')}>
         <span class="ctx-icon">⚙️</span> {$t('contextMenu.properties')}
       </button>
-      <div class="ctx-sep"></div>
-      <button class="ctx-item ctx-danger" role="menuitem" onclick={() => clickItem('delete')}>
-        <span class="ctx-icon">🗑️</span> {$t('contextMenu.delete')}
-      </button>
+      {#if !targetFurniture?.locked}
+        <div class="ctx-sep"></div>
+        <button class="ctx-item ctx-danger" role="menuitem" onclick={() => clickItem('delete')}>
+          <span class="ctx-icon">🗑️</span> {$t('contextMenu.delete')}
+        </button>
+      {/if}
 
     {:else if targetType === 'wall'}
       <button class="ctx-item" role="menuitem" onclick={() => clickItem('split-wall')}>
