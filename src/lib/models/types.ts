@@ -111,6 +111,8 @@ export interface FurnitureItem {
   customModelId?: string;
   details?: ItemDetails;
   id: string;
+  /** Caption the person gave this piece; wins over the model and catalogue names. */
+  name?: string;
   catalogId: string;
   /** Original unsupported import category, used only by the imported_object preview. */
   sourceCategory?: string;

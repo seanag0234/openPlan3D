@@ -141,7 +141,7 @@ export function readProject(value: unknown): Project {
       for (const key of ['x', 'y', 'z']) number(item.scale[key], `${path}.scale.${key}`);
       for (const key of ['width', 'depth', 'height']) if (item[key] !== undefined) positive(item[key], `${path}.${key}`);
       if (item.elevation !== undefined) number(item.elevation, `${path}.elevation`, 0, MAX_FURNITURE_ELEVATION);
-      strings(item, ['color', 'material', 'sourceCategory'], path); booleans(item, ['locked'], path);
+      strings(item, ['name', 'color', 'material', 'sourceCategory'], path); booleans(item, ['locked'], path);
     });
     elements('stairs', (item, path) => {
       positioned(item, path); positive(item.width, `${path}.width`); positive(item.depth, `${path}.depth`);

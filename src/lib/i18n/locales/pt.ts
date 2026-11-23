@@ -776,6 +776,7 @@ export const pt = {
   "openingProperties.doorway": "Vão de passagem (sem porta)",
   "furnitureProperties.heading": "Propriedades de {name}",
   "furnitureProperties.fallback": "Móvel",
+  "furnitureProperties.name": "Nome",
   "furnitureProperties.lock": "Bloquear (Ctrl+L)",
   "furnitureProperties.unlock": "Desbloquear (Ctrl+L)",
   "furnitureProperties.locked": "Bloqueado",

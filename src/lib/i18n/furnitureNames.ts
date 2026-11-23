@@ -204,7 +204,7 @@ export function furnitureName(id: string, language: Locale): string {
 }
 
 
-/** User-authored model names are retained verbatim in every interface language. */
+/** User-authored names, the piece's own first, are retained verbatim in every interface language. */
 export function customModelName(item: FurnitureItem, project?: Project | null): string | undefined {
-  return item.customModelId ? project?.customModels?.find(model => model.id === item.customModelId)?.name : undefined;
+  return item.name?.trim() || (item.customModelId ? project?.customModels?.find(model => model.id === item.customModelId)?.name : undefined);
 }
