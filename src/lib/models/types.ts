@@ -275,7 +275,17 @@ export interface InterchangeState {
   planNotes?: string;
 }
 
+/** Display choices a plan file carries; applied to the browser's Settings on import. Unknown keys are kept. */
+export interface DisplaySettings {
+  units?: 'metric' | 'imperial';
+  showDimensions?: boolean;
+  showExternalDimensions?: boolean;
+  showInternalDimensions?: boolean;
+  [key: string]: unknown;
+}
+
 export interface Project {
+  displaySettings?: DisplaySettings;
   customModels?: CustomModelDef[];
   attachmentNames?: Record<string, string>;
   projectPackage?: ProjectPackageState;

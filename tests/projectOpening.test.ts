@@ -5,6 +5,7 @@ import { openProject } from '$lib/services/projectOpening';
 import { createLocalStore, localStore } from '$lib/services/datastore';
 import { currentProject, loadProject, updateProjectName } from '$lib/stores/project';
 import { initAutoSave, markClean, saveConflict, saveError, saveState } from '$lib/stores/saveStatus';
+import { projectSettings } from '$lib/stores/settings';
 import { roomProject } from './fixtures/project';
 
 vi.mock('$lib/stores/versionHistory', () => ({ saveSnapshot: vi.fn() }));
@@ -43,6 +44,17 @@ it('saves pending current edits before importing, then saves the candidate separ
   expect((await localStore.load(opened!.id))!.floors).toEqual(candidate.floors);
   expect(get(saveState)).toBe('saved');
   expect(get(currentProject)).toBe(opened);
+});
+
+it('applies an imported file\'s display settings to this browser, but not when starting a new plan', async () => {
+  projectSettings.set({ ...get(projectSettings), units: 'metric', showDimensions: true });
+  const blank: any = roomProject(); blank.displaySettings = { units: 'imperial' };
+  await openProject(() => blank, 'new');
+  expect(get(projectSettings)).toMatchObject({ units: 'metric', showDimensions: true });
+  const candidate: any = roomProject(); candidate.displaySettings = { units: 'imperial', showDimensions: false };
+  await openProject(() => candidate);
+  expect(get(projectSettings)).toMatchObject({ units: 'imperial', showDimensions: false });
+  projectSettings.reset();
 });
 
 it('does not write the previous project again when it is already saved', async () => {

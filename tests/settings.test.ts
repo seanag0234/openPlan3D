@@ -60,6 +60,26 @@ describe('editor settings', () => {
     expect(data.has('o3d_settings')).toBe(false);
   });
 
+  it('applies a plan file\'s display settings as if picked in Settings, ignoring unknown and other keys', async () => {
+    const data = mockStorage();
+    const { projectSettings, applyDisplaySettings } = await import('../src/lib/stores/settings');
+    applyDisplaySettings({ units: 'imperial', showDimensions: false, gridSize: 5, future: true } as any);
+    expect(get(projectSettings)).toMatchObject({ units: 'imperial', showDimensions: false, showExternalDimensions: true, gridSize: 25 });
+    expect(get(projectSettings)).not.toHaveProperty('future');
+    expect(JSON.parse(data.get('o3d_settings')!)).toMatchObject({ units: 'imperial', showDimensions: false });
+  });
+
+  it('writes the browser\'s display settings into a downloaded plan and keeps the file\'s unknown keys', async () => {
+    mockStorage();
+    const { projectSettings, withDisplaySettings } = await import('../src/lib/stores/settings');
+    projectSettings.set({ ...get(projectSettings), units: 'imperial', showInternalDimensions: true });
+    const project = { id: 'plan', displaySettings: { units: 'metric', future: 'kept' } } as any;
+    expect(withDisplaySettings(project, get(projectSettings)).displaySettings).toEqual({
+      units: 'imperial', showDimensions: true, showExternalDimensions: true, showInternalDimensions: true, future: 'kept',
+    });
+    expect(project.displaySettings).toEqual({ units: 'metric', future: 'kept' });
+  });
+
   it('remembers changes across reloads when storage works', async () => {
     const data = mockStorage();
     const settings = await load();

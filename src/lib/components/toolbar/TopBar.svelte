@@ -21,6 +21,7 @@
   import { base } from '$app/paths';
   import { orderedFloors } from '$lib/utils/floors';
   import type { FloorPosition, FloorSeed } from '$lib/stores/project';
+  import { projectSettings, withDisplaySettings } from '$lib/stores/settings';
   import { currentProject, viewMode, undo, redo, addFloor, removeFloor, renameFloor, setActiveFloor, updateProjectName, createDefaultProject, snapEnabled, canvasZoom, canvasMinimumZoom, panMode, showFurnitureStore, layerVisibility, activeFloor, selectedElementId, elevationWallId, elevationPickMode } from '$lib/stores/project';
   import { get } from 'svelte/store';
   import type { Floor } from '$lib/models/types';
@@ -272,7 +273,7 @@
   function onShareProject() {
     const p = get(currentProject);
     if (!p) return;
-    const json = JSON.stringify(p, null, 2);
+    const json = JSON.stringify(withDisplaySettings(p, get(projectSettings)), null, 2);
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
