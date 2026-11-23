@@ -24,6 +24,7 @@ function completeProject(): any {
   floor.backgroundImage = { dataUrl: 'data:image/png;base64,AA==', position: { x: -30, y: 10 }, scale: 0.5, opacity: 0, rotation: -25, locked: true };
   floor.entourage = [{ id: 'symbol', defId: 'custom-tree', position: { x: 20, y: 30 }, rotation: 45, width: 70.125, opacity: 0, locked: true }];
   project.customEntourage = [{ id: 'custom-tree', name: 'Tree', dataUrl: 'data:image/png;base64,AA==', aspect: 1.25 }];
+  project.displaySettings = { units: 'imperial', showDimensions: false, futureDisplayKey: 'kept' };
   return project;
 }
 
@@ -102,6 +103,9 @@ describe('native project reader', () => {
     ['invalid date', p => p.createdAt = 'not a date', 'createdAt'],
     ['null date', p => p.updatedAt = null, 'updatedAt'],
     ['nonfinite elevation', p => p.floors[0].elevation = Infinity, 'floors[0].elevation'],
+    ['display settings list', p => p.displaySettings = [], 'displaySettings'],
+    ['unsupported units', p => p.displaySettings.units = 'furlongs', 'displaySettings.units'],
+    ['non-boolean display flag', p => p.displaySettings.showDimensions = 'no', 'displaySettings.showDimensions'],
   ];
   it.each(bad)('rejects %s before changing the input', (_, change, path) => {
     const project = completeProject(); change(project); const before = structuredClone(project);

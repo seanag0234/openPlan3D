@@ -57,6 +57,11 @@ export function readProject(value: unknown): Project {
   text(project!.name, 'name'); strings(project!, ['description'], 'document');
   if (project!.projectPackage !== undefined) validateRetainedDetailState(project!.projectPackage);
   const customModelIds = validateCustomModelDefinitions(project!.customModels, project!.projectPackage?.assets);
+  if (project!.displaySettings !== undefined) {
+    const display = record(project!.displaySettings, 'displaySettings');
+    if (display.units !== undefined) choice(display.units, ['metric', 'imperial'], 'displaySettings.units');
+    booleans(display, ['showDimensions', 'showExternalDimensions', 'showInternalDimensions'], 'displaySettings');
+  }
   if (project!.attachmentNames !== undefined) {
     record(project!.attachmentNames, 'attachmentNames');
     for (const [name, label] of Object.entries(project!.attachmentNames)) text(label, `attachmentNames.${name}`);

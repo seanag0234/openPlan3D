@@ -2,6 +2,7 @@ import { get } from 'svelte/store';
 import type { Project } from '$lib/models/types';
 import { currentProject, loadProject } from '$lib/stores/project';
 import { autoSave, markClean, saveError, saveState } from '$lib/stores/saveStatus';
+import { applyDisplaySettings } from '$lib/stores/settings';
 import { readProject } from '$lib/utils/projectValidation';
 import { localStore, ProjectConflictError } from './datastore';
 import { prepareToLeave } from './deployment';
@@ -58,6 +59,8 @@ export async function openProject(
     }
     candidate.updatedAt = new Date();
     loadProject(candidate);
+    // Only on import: reopening a library plan must not overwrite a later choice made in Settings.
+    if (kind === 'import' && candidate.displaySettings) applyDisplaySettings(candidate.displaySettings);
     // A candidate that cannot fit in storage is still available for local export.
     // The previously saved plan stays in the library and normal save feedback applies.
     await autoSave();

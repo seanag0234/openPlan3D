@@ -1,4 +1,5 @@
 import { get, writable } from 'svelte/store';
+import type { DisplaySettings, Project } from '$lib/models/types';
 
 export interface ProjectSettings {
   units: 'metric' | 'imperial';         // m,cm vs ft,inch
@@ -64,6 +65,19 @@ function createSettingsStore() {
 }
 
 export const projectSettings = createSettingsStore();
+
+const displayKeys = ['units', 'showDimensions', 'showExternalDimensions', 'showInternalDimensions'] as const;
+
+/** Apply a plan file's display choices as if picked in Settings, for every plan in this browser. */
+export function applyDisplaySettings(values: DisplaySettings) {
+  const picked = Object.fromEntries(displayKeys.filter(key => values[key] !== undefined).map(key => [key, values[key]]));
+  if (Object.keys(picked).length) projectSettings.update(s => ({ ...s, ...picked }));
+}
+
+/** The project as downloaded: the browser's current display choices, plus any keys this version does not know. */
+export function withDisplaySettings(project: Project, settings: ProjectSettings): Project {
+  return { ...project, displaySettings: { ...project.displaySettings, ...Object.fromEntries(displayKeys.map(key => [key, settings[key]])) } };
+}
 
 /** Convert cm to display string based on current units */
 export function formatLength(cm: number, units: 'metric' | 'imperial'): string {
