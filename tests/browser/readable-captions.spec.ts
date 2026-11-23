@@ -51,9 +51,10 @@ test('a named piece shows its name and size in readable text, and the setting tu
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
   await settings.getByRole('button', { name: 'Dimensions', exact: true }).click();
+  // Clear before the toggle: it repaints the canvas once, and on WebKit that frame lands before uncheck() returns.
+  await clear();
   await settings.getByRole('checkbox', { name: 'Object Sizes', exact: true }).uncheck();
   await page.keyboard.press('Escape');
-  await clear();
   await expect.poll(async () => (await fonts('Lego table')).length).toBeGreaterThan(0);
   expect(await fonts('Lego table')).not.toContain('12px sans-serif');
   expect(await fonts('1.52 m × 91 cm')).toEqual([]);
