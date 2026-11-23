@@ -719,6 +719,10 @@
       <p class="mb-3 text-xs text-gray-500">{$t('furnitureProperties.stairsHelp')}</p>
     {/if}
     <div class="space-y-3">
+      <label class="block">
+        <span class="text-xs text-gray-500">{$t('furnitureProperties.name')}</span>
+        <input type="text" value={selectedFurniture.name ?? ''} oninput={(e) => updateFurniture(selectedFurniture!.id, { name: (e.target as HTMLInputElement).value || undefined })} class="w-full px-2 py-1 border border-gray-200 rounded text-sm" />
+      </label>
       <!-- Color -->
       <div>
         <div class="flex items-center gap-1 mb-2">

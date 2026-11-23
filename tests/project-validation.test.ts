@@ -12,7 +12,7 @@ function completeProject(): any {
   floor.walls[0] = { ...floor.walls[0], thickness: 21.125, startHeight: 0, endHeight: 290.75, curvePoint: { x: 200.25, y: -45.125 }, extensions: { source: 'survey' } };
   floor.doors = [{ id: 'door', wallId: floor.walls[0].id, position: 0, width: 95.125, height: 207.25, type: 'double', swingDirection: 'right', flipSide: true }];
   floor.windows = [{ id: 'window', wallId: floor.walls[1].id, position: 1, width: 100.5, height: 120.25, sillHeight: 0, type: 'casement' }];
-  floor.furniture = [{ id: 'chair', catalogId: 'future-catalog-item', position: { x: 80.5, y: -20.25 }, rotation: -45.5, scale: { x: -1, y: 2.5, z: -1 }, width: 81.125, depth: 60.25, height: 85.75, locked: true, material: 'Wood' }];
+  floor.furniture = [{ id: 'chair', catalogId: 'future-catalog-item', position: { x: 80.5, y: -20.25 }, rotation: -45.5, scale: { x: -1, y: 2.5, z: -1 }, width: 81.125, depth: 60.25, height: 85.75, locked: true, material: 'Wood', name: 'Reading chair' }];
   floor.stairs = [{ id: 'stair', position: { x: 50, y: 75 }, rotation: 90, width: 95.5, depth: 302.5, riserCount: 14, direction: 'down', stairType: 'l-shaped' }];
   floor.columns = [{ id: 'column', position: { x: 40, y: 30 }, rotation: 0, shape: 'round', diameter: 25.5, height: 270.25, color: '#ccc' }];
   floor.rooms = [{ id: 'room', name: 'Kitchen', walls: floor.walls.map((wall: any) => wall.id), area: 12.5, floorTexture: 'oak', color: '#fff', roomType: 'kitchen', labelOffset: { x: 2.25, y: -4.5 } }];
@@ -87,6 +87,7 @@ describe('native project reader', () => {
     ['null scale', p => p.floors[0].furniture[0].scale = null, 'furniture[0].scale'],
     ['invalid scale', p => p.floors[0].furniture[0].scale.z = Infinity, 'furniture[0].scale.z'],
     ['invalid dimension override', p => p.floors[0].furniture[0].width = -50, 'furniture[0].width'],
+    ['non-text furniture name', p => p.floors[0].furniture[0].name = 42, 'furniture[0].name'],
     ['fractional risers', p => p.floors[0].stairs[0].riserCount = 1.5, 'stairs[0].riserCount'],
     ['null column height', p => p.floors[0].columns[0].height = null, 'columns[0].height'],
     ['invalid guide', p => p.floors[0].guides[0].orientation = 'diagonal', 'guides[0].orientation'],

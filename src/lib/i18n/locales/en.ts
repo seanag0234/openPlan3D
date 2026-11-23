@@ -776,6 +776,7 @@ export const en = {
   "openingProperties.doorway": "Doorway (no door)",
   "furnitureProperties.heading": "{name} Properties",
   "furnitureProperties.fallback": "Furniture",
+  "furnitureProperties.name": "Name",
   "furnitureProperties.lock": "Lock (Ctrl+L)",
   "furnitureProperties.unlock": "Unlock (Ctrl+L)",
   "furnitureProperties.locked": "Locked",
