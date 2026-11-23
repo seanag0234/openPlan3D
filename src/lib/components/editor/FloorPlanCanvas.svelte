@@ -2164,6 +2164,12 @@
     return _findFurnitureAt(p, currentFloor.furniture);
   }
 
+  /** A plain press passes through locked items; Layers, Select All, modifier clicks and the context menu still reach them. */
+  function unlockedOnly(floor: Floor): Floor {
+    return { ...floor, furniture: floor.furniture.filter(item => !item.locked), entourage: floor.entourage?.filter(item => !item.locked),
+      textAnnotations: floor.textAnnotations?.filter(item => !item.locked) };
+  }
+
   function findColumnAt(p: Point): Column | null {
     if (!currentFloor) return null;
     return _findColumnAt(p, currentFloor.columns);
@@ -2271,6 +2277,7 @@
     const rect = canvas.getBoundingClientRect();
     const wp = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
     const tool = currentTool;
+    const hitFloor = currentFloor && !e.shiftKey && !e.ctrlKey && !e.metaKey ? unlockedOnly(currentFloor) : currentFloor;
     if (tool === 'select' && currentFloor && e.detail === 1) {
       selectionPress = { floorId: currentFloor.id, x: e.clientX, y: e.clientY, world: wp };
     }
@@ -2414,8 +2421,8 @@
     }
 
     // Text annotation click detection (select + drag)
-    if (tool === 'select' && currentFloor) {
-      const textHitId = hitTestTextAnnotation(wp, currentFloor);
+    if (tool === 'select' && currentFloor && hitFloor) {
+      const textHitId = hitTestTextAnnotation(wp, hitFloor);
       if (textHitId && (e.ctrlKey || e.metaKey || !(currentSelectedIds.size >= 2 && currentSelectedIds.has(textHitId)))) {
         if (selectAnnotationTarget('text',textHitId,e,wp)) return;
         const ta = currentFloor.textAnnotations?.find(t => t.id === textHitId);
@@ -2614,7 +2621,7 @@
         return;
       }
       // Check furniture
-      const fi = findFurnitureAt(wp);
+      const fi = hitFloor ? _findFurnitureAt(wp, hitFloor.furniture) : null;
       if (fi) {
         if (selectElement(fi.id, e.shiftKey, e.ctrlKey || e.metaKey)) return;
         if (!e.shiftKey && !fi.locked) {
@@ -2626,7 +2633,7 @@
         return;
       }
       // Check entourage (below furniture in priority)
-      const ent = findEntourageAt(wp, currentFloor?.entourage, (d) => entourageAspect(d, customEntourageDefs));
+      const ent = findEntourageAt(wp, hitFloor?.entourage, (d) => entourageAspect(d, customEntourageDefs));
       if (ent) {
         if (selectElement(ent.id, e.shiftKey)) return;
         if (!e.shiftKey && !ent.locked) {
@@ -2732,7 +2739,7 @@
     // Double-click on a text annotation to edit it
     if (currentTool === 'select' && currentFloor) {
       const wp = selectionPoint;
-      const textHitId = hitTestTextAnnotation(wp, currentFloor);
+      const textHitId = hitTestTextAnnotation(wp, unlockedOnly(currentFloor));
       if (textHitId) {
         const ta = currentFloor.textAnnotations?.find(t => t.id === textHitId);
         if (ta) {

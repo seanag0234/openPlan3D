@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 
 // A locked piece, symbol and text label cannot be deleted or dragged. Select All plus the lock
 // shortcut is how they are unlocked again, and one Undo reverts each step.
-async function openLockedPlan(page: Page) {
+async function openLockedPlan(page: Page, stacked = false) {
   await page.addInitScript(() => {
     localStorage.setItem('o3d_tips_seen', JSON.stringify(['first-wall', 'first-furniture', 'first-3d', 'first-export', 'first-door']));
     // Record where the label is painted, to press on it.
@@ -25,6 +25,8 @@ async function openLockedPlan(page: Page) {
   ];
   floor.entourage = [{ id: 'symbol', defId: 'person', position: { x: 300, y: 0 }, width: 100, rotation: 0, locked: true }];
   floor.textAnnotations = [{ id: 'label', text: 'PARK', x: 300, y: 300, fontSize: 40, rotation: 0, color: '#111111', locked: true }];
+  // Stacked: the locked symbol and the unlocked piece lie under the locked label.
+  if (stacked) floor.furniture[1].position = floor.entourage[0].position = { x: 300, y: 300 };
   await page.goto('/editor');
   await page.getByRole('button', { name: 'Export', exact: true }).click();
   const chooser = page.waitForEvent('filechooser');
@@ -83,4 +85,26 @@ test('locked pieces, symbols and text labels survive Delete and dragging, and un
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   floor = await exported(page);
   expect([...floor.furniture, ...floor.entourage, ...floor.textAnnotations].every((item: any) => item.locked === true)).toBe(true);
+});
+
+test('a plain click passes through locked items to what lies under them', async ({ page }) => {
+  test.setTimeout(90_000);
+  await openLockedPlan(page, true);
+  const save = page.getByRole('button', { name: 'Save', exact: true });
+  await expect.poll(() => page.evaluate(() => !!(window as any).__label)).toBe(true);
+  const label = await page.evaluate(() => (window as any).__label);
+  // The click lands on the unlocked piece under the locked label and symbol: Delete removes only it.
+  await page.mouse.click(label.x, label.y);
+  await expect(page.locator('[data-plan-properties]')).toBeVisible();
+  await save.press('Delete');
+  let floor = await exported(page);
+  expect(ids(floor.furniture)).toEqual(['piece']);
+  expect(ids(floor.entourage)).toEqual(['symbol']);
+  expect(ids(floor.textAnnotations)).toEqual(['label']);
+  // With only locked items under the pointer, a click selects nothing.
+  const again = await page.evaluate(() => (window as any).__label);
+  await page.mouse.click(again.x, again.y);
+  await expect(page.locator('[data-plan-properties]')).toBeHidden();
+  floor = await exported(page);
+  expect(ids(floor.entourage)).toEqual(['symbol']);
 });
