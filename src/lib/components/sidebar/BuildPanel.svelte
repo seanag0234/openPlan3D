@@ -220,6 +220,8 @@
   let customSymbolMatches = $derived(search.trim()
     ? customEntDefs.filter(d => normalizeCatalogSearch(d.name).includes(normalizeCatalogSearch(search.trim())))
     : customEntDefs);
+  /** Everything the search finds: furniture, symbols and uploaded symbols. */
+  let foundCount = $derived(filtered.length + symbolMatches.length + (search.trim() ? customSymbolMatches.length : 0));
   let entourageFileInput = $state<HTMLInputElement | null>(null);
 
   function armEntourage(id: string) {
@@ -742,7 +744,7 @@
           {/if}
         </div>
         {#if search}
-          {@const found = filtered.length + symbolMatches.length}
+          {@const found = foundCount}
           <div class="text-xs text-gray-600 px-1">{$t(found === 1 ? 'objectControls.result' : 'objectControls.results', { count: found, query: search })}</div>
           {#if found === 0}
             <p class="text-xs text-gray-600 px-1">{$t('adding.nothingCalled', { query: search.trim() })}</p>
@@ -889,7 +891,7 @@
           <input type="file" accept="image/png,image/jpeg,image/webp" class="hidden" bind:this={entourageFileInput} onchange={onEntourageUpload} />
         </div>
         {/if}
-        {#if search.trim() && filtered.length + symbolMatches.length > 0}
+        {#if search.trim() && foundCount > 0}
           {@render boxNamedButton()}
         {/if}
       </div>

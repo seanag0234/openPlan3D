@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
 
 const SYMBOLS = ['Person', 'Two People', 'Sedan', 'SUV', 'Pickup', 'Deciduous Tree', 'Conifer', 'Shrub', 'Hedge', 'Potted Plant', 'Grass', 'Patio Umbrella'];
 
@@ -30,4 +31,18 @@ test('the Objects search finds things by everyday words, symbols included', asyn
   const first = await page.evaluate(names => [...document.querySelectorAll('button')]
     .map(button => button.textContent?.trim() ?? '').find(text => names.includes(text)), SYMBOLS);
   expect(first).toBe('Person');
+});
+
+test('an uploaded symbol the search finds counts as a result', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('hasSeenWelcome', 'true'));
+  await page.goto('/editor');
+  await page.getByRole('button', { name: 'Objects', exact: true }).click();
+  const chooser = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: '+ Upload symbol (PNG, JPEG, WebP)', exact: true }).click();
+  await (await chooser).setFiles({ name: 'Slide.png', mimeType: 'image/png', buffer: await readFile('tests/fixtures/item-photo.png') });
+  await expect(page.getByRole('button', { name: 'Slide', exact: true })).toBeVisible();
+  await page.getByRole('textbox', { name: 'Search furniture...', exact: true }).fill('slide');
+  await expect(page.getByRole('button', { name: 'Slide', exact: true })).toBeVisible();
+  await expect(page.getByText('1 result for "slide"', { exact: true })).toBeVisible();
+  await expect(page.getByText(/Nothing in the list is called/)).toHaveCount(0);
 });
