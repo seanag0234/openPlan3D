@@ -26,7 +26,7 @@ function post(body: unknown, headers: Record<string, string> = {}) {
   const request = new Request(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: typeof body === 'string' ? body : JSON.stringify(body) });
   return POST({ request, url } as never);
 }
-const get = () => GET({ url } as never);
+const get = () => GET();
 
 it('says feedback is off unless FEEDBACK_DIR is an absolute path', async () => {
   for (const value of [undefined, '', 'feedback', './feedback']) {
