@@ -187,7 +187,7 @@ describe('project service diagnostics', () => {
     expect(projectServiceMessage(quota, 'pt')).toContain('O armazenamento do navegador está cheio.');
     expect(projectServiceMessage(storageErrorMessage({ name: 'SecurityError' }), 'pt')).toContain('está indisponível');
     expect(projectServiceMessage(storageErrorMessage(null), 'pt')).toContain('Não foi possível salvar');
-    expect(projectServiceMessage(new ProjectConflictError().message, 'pt')).toContain('alterado ou excluído em outra aba');
+    expect(projectServiceMessage(new ProjectConflictError().message, 'pt')).toContain('alterada ou excluída em outra aba');
   });
 
   it('translates the opening wrapper, nested cause and import outcome together', () => {

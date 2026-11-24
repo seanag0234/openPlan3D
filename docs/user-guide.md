@@ -575,7 +575,7 @@ versions per project are restored; damaged entries are kept as recovery data
 and included in future backups.
 
 **Restore library backup** also takes a single project saved with **Download
-JSON** (or **Download JSON backup** in the red save bar), for example
+JSON** (or **Download a copy of this plan** in the red save bar), for example
 `Our house.json` or a second download named `Our house(1).json`. That is the
 quickest way back if browser storage was cleared: choose the file, check that
 the preview lists the project, and choose **Restore as copies**; it comes back
@@ -584,9 +584,9 @@ as "Our house (Restored copy)".
 ### Save problems
 
 If a save fails, a red bar reads "Changes are not saved." followed by the
-reason, with **Retry save** and **Download JSON backup**. When the project was
-changed in another tab ("This project changed or was deleted in another tab.
-Save your version as a copy or download a JSON backup to keep both versions.")
+reason, with **Retry save** and **Download a copy of this plan**. When the project was
+changed in another tab ("This plan changed or was deleted in another tab. Save
+your version as a copy, or download a copy of it, to keep both.")
 use **Save as copy**. See [Troubleshooting](#16-troubleshooting) for the
 storage messages.
 
@@ -1071,8 +1071,8 @@ Messages are quoted as the editor shows them.
   (Welcome screen) opens a project's JSON file.
 - "Could not save to browser storage. Download your project as JSON to keep a
   copy." — A general write failure; retry, and download JSON if it persists.
-- "This project changed or was deleted in another tab. Save your version as a
-  copy or download a JSON backup to keep both versions." — The same project
+- "This plan changed or was deleted in another tab. Save your version as a
+  copy, or download a copy of it, to keep both." — The same project
   is open twice. Use **Save as copy** here, or close the other tab.
 - "Close other OpenPlan3D tabs, then retry loading to update browser storage.
   Your saved projects have not been removed." — A storage upgrade is waiting
@@ -1166,7 +1166,7 @@ Messages are quoted as the editor shows them.
 **General**
 
 - "An app update is ready. Reload to use the latest version. Your project will
-  be saved first." — Choose **Save and reload**; keep "Download JSON backup"
+  be saved first." — Choose **Save and reload**; keep "Download a copy of this plan"
   as a fallback.
 - Keys do nothing — click the canvas first; shortcuts are off while a text
   field or dialog has focus.

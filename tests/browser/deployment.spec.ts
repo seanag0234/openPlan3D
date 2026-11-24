@@ -133,7 +133,7 @@ for (const locale of ['en', 'pt']) test(`${locale}: update reload preserves fail
     await expect(page.getByRole('status')).toContainText(locale === 'pt' ? 'Não foi possível salvar suas alterações' : 'Your changes could not be saved');
     await expect(page).toHaveURL(/editor\?id=qa-deployment-save$/);
     const download = page.waitForEvent('download');
-    await page.getByRole('status').getByRole('button', { name: locale === 'pt' ? 'Baixar backup JSON' : 'Download JSON backup' }).click();
+    await page.getByRole('status').getByRole('button', { name: locale === 'pt' ? 'Baixar uma cópia desta planta' : 'Download a copy of this plan' }).click();
     const backup = JSON.parse(await readFile((await (await download).path())!, 'utf8'));
     expect(backup.name).toBe('Unsaved deployment recovery');
     expect(backup.id).toBe('qa-deployment-save');
