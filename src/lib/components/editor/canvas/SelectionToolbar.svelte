@@ -5,6 +5,8 @@
   import MoveToFloorMenu from '../MoveToFloorMenu.svelte';
   import { coarsePointer } from '$lib/stores/pointer';
   import { detailsOpen, noteTarget } from '$lib/stores/ui';
+  import { handleGeometry } from '$lib/utils/handleGeometry';
+  import { toolbarPosition } from '$lib/utils/toolbarPlacement';
 
   type Extra = { kind: 'measurement' | 'annotation' | 'text'; id: string; x: number; y: number };
   let { anchor, box, selectedId, selectedIds, floorId, locked, extra, onsplit, ondeleteextra }: {
@@ -13,12 +15,25 @@
     box: { left: number; top: number; right: number; bottom: number } | null;
     selectedId: string | null; selectedIds: ReadonlySet<string>; floorId: string; locked: boolean;
     extra: Extra | null; onsplit: () => void; ondeleteextra: (kind: Extra['kind'], id: string) => void } = $props();
+
+  // The bar sits clear of the selection and of a piece's handles, measured from its own size and the plan's.
+  let barEl = $state<HTMLDivElement>();
+  let barWidth = $state(0), barHeight = $state(0);
+  let g = $derived(handleGeometry($coarsePointer));
+  let singlePiece = $derived(anchor?.type === 'furniture' && selectedIds.size <= 1);
+  let place = $derived.by(() => {
+    if (!anchor) return null;
+    const parent = barEl?.parentElement;
+    if (!box || !barWidth || !parent) return null;
+    const clearance = singlePiece ? { above: 18 + 3 * g.outset + g.radius, below: g.outset + g.radius } : { above: 4, below: 4 };
+    return toolbarPosition(box, { width: barWidth, height: barHeight }, { width: parent.clientWidth, height: parent.clientHeight }, clearance);
+  });
 </script>
 
 {#if anchor}
-<div
+<div data-selection-bar bind:this={barEl} bind:clientWidth={barWidth} bind:clientHeight={barHeight}
   class="absolute z-40 flex items-center gap-0.5 bg-white rounded-lg shadow-lg border border-gray-200 px-1 py-0.5"
-  style="left: {anchor.pos.x}px; top: {anchor.pos.y - 44}px; transform: translateX(-50%);"
+  style={place ? `left: ${place.left}px; top: ${place.top}px;` : `left: ${anchor.pos.x}px; top: ${anchor.pos.y - 44}px; transform: translateX(-50%);`}
 >
   {#if $coarsePointer}
     <button class="h-7 px-2 text-xs rounded hover:bg-gray-100 text-gray-700" onclick={() => detailsOpen.set(true)}>{$t('panels.details')}</button>
