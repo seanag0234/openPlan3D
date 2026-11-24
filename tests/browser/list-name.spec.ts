@@ -7,14 +7,15 @@ test.beforeEach(async ({ context }) => {
   });
 });
 
-for (const [locale, list, layers, opener] of [['en', 'Everything on the plan', 'Layers', 'Everything on the plan (L)'], ['pt', 'Tudo na planta', 'Camadas', 'Tudo na planta (L)']] as const) {
+for (const [locale, list, layers, opener, bar] of [['en', 'Everything on the plan', 'Layers', 'Everything on the plan (L)', 'Show and hide'], ['pt', 'Tudo na planta', 'Camadas', 'Tudo na planta (L)', 'Mostrar e ocultar']] as const) {
   test(`${locale}: the list of everything on the plan is not called by the bottom bar's Layers name`, async ({ page }) => {
     await page.addInitScript(value => localStorage.setItem('o3d_locale', value), locale);
     await page.goto('/editor');
     await page.getByTitle(opener, { exact: true }).click();
     await expect(page.locator('div').filter({ hasText: new RegExp(`^🗂 ${list}$`) })).toBeVisible();
     await expect(page.locator('div').filter({ hasText: new RegExp(`^🗂 ${layers}$`) })).toHaveCount(0);
-    // The bottom bar keeps its name for hiding kinds of things.
-    await expect(page.getByRole('button', { name: `🗂 ${layers}`, exact: true })).toBeVisible();
+    // The bottom bar's popup for hiding kinds of things has a name of its own, and neither is called Layers.
+    await expect(page.getByRole('button', { name: `🗂 ${bar}`, exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: `🗂 ${layers}`, exact: true })).toHaveCount(0);
   });
 }
