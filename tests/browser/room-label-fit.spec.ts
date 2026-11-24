@@ -32,14 +32,14 @@ for (const width of [1440, 390]) {
       return p && canvas && p.left > canvas.x + 24 && p.right < canvas.x + canvas.width - 20 && p.top > canvas.y + 24 && p.bottom < canvas.y + canvas.height - 20;
     }).toBe(true);
     await testInfo.attach(`room-label-fit-${width}`, { body: await page.screenshot(), contentType: 'image/png' });
-    await page.getByTitle('Layer Visibility', { exact: true }).press('Enter');
+    await page.getByTitle('Show and hide', { exact: true }).press('Enter');
     await page.getByRole('checkbox', { name: 'Room Labels', exact: true }).uncheck();
-    await page.getByTitle('Layer Visibility', { exact: true }).press('Enter');
+    await page.getByTitle('Show and hide', { exact: true }).press('Enter');
     await page.getByTitle('Zoom to Fit (F)', { exact: true }).first().press('Enter');
     const hiddenZoom = await page.getByRole('button', { name: 'Zoom to 100%', exact: true }).textContent();
-    await page.getByTitle('Layer Visibility', { exact: true }).press('Enter');
+    await page.getByTitle('Show and hide', { exact: true }).press('Enter');
     await page.getByRole('checkbox', { name: 'Room Labels', exact: true }).check();
-    await page.getByTitle('Layer Visibility', { exact: true }).press('Enter');
+    await page.getByTitle('Show and hide', { exact: true }).press('Enter');
     await page.getByTitle('Zoom to Fit (F)', { exact: true }).first().press('Enter');
     await expect(page.getByRole('button', { name: 'Zoom to 100%', exact: true })).not.toHaveText(hiddenZoom!);
     await page.getByRole('button', { name: 'Export', exact: true }).click();

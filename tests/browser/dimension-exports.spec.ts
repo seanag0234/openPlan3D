@@ -59,7 +59,7 @@ test('plan exports leave out the dimensions, notes and stairs hidden in the 2D v
  for(const label of ['Estimated width','Shell note','data-stair='])expect(svg).toContain(label);
 
  // The report: dimensions turned off on screen still came out in the image. Hide them, the note and the stair.
- const layers=page.getByTitle('Layer Visibility',{exact:true});
+ const layers=page.getByTitle('Show and hide',{exact:true});
  await layers.press('Enter');
  for(const name of ['Automatic dimensions','Dimensions','Text labels','Stairs'])await page.getByRole('checkbox',{name,exact:true}).uncheck();
  await layers.press('Enter');
@@ -108,7 +108,7 @@ test('a floor whose every item is hidden explains itself instead of exporting an
  floor.textAnnotations=[{id:'note',x:0,y:0,text:'Driveway',fontSize:24,color:'#1e293b',rotation:0}];
  await(await chooser).setFiles({name:'notes.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(project))});
  await page.waitForLoadState('networkidle');
- const layers=page.getByTitle('Layer Visibility',{exact:true});
+ const layers=page.getByTitle('Show and hide',{exact:true});
  await layers.press('Enter');await page.getByRole('checkbox',{name:'Text labels',exact:true}).uncheck();await layers.press('Enter');
  await page.getByRole('button',{name:'Export',exact:true}).click();await page.getByRole('button',{name:'Export 2D as PNG',exact:true}).click();
  await expect(page.getByRole('alert')).toContainText("Couldn't export 2D PNG");

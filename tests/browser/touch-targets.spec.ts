@@ -62,7 +62,7 @@ for (const [name, device] of [['iPad landscape', ipadLandscape], ['iPad portrait
       await expect(bar.getByText(/walls?$/)).toHaveCount(0);
       await expect(bar.getByText(/rooms?$/)).toHaveCount(0);
       for (const name of [/Grid/, /Rulers/, /Map/]) await expect(bar.getByRole('button', { name })).toHaveCount(0);
-      await bar.getByTitle('Layer Visibility', { exact: true }).click();
+      await bar.getByTitle('Show and hide', { exact: true }).click();
       for (const name of ['Grid', 'Rulers', 'Map']) await expect(page.getByRole('checkbox', { name, exact: true })).toBeVisible();
       const grid = page.getByRole('checkbox', { name: 'Grid', exact: true });
       const before = await grid.isChecked();

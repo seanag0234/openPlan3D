@@ -62,11 +62,11 @@ test('2D sleeps between display, camera, tool, geometry and history changes', as
     await changed(page, () => page.getByTitle(title, { exact: true }).press('Enter'));
   }
   await changed(page, () => page.getByTitle('Zoom to Fit (F)', { exact: true }).first().press('Enter'));
-  await page.getByTitle('Layer Visibility', { exact: true }).press('Enter');
+  await page.getByTitle('Show and hide', { exact: true }).press('Enter');
   for (const label of ['Room Labels', 'Automatic dimensions']) {
     await changed(page, () => page.getByRole('checkbox', { name: label, exact: true }).press('Space'));
   }
-  await page.getByTitle('Layer Visibility', { exact: true }).press('Enter');
+  await page.getByTitle('Show and hide', { exact: true }).press('Enter');
   const minimap = page.getByRole('application').locator('canvas').last();
   await changed(page, () => minimap.click({ position: { x: 40, y: 30 } }));
   await page.getByTitle('Toggle Mini-map', { exact: true }).press('Enter'); await idle(page);
