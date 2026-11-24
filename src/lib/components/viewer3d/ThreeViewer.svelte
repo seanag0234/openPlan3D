@@ -679,6 +679,14 @@
     return tex;
   }
 
+  /** The walk-through's arrow pad, laid out as a cross. */
+  const walkPad: { code: string; arrow: string; label: TranslationKey; place: string }[] = [
+    { code: 'ArrowUp', arrow: '▲', label: 'adding.walkForward', place: 'col-start-2 row-start-1' },
+    { code: 'ArrowLeft', arrow: '◀', label: 'adding.walkLeft', place: 'col-start-1 row-start-2' },
+    { code: 'ArrowRight', arrow: '▶', label: 'adding.walkRight', place: 'col-start-3 row-start-2' },
+    { code: 'ArrowDown', arrow: '▼', label: 'adding.walkBack', place: 'col-start-2 row-start-3' },
+  ];
+
   /** The finger looking round the walk-through, and where it was last. */
   let lookFinger: { id: number; x: number; y: number } | null = null;
   function onLookDown(e: PointerEvent) {
@@ -2760,10 +2768,33 @@
       </label>
     </div>
 
+    {#if $coarsePointer}
+      <!-- Walking by finger: hold an arrow to walk, Done to leave. -->
+      <div class="absolute bottom-4 left-4 z-10 grid grid-cols-3 gap-1" style="touch-action: none">
+        {#each walkPad as pad (pad.code)}
+          <button
+            type="button"
+            class="w-14 h-14 rounded-xl bg-black/70 text-white text-xl select-none {pad.place}"
+            aria-label={$t(pad.label)}
+            onpointerdown={e => { try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* a pointer the browser no longer tracks */ } walkthroughMotion.setKey(pad.code, true); wakeWalkthrough(); }}
+            onpointerup={() => { walkthroughMotion.setKey(pad.code, false); wakeWalkthrough(); }}
+            onpointercancel={() => { walkthroughMotion.setKey(pad.code, false); wakeWalkthrough(); }}
+            onlostpointercapture={() => { walkthroughMotion.setKey(pad.code, false); wakeWalkthrough(); }}
+            oncontextmenu={e => e.preventDefault()}
+          >{pad.arrow}</button>
+        {/each}
+      </div>
+      <button
+        type="button"
+        class="absolute bottom-4 right-4 z-10 min-h-11 px-5 rounded-xl bg-black/70 text-white text-base font-semibold"
+        onclick={() => exitWalkthroughMode()}
+      >{$t('adding.walkDone')}</button>
+    {/if}
+
     <!-- Help Text -->
-    <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+    <div class="absolute {$coarsePointer ? 'bottom-20' : 'bottom-4'} left-1/2 transform -translate-x-1/2 z-10">
       <div class="bg-black/70 text-white text-sm px-4 py-2 rounded-lg backdrop-blur-sm">
-        {$t('viewerNav.walkHelp')}
+        {$coarsePointer ? $t('adding.walkHelpTouch') : $t('viewerNav.walkHelp')}
       </div>
     </div>
   {/if}
