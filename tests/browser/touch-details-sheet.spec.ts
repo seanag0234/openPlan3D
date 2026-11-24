@@ -79,3 +79,29 @@ test.describe('the list of things to add on an upright iPad', () => {
   });
 });
 
+
+test.describe('help on a touch screen', () => {
+  test.use(ipadLandscape);
+
+  test('speaks of fingers, not keys', async ({ page }) => {
+    await openPlan(page, FIXTURE);
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'Help', exact: true }).tap();
+    const card = page.getByRole('dialog', { name: 'Using your fingers', exact: true });
+    await expect(card).toBeVisible();
+    for (const line of ['Tap a thing to pick it.', 'Drag it to move it.', 'Two fingers zoom and slide the plan.',
+      'One finger on empty paper slides the plan.', 'Press and hold for more choices.', 'Done on a message ends what you were doing.']) {
+      await expect(card).toContainText(line);
+    }
+    const text = await card.innerText();
+    for (const key of ['Esc', 'Ctrl', 'Shift']) expect(text).not.toContain(key);
+    await card.getByRole('button', { name: 'Done', exact: true }).tap();
+    await expect(card).toBeHidden();
+  });
+});
+
+test('with a mouse, ? still opens the keyboard shortcuts', async ({ page }) => {
+  await openPlan(page, FIXTURE);
+  await page.getByRole('button', { name: 'Keyboard Shortcuts', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Keyboard Shortcuts' })).toContainText('Ctrl+Z');
+});

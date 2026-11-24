@@ -16,4 +16,12 @@ export const panelsEn = {
   "panels.flip": "Flip",
   "panels.split": "Split",
   "panels.move": "Floor",
+  "panels.help": "Help",
+  "panels.touchHelpTitle": "Using your fingers",
+  "panels.touchHelp1": "Tap a thing to pick it.",
+  "panels.touchHelp2": "Drag it to move it.",
+  "panels.touchHelp3": "Two fingers zoom and slide the plan.",
+  "panels.touchHelp4": "One finger on empty paper slides the plan.",
+  "panels.touchHelp5": "Press and hold for more choices.",
+  "panels.touchHelp6": "Done on a message ends what you were doing.",
 } as const;

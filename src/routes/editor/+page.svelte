@@ -310,8 +310,8 @@
     <button
       class="w-8 h-8 rounded-full bg-slate-700 text-white text-sm font-bold shadow-lg hover:bg-slate-600 transition-colors z-50"
       onclick={() => showHelp = !showHelp}
-      title={`${$t('shortcuts.title')} (?)`}
-      aria-label={$t('shortcuts.title')}
+      title={$coarsePointer ? $t('panels.help') : `${$t('shortcuts.title')} (?)`}
+      aria-label={$coarsePointer ? $t('panels.help') : $t('shortcuts.title')}
     >?</button>
     {#if mode === '2d'}
       <button
@@ -342,8 +342,29 @@
 
   <UndoHistoryPanel bind:visible={showUndoHistory} returnFocusTo={historyTrigger} />
 
+  <!-- On a touch screen, help speaks of fingers -->
+  {#if showHelp && $coarsePointer}
+    <dialog use:modalDialog class="modal-overlay fixed inset-0 bg-black/50 flex items-center justify-center z-50" onclick={(e) => { if (e.target === e.currentTarget) showHelp = false; }} oncancel={(e) => { e.preventDefault(); showHelp = false; }} aria-label={$t('panels.touchHelpTitle')}>
+      <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full mx-4 p-5 flex flex-col gap-4">
+        <h2 class="text-lg font-bold text-slate-800">{$t('panels.touchHelpTitle')}</h2>
+        <ul class="flex flex-col gap-2.5 text-base text-gray-700 list-disc pl-5">
+          <li>{$t('panels.touchHelp1')}</li>
+          <li>{$t('panels.touchHelp2')}</li>
+          <li>{$t('panels.touchHelp3')}</li>
+          <li>{$t('panels.touchHelp4')}</li>
+          <li>{$t('panels.touchHelp5')}</li>
+          <li>{$t('panels.touchHelp6')}</li>
+        </ul>
+        <div class="flex items-center gap-2">
+          <a href={USER_GUIDE_URL} target="_blank" rel="noopener" class="min-h-[44px] px-3 flex items-center rounded-lg text-sm text-slate-600 bg-slate-100">{$t('help.userGuide')}</a>
+          <button class="ml-auto min-h-[44px] px-6 rounded-lg bg-blue-600 text-white text-sm font-medium active:bg-blue-700" onclick={() => showHelp = false}>{$t('panels.done')}</button>
+        </div>
+      </div>
+    </dialog>
+  {/if}
+
   <!-- Shortcuts overlay -->
-  {#if showHelp}
+  {#if showHelp && !$coarsePointer}
     <dialog use:modalDialog class="modal-overlay fixed inset-0 bg-black/50 flex items-center justify-center z-50" onclick={(e) => { if (e.target === e.currentTarget) showHelp = false; }} oncancel={(e) => { e.preventDefault(); showHelp = false; }} onkeydown={(e) => { if (e.key === '?') { e.preventDefault(); showHelp = false; } }} aria-label={$t('shortcuts.title')}>
       <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[85vh] flex flex-col">
         <!-- Header -->
