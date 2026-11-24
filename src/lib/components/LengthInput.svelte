@@ -55,11 +55,11 @@
     <span class="text-xs text-gray-500">{label}</span>
     <div class="flex gap-2">
       <label class="flex-1 flex items-center gap-1">
-        <input bind:this={ftBox} type="number" inputmode="numeric" step="1" aria-label="{label} (ft)" {oninput} {onkeydown} class={inputClass} />
+        <input bind:this={ftBox} type="number" inputmode="numeric" step="1" aria-label="{label} (ft)" {oninput} {onkeydown} class="{inputClass} no-spin" />
         <span class="text-xs text-gray-500" aria-hidden="true">ft</span>
       </label>
       <label class="flex-1 flex items-center gap-1">
-        <input bind:this={inBox} type="number" inputmode="decimal" step="any" aria-label="{label} (in)" {oninput} {onkeydown} class={inputClass} />
+        <input bind:this={inBox} type="number" inputmode="decimal" step="any" aria-label="{label} (in)" {oninput} {onkeydown} class="{inputClass} no-spin" />
         <span class="text-xs text-gray-500" aria-hidden="true">in</span>
       </label>
     </div>
@@ -70,3 +70,9 @@
     <input bind:this={cmBox} type="number" inputmode="decimal" step="any" {title} {oninput} {onkeydown} class={inputClass} />
   </label>
 {/if}
+
+<style>
+  /* Two boxes share a row: spinner arrows would be too small to hit and too easy to hit by mistake. */
+  .no-spin { appearance: textfield; -moz-appearance: textfield; }
+  .no-spin::-webkit-inner-spin-button, .no-spin::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+</style>
