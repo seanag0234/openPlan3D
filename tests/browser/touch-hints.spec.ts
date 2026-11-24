@@ -5,7 +5,7 @@ const PLAN = 'tests/fixtures/room-with-boxes.openplan.json';
 const KEYS_AND_MOUSE = /\bEsc\b|\bM to\b|\bclick|dbl-|scroll|\bR to\b/i;
 
 const hint = (page: Page) => page.locator('[data-tool-hint]');
-// The sidebar's tool buttons, named by title and description ("Select Click to select elements"), not the top bar's "Select mode".
+// The sidebar's tool buttons, named by title and description ("Select Pick things on the plan"), not the top bar's "Select mode".
 const tool = (page: Page, name: RegExp) => page.getByRole('button', { name }).first();
 
 async function pickMeasure(page: Page) {
