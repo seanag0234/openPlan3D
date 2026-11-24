@@ -15,6 +15,12 @@
   let showLayerPanel = $state(false);
   const mouseBarClass = 'absolute bottom-2 right-2 max-md:bottom-[calc(var(--visible-bottom)+3rem)] max-md:left-2 max-md:overflow-x-auto max-md:min-h-12 max-md:items-center max-md:whitespace-nowrap max-md:[&>*]:shrink-0 bg-white/80 rounded px-2 py-1 text-xs text-gray-500 flex gap-3';
   // On a touch screen the row is one line across the bottom that scrolls sideways; the counts and view toggles leave it.
+  /** The kinds of thing on the plan that can be hidden from the popup; when any is, a notice says so. */
+  const HIDEABLE = ['walls', 'doors', 'windows', 'furniture', 'stairs', 'columns', 'measurements', 'annotations', 'textAnnotations'] as const;
+  const somethingHidden = $derived(HIDEABLE.some(key => layerVis[key] === false));
+  function showAll() {
+    layerVisibility.update(v => ({ ...v, ...Object.fromEntries(HIDEABLE.map(key => [key, true])) }));
+  }
   const touchBarClass = 'absolute bottom-2 left-2 right-2 bg-white/80 rounded px-2 py-1 text-xs text-gray-500 flex flex-nowrap items-center gap-2 overflow-x-auto whitespace-nowrap [&>*]:shrink-0';
 </script>
 
@@ -55,11 +61,14 @@
   <button class="hover:text-gray-700" onclick={() => projectSettings.update(s => ({ ...s, snapToGrid: !s.snapToGrid }))} title={snapControl.title} aria-pressed={snapControl.pressed}>
     <span class:opacity-40={!snapEnabled}>🧲</span> {snapControl.label}
   </button>
+  {#if !$coarsePointer}
   <button class="hover:text-gray-700" onclick={() => layerVisibility.update(v => ({ ...v, furniture: !v.furniture }))} title={$t('canvasDisplay.furnitureHint')} aria-pressed={layerVis.furniture}>
     {layerVis.furniture ? '🪑' : '👻'} {$t('canvasDisplay.furniture')}
   </button>
+  {/if}
+  <!-- "Layers" names only the list of everything on the plan; this popup shows and hides kinds of thing. -->
   <button class="hover:text-gray-700" onclick={() => showLayerPanel = !showLayerPanel} title={$t('layerVisibility.title')}>
-    🗂 {$t('layers.title')}
+    🗂 {$t('bars.showHide')}
   </button>
   {#if !$coarsePointer}
   <button class="hover:text-gray-700" onclick={() => showRulers = !showRulers} title={$t('canvasDisplay.rulersHint')} aria-pressed={showRulers}>
@@ -70,12 +79,22 @@
   </button>
   {/if}
 </div>
+<!-- Hidden things leave the plan without a word otherwise. -->
+{#if somethingHidden}
+  <!-- Centred above the bar, clear of the zoom buttons at the left and the map at the right. -->
+  <div role="status" style:--visible-bottom={`${bottomInset}px`} class="absolute left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 rounded-full bg-amber-100 border border-amber-300 pl-3 pr-1 py-0.5 text-amber-900 shadow whitespace-nowrap {$coarsePointer
+    ? 'bottom-16 text-sm'
+    : 'bottom-10 max-md:bottom-[calc(var(--visible-bottom)+5.5rem)] text-xs'}">
+    <span>{$t('bars.someHidden')}</span>
+    <button class="rounded-full bg-white px-2 py-0.5 font-semibold text-amber-900 hover:bg-amber-50" onclick={showAll}>{$t('bars.showAll')}</button>
+  </div>
+{/if}
 <!-- Layer Visibility Panel -->
 {#if showLayerPanel}
   <div style:--visible-bottom={`${bottomInset}px`} class={$coarsePointer
     ? 'absolute bottom-16 right-2 max-h-[calc(100%-5rem)] overflow-y-auto z-20 bg-white rounded-lg shadow-lg border border-gray-200 p-3 text-sm min-w-[200px]'
     : 'absolute bottom-12 right-2 max-md:bottom-[calc(var(--visible-bottom)+6rem)] z-20 bg-white rounded-lg shadow-lg border border-gray-200 p-3 text-xs min-w-[160px]'}>
-    <div class="font-semibold text-gray-700 mb-2">{$t('layers.title')}</div>
+    <div class="font-semibold text-gray-700 mb-2">{$t('bars.showHide')}</div>
     {#if $coarsePointer}
       <!-- The bar's Grid, Rulers and Map buttons, as tick boxes, on a touch screen. -->
       <label class="flex items-center gap-2 py-0.5 cursor-pointer hover:bg-gray-50 rounded px-1">
