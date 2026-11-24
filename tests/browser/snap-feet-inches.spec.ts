@@ -45,6 +45,9 @@ test.describe('in feet and inches', () => {
     const moved = boxA(await savedPlan(page));
     expect(moved.position.y).toBe(210);
     expect(moved.position.x).toBeGreaterThan(150);
+    // On the grid a piece moves in 6 in steps.
+    const steps = (moved.position.x - 150) / 15.24;
+    expect(steps).toBeCloseTo(Math.round(steps), 3);
   });
 
   test('an edge-handle resize lands on a whole inch', async ({ page }) => {

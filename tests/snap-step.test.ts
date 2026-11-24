@@ -15,6 +15,11 @@ describe('the status-bar snap step', () => {
     expect(snapStepLabel(SNAP, 'imperial')).toBe('3.9"');
   });
 
+  it('reads a whole number of inches without a decimal', () => {
+    expect(snapStepLabel(15.24, 'imperial')).toBe('6"');
+    expect(snapStepLabel(2.54, 'imperial')).toBe('1"');
+  });
+
   it('only changes the step: the finer step still rounds, and only the top-bar switch stops snapping', () => {
     expect(snap(137, true, true, 25)).toBe(125);
     expect(snap(137, true, false, 25)).toBe(140);
@@ -66,7 +71,7 @@ describe('the status-bar Snap button', () => {
     });
     expect(snapStatus(tFor('en'), { ...off, snapToGrid: false }, 'imperial')).toEqual({
       label: 'Snap off',
-      title: 'Snap to Grid is off in the top bar. S still picks the step used when it is on: 9.8" grid or 3.9" (now 3.9")',
+      title: 'Snap to Grid is off in the top bar. S still picks the step used when it is on: 6" grid or 1" (now 1")',
       pressed: false,
     });
   });

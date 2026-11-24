@@ -87,7 +87,7 @@ test('with site storage blocked the snap step, Settings, the Gemini key and cata
   await settings.getByRole('button', { name: 'Remove', exact: true }).click();
   await expect(settings.getByRole('alert')).toHaveText('Browser storage is unavailable. The key could not be removed.');
   await settings.getByRole('button', { name: 'Close settings', exact: true }).click();
-  await expect(page.getByTitle('Switch snap step: 9.8" grid or 3.9" (S)', { exact: true })).toHaveText('🧲 Snap 9.8"');
+  await expect(page.getByTitle('Switch snap step: 6" grid or 1" (S)', { exact: true })).toHaveText('🧲 Snap 6"');
 
   // Favorites and recent items last for the session.
   await page.getByRole('button', { name: 'Objects', exact: true }).click();

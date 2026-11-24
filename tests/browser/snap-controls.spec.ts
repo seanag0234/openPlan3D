@@ -81,8 +81,8 @@ test('the status-bar Snap button reads Snap off while Snap to Grid is off, and S
 test('the snap step reads in inches when the plan uses feet and inches', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('o3d_settings', JSON.stringify({ units: 'imperial' })));
   await page.goto('/editor');
-  const step = page.getByTitle('Switch snap step: 9.8" grid or 3.9" (S)', { exact: true });
-  await expect(step).toHaveText('🧲 Snap 9.8"');
+  const step = page.getByTitle('Switch snap step: 6" grid or 1" (S)', { exact: true });
+  await expect(step).toHaveText('🧲 Snap 6"');
   await page.getByRole('button', { name: 'Save', exact: true }).press('s');
-  await expect(step).toHaveText('🧲 Snap 3.9"');
+  await expect(step).toHaveText('🧲 Snap 1"');
 });

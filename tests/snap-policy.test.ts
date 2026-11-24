@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { gridLineStepCm, resizeStep, snapPieceMove, snapValue, stopAtWalls, type SnapContext } from '$lib/utils/snapPolicy';
+import { gridLineStepCm, gridMajorStepCm, pieceStepCm, resizeStep, snapPieceMove, snapValue, stopAtWalls, type SnapContext } from '$lib/utils/snapPolicy';
 import { snap } from '$lib/utils/canvasInteraction';
 import type { FurnitureItem, Wall } from '$lib/models/types';
 
@@ -45,10 +45,27 @@ describe('snap policy in feet and inches', () => {
   const imperial: SnapContext = { enabled: true, snapToGrid: true, gridSize: 25, units: 'imperial' };
 
   it('rounds the distance moved, so a piece keeps its row', () => {
-    expect(snapPieceMove({ x: 190, y: 203 }, { x: 150, y: 200 }, imperial)).toEqual({ x: 200, y: 200 });
-    expect(snapPieceMove({ x: 190, y: 203 }, { x: 150, y: 200 }, { ...imperial, snapToGrid: false })).toEqual({ x: 190, y: 200 });
+    // 40 cm is three 6 in steps on the grid, and 16 one-inch steps off it.
+    expect(snapPieceMove({ x: 190, y: 203 }, { x: 150, y: 200 }, imperial)).toEqual({ x: 150 + 3 * 15.24, y: 200 });
+    const fine = snapPieceMove({ x: 190, y: 203 }, { x: 150, y: 200 }, { ...imperial, snapToGrid: false });
+    expect(fine.x).toBeCloseTo(190.64, 9);
+    expect(fine.y).toBeCloseTo(202.54, 9);
     expect(snapPieceMove({ x: 190, y: 203 }, { x: 150, y: 200 }, { ...imperial, enabled: false })).toEqual({ x: 190, y: 203 });
     // A piece off the grid stays on its own row instead of jumping to the nearest grid line.
-    expect(snapPieceMove({ x: 190, y: 213 }, { x: 150, y: 210 }, imperial)).toEqual({ x: 200, y: 210 });
+    expect(snapPieceMove({ x: 190, y: 213 }, { x: 150, y: 210 }, imperial)).toEqual({ x: 150 + 3 * 15.24, y: 210 });
+  });
+
+  it('moves a piece 6 in on the grid and 1 in off it; metres keep the grid size and 10 cm', () => {
+    expect(pieceStepCm(imperial)).toBe(15.24);
+    expect(pieceStepCm({ ...imperial, snapToGrid: false })).toBe(2.54);
+    expect(pieceStepCm({ ...imperial, units: 'metric' })).toBe(25);
+    expect(pieceStepCm({ ...imperial, units: 'metric', snapToGrid: false })).toBe(10);
+  });
+
+  it('draws a grid line every foot and a heavier one every 3 ft; metres keep every metre', () => {
+    expect(gridLineStepCm(imperial, 20)).toBe(30.48);
+    expect(gridLineStepCm({ ...imperial, snapToGrid: false }, 20)).toBe(30.48);
+    expect(gridMajorStepCm(imperial)).toBe(91.44);
+    expect(gridMajorStepCm({ ...imperial, units: 'metric' })).toBe(100);
   });
 });

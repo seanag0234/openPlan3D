@@ -4,16 +4,25 @@ import { houseFixed } from '$lib/stores/project';
 import { getFurnitureSize } from './furnitureCatalog';
 import { snap, SNAP } from './canvasInteraction';
 
-const ONE_INCH = 2.54;
+const ONE_INCH = 2.54, SIX_INCHES = 15.24, ONE_FOOT = 30.48;
 
 /** What snapping is set to: the top-bar switch, the grid or fine step, the grid size in cm and the units. */
 export interface SnapContext { enabled: boolean; snapToGrid: boolean; gridSize: number; units: 'metric' | 'imperial' }
 
-/** Spacing of the minor grid lines, in cm. */
-export function gridLineStepCm(s: SnapContext, fallback: number): number { return s.snapToGrid ? s.gridSize : fallback; }
+/** Spacing of the minor grid lines, in cm: every foot in feet and inches; the snap step or `fallback` in metres. */
+export function gridLineStepCm(s: SnapContext, fallback: number): number {
+  if (s.units === 'imperial') return ONE_FOOT;
+  return s.snapToGrid ? s.gridSize : fallback;
+}
 
-/** Step a dragged piece moves by, in cm: the grid size on the grid step, the fine step otherwise. */
-export function pieceStepCm(s: SnapContext): number { return s.snapToGrid ? s.gridSize : SNAP; }
+/** Spacing of the heavier grid lines, in cm: every metre, or every 3 ft. */
+export function gridMajorStepCm(s: SnapContext): number { return s.units === 'imperial' ? 3 * ONE_FOOT : 100; }
+
+/** Step a dragged piece moves by, in cm: 6 in on the grid step and 1 in off it in feet and inches; the grid size or 10 cm in metres. */
+export function pieceStepCm(s: SnapContext): number {
+  if (s.units === 'imperial') return s.snapToGrid ? SIX_INCHES : ONE_INCH;
+  return s.snapToGrid ? s.gridSize : SNAP;
+}
 
 /** Keep exactly as it is: an existing test reads this line. Walls, labels and measuring lines still use it. */
 export function snapValue(v: number, s: SnapContext): number { return snap(v, s.enabled, s.snapToGrid, s.gridSize); }
