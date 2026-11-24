@@ -173,7 +173,7 @@ for (const width of [1440, 390]) test(`item metadata and optimized photos surviv
   await page.getByRole('button', { name: '3D', exact: true }).click();
   await expect(page.getByRole('region', { name: '3D floor plan viewer' }).locator('canvas').first()).toBeVisible({ timeout: 60_000 });
   await page.getByRole('link', { name: width < 640 ? 'Back to Projects' : 'Projects', exact: true }).click();
-  const backup = JSON.parse((await download(page, 'Download library backup')).toString());
+  const backup = JSON.parse((await download(page, 'Download a backup of all plans')).toString());
   const saved = JSON.parse(backup.projects[original.id]);
   expect(saved.floors[0].furniture[0].details).toMatchObject({ note: 'Chosen on the web', price: 123.456, photos: ['chair.png'] });
   expect(saved.projectPackage.assets[`assets/${photoName}`]).toBeUndefined();

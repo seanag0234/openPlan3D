@@ -32,7 +32,7 @@ async function exported(page: Page) {
 }
 async function libraryBackup(page: Page) {
   const pending = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Download library backup', exact: true }).click();
+  await page.getByRole('button', { name: 'Download a backup of all plans', exact: true }).click();
   return JSON.parse(await readFile((await (await pending).path())!, 'utf8'));
 }
 

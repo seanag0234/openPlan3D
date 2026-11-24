@@ -109,7 +109,7 @@ test('damaged saved geometry offers an exact raw backup without hiding healthy p
   await page.goto('/editor?id=qa-project-import-safety');
   await expect(page.getByRole('alert')).toContainText('walls[0].start');
   const pending = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Download library backup', exact: true }).click();
+  await page.getByRole('button', { name: 'Download a backup of all plans', exact: true }).click();
   const backup = JSON.parse(await readFile((await (await pending).path())!, 'utf8'));
   expect(backup.projects).toEqual(JSON.parse(raw));
   expect(backup.legacy.original.floorplan_projects).toBe(raw);

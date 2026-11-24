@@ -154,7 +154,7 @@ export const en = {
   "library.duplicating": "Duplicating project…",
   "library.duplicated": "Duplicated as “{name}”.",
   "library.local": "Projects and version history are saved in this browser.",
-  "library.backup": "Download library backup",
+  "library.backup": "Download a backup of all plans",
   "library.restore": "Bring back a backup of all plans",
   "library.package": "Open a plan with its pictures",
   "library.storageNote": "This browser may delete saved projects, for example when it runs low on space. Use “{backup}” regularly to keep a copy.",

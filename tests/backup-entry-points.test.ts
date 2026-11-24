@@ -20,7 +20,7 @@ vi.mock('$lib/stores/versionHistory', () => ({ saveSnapshot: vi.fn() }));
 // Both files were written by the release that was live on 2026-09-29 (d68cadf): a two-floor plan
 // drawn from scratch (walls, a door, an opening, a sliding door, windows, named rooms, text
 // labels, stairs up and down, a measurement and a dimension), saved with Download JSON, and then
-// Download library backup after duplicating it twice (a copy and a copy of the copy).
+// Download a backup of all plans after duplicating it twice (a copy and a copy of the copy).
 const projectFile = readFileSync('tests/fixtures/sketch-two-floors.openplan.json', 'utf8');
 const libraryFile = readFileSync('tests/fixtures/sketch-library-backup.json', 'utf8');
 

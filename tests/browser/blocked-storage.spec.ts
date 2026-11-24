@@ -27,7 +27,7 @@ test('the library explains blocked site storage instead of failing to load', asy
   const alert = page.getByRole('alert').filter({ hasText: unavailable });
   await expect(alert).toBeVisible();
   await expect(alert.getByRole('button', { name: 'Retry loading', exact: true })).toBeVisible();
-  await expect(alert.getByRole('button', { name: 'Download library backup', exact: true })).toBeVisible();
+  await expect(alert.getByRole('button', { name: 'Download a backup of all plans', exact: true })).toBeVisible();
   check();
 });
 

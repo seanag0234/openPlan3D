@@ -50,13 +50,13 @@ version history are saved in this browser." (See
   first and outlined, and the line above the list reads "Duplicated as “…
   (Copy)”." Rename it to tell your variations apart, since their previews look
   alike. The editor itself has no duplicate command.
-- Below the header: **Download library backup**, **Restore library backup**,
+- Below the header: **Download a backup of all plans**, **Restore library backup**,
   **Import project package** (see sections 10 and 12) and **User guide**,
   which opens this page in a new tab.
 - While the browser has not agreed to keep your projects (see "Persistent
   storage" in [section 10](#10-saving-and-the-project-library)), a note
   below those links reads "This browser may delete saved projects, for
-  example when it runs low on space. Use “Download library backup” regularly
+  example when it runs low on space. Use “Download a backup of all plans” regularly
   to keep a copy." Its ✕ hides the note in this browser.
 
 ### First visit
@@ -545,7 +545,7 @@ Persistent storage only stops automatic cleanup. Clearing site data, a
 "delete on close" setting, a private window or another browser profile still
 removes or hides the library, so backups stay the copy you control. While the
 browser has not agreed to keep the library, the library page says so and
-recommends **Download library backup** (see
+recommends **Download a backup of all plans** (see
 [section 1](#the-project-library)).
 
 ### Version History
@@ -565,7 +565,7 @@ them by name ("Added wall", "Moved furniture", …).
 
 ### Library backups
 
-On the library page, **Download library backup** saves
+On the library page, **Download a backup of all plans** saves
 `openplan3d-library-backup.json` with every project, its version history,
 previews and any recovery data. **Restore library backup** ("Add restored
 copies to this browser. Your existing projects stay available.") reads such a
@@ -721,7 +721,7 @@ everything.
   project package** on the library page or in the editor's Export menu. The
   format is described in
   [project-package-v1.md](project-package-v1.md).
-- **Download library backup** — every project in this browser plus version
+- **Download a backup of all plans** — every project in this browser plus version
   history and previews, restored with **Restore library backup** (choosing it
   in **Import JSON** or **Import a Plan** opens the same dialog).
 
@@ -1078,7 +1078,7 @@ Messages are quoted as the editor shows them.
   Your saved projects have not been removed." — A storage upgrade is waiting
   for other tabs to close.
 - "The saved project library could not be read. Download a backup before
-  attempting recovery." — Click **Download library backup** first; the raw
+  attempting recovery." — Click **Download a backup of all plans** first; the raw
   data is preserved in that file and can be restored later.
 - "Version history could not be read. Download a backup before clearing
   damaged versions." — Use **Download version backup**, then **Clear all
