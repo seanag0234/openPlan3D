@@ -25,6 +25,8 @@
   import { orderedFloors } from '$lib/utils/floors';
   import { selectableContentIds, type AddedContent } from '$lib/utils/roomplanMerge';
   import { interchangeProjectName } from '$lib/utils/interchange';
+  import { projectSettings } from '$lib/stores/settings';
+  import { sizeText } from '$lib/utils/sizeText';
 
   const openingLifetime = new AbortController();
   onDestroy(() => openingLifetime.abort());
@@ -582,7 +584,7 @@
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="{dc.icon}"/></svg>
                 </div>
                 <span class="text-xs font-medium text-gray-600">{dc.name}</span>
-                <span class="text-[10px] text-gray-400">{dc.desc}</span>
+                <span class="text-[10px] text-gray-400">{sizeText(dc.desc, $projectSettings.units)}</span>
               </button>
             {/each}
           </div>
@@ -600,7 +602,7 @@
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0e7490" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
                 </div>
                 <span class="text-xs font-medium text-gray-600">{wc.name}</span>
-                <span class="text-[10px] text-gray-400">{wc.desc}</span>
+                <span class="text-[10px] text-gray-400">{sizeText(wc.desc, $projectSettings.units)}</span>
               </button>
             {/each}
           </div>
@@ -751,7 +753,7 @@
                 {:else}
                   <span class="text-xs font-medium text-gray-600">{furnitureName(item.id, $locale)}</span>
                 {/if}
-                <span class="text-[10px] text-gray-400">{item.width}×{item.depth}cm</span>
+                <span class="text-[10px] text-gray-400">{sizeText(`${item.width}×${item.depth}cm`, $projectSettings.units)}</span>
               </button>
               <button
                 class="absolute top-1 right-1 text-[12px] leading-none cursor-pointer {favoriteIds.includes(item.id) ? 'text-pink-500' : 'text-gray-300 hover:text-pink-400'}"
@@ -837,7 +839,7 @@
           >{catalogCategoryLabels[item.category] ? $t(catalogCategoryLabels[item.category]) : item.category}</span>
         </div>
         <div class="text-xs text-gray-500">
-          {item.width} × {item.depth} × {item.height} cm
+          {sizeText(`${item.width} × ${item.depth} × ${item.height} cm`, $projectSettings.units)}
         </div>
       </div>
     </div>

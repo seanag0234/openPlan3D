@@ -6,6 +6,8 @@
   import { currentProject, commitItemDetails, canvasCamX, canvasCamY, selectedElementId, selectedElementIds, selectedTool } from '$lib/stores/project';
   import { getSnapshots } from '$lib/stores/versionHistory';
   import { modalDialog } from '$lib/utils/modalDialog';
+  import { projectSettings } from '$lib/stores/settings';
+  import { sizeText } from '$lib/utils/sizeText';
   import type { PreparedCustomModel } from '$lib/services/customModelImport';
   import { placeCustomModel, removeCustomModel } from '$lib/services/customModels';
   import type CustomModelPreview from './CustomModelPreview.svelte';
@@ -91,7 +93,7 @@
   {#each $currentProject?.customModels ?? [] as model (model.id)}
     <div class="rounded border border-gray-200 p-2 text-xs">
       <strong class="break-words">{model.name}</strong>
-      <p>{model.width.toFixed(1)} × {model.depth.toFixed(1)} × {model.height.toFixed(1)} cm</p>
+      <p>{sizeText(`${model.width.toFixed(1)} × ${model.depth.toFixed(1)} × ${model.height.toFixed(1)} cm`, $projectSettings.units)}</p>
       {#if model.attribution}<p class="break-words">{model.attribution}</p>{/if}
       {#if model.license}<p class="break-words">{model.license}</p>{/if}
       {#if model.sourceUrl}<a class="text-blue-700 underline" href={model.sourceUrl} target="_blank" rel="noopener noreferrer">{$t('customModel.source')}</a>{/if}

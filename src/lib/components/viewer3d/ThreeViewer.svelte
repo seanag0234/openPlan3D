@@ -33,6 +33,7 @@
   import { SPIRAL_START_ANGLE, SPIRAL_SWEEP, stairFlights } from '$lib/utils/stairPlanGeometry';
   import { framingContext, shouldFrameScene, type FramingContext } from '$lib/utils/sceneFraming';
   import { WalkthroughMotion } from '$lib/utils/walkthroughMotion';
+  import { sizeText } from '$lib/utils/sizeText';
   import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
   import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
   import { getCatalogItem, furnitureCatalog, furnitureCategories } from '$lib/utils/furnitureCatalog';
@@ -2707,7 +2708,7 @@
         <span class="text-white/70">{$t('viewerNav.eyeHeight')}</span>
         <div class="flex items-center gap-1">
           <input type="range" min="80" max="220" bind:value={eyeHeight} oninput={markSceneDirty} class="w-16 h-1 accent-blue-400" />
-          <span class="w-10 text-right">{eyeHeight}cm</span>
+          <span class="w-12 text-right">{sizeText(`${eyeHeight}cm`, $projectSettings.units)}</span>
         </div>
       </label>
       <label class="flex items-center justify-between gap-2">
