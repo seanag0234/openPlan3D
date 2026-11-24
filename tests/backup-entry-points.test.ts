@@ -141,7 +141,7 @@ describe('Import JSON and Import a Plan', () => {
   });
 });
 
-describe('Import project package', () => {
+describe('Open a plan with its pictures', () => {
   it.each([
     ['a project saved with Download JSON', projectFile],
     ['a library backup', libraryFile],

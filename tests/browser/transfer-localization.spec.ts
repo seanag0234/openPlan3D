@@ -11,8 +11,8 @@ test('Portuguese package rejection leaves saved records unchanged and allows ano
   await page.goto('/');
   await expect(page.getByText('Nenhum projeto ainda', { exact: true })).toBeVisible();
   const before = await storedRecords(page);
-  await page.getByRole('button', { name: 'Importar pacote de projeto', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Importar pacote de projeto', exact: true });
+  await page.getByRole('button', { name: 'Abrir uma planta com as imagens', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Abrir uma planta com as imagens', exact: true });
   const missingAttachment = readPackageZip(await readFile('tests/fixtures/native-project-package.zip'));
   delete missingAttachment['assets/chair.png'];
   const invalidGeometry = readPackageZip(await readFile('tests/fixtures/native-project-package.zip'));
@@ -134,7 +134,7 @@ test('Portuguese backup rejection preserves each original file and saved records
 
 for (const flow of [
   { title: 'Restaurar backup da biblioteca', choose: 'Escolher arquivo de backup', original: 'Baixar backup original', confirm: 'Restaurar como cópias', success: '1 projeto restaurado.', file: 'tests/fixtures/library-backup.json', preview: '1 projeto pronto para restaurar' },
-  { title: 'Importar pacote de projeto', choose: 'Escolher pacote de projeto', original: 'Baixar pacote original', confirm: 'Importar como cópia', success: 'Projeto importado.', file: 'tests/fixtures/native-project-package.zip', preview: 'arquivos anexos' },
+  { title: 'Abrir uma planta com as imagens', choose: 'Escolher pacote de projeto', original: 'Baixar pacote original', confirm: 'Importar como cópia', success: 'Projeto importado.', file: 'tests/fixtures/native-project-package.zip', preview: 'arquivos anexos' },
 ]) {
   test(`Portuguese transfer preserves original bytes and requires confirmation: ${flow.title}`, async ({ page }) => {
     await page.addInitScript(() => {
