@@ -6,6 +6,10 @@ import { applyDisplaySettings } from '$lib/stores/settings';
 import { readProject } from '$lib/utils/projectValidation';
 import { localStore, ProjectConflictError } from './datastore';
 import { prepareToLeave } from './deployment';
+import { isLibraryBackup, LibraryBackupFileError } from './libraryRestore';
+import { isRoomPlanJson } from '$lib/utils/roomplanValidation';
+import { importQuestion, type ImportAnswer } from '$lib/stores/ui';
+import { saveSnapshot } from '$lib/stores/versionHistory';
 
 let latestRequest = 0;
 
@@ -92,4 +96,64 @@ export async function openStoredProject(id: string, signal?: AbortSignal): Promi
     if (superseded()) return null;
     throw error;
   }
+}
+
+/** Read a file the person chose into what openProject takes. Throws LibraryBackupFileError for a backup of every plan. */
+export async function readPlanFile(file: File): Promise<unknown> {
+  const data = JSON.parse(await file.text());
+  // A library backup holds every project: Restore previews it and adds them as copies.
+  if (isLibraryBackup(data)) throw new LibraryBackupFileError();
+  if (!isRoomPlanJson(data)) return data;
+  const [{ createProjectFromRoomPlan }, { interchangeProjectName }] = await Promise.all([import('$lib/utils/roomplanImport'), import('$lib/utils/interchange')]);
+  return createProjectFromRoomPlan(data, interchangeProjectName(data, file.name.replace(/\.json$/i, '')));
+}
+
+/** The plan as text without the moments it was made and last saved: two files of the same plan compare equal. */
+function content(project: Project): string {
+  const { createdAt: _created, updatedAt: _updated, ...rest } = project;
+  return JSON.stringify(rest);
+}
+
+/** "Room (2)" and "Room" both give "Room"; the first of "Room (2)", "Room (3)"… the list does not hold. */
+async function nextFreeName(name: string): Promise<string> {
+  const base = (name || 'Untitled Project').replace(/ \(\d+\)$/, '');
+  const taken = new Set((await localStore.list()).map(item => item.name));
+  let n = 2;
+  while (taken.has(`${base} (${n})`)) n++;
+  return `${base} (${n})`;
+}
+
+/** Open a plan the person chose. A plan already in the list is opened as it is when the file matches it, and asked about when it differs. */
+export async function openPlanFile(readCandidate: () => unknown | Promise<unknown>, signal?: AbortSignal): Promise<Project | null> {
+  if (signal?.aborted) return null;
+  const candidate = readProject(await readCandidate());
+  if (signal?.aborted) return null;
+  if (!await prepareToLeave()) {
+    if (signal?.aborted) return null;
+    throw new Error(`Your current plan could not be saved. ${get(saveError) ?? 'Retry saving or download a JSON backup before opening another plan.'}`);
+  }
+  if (signal?.aborted) return null;
+  if (!(await localStore.has(candidate.id))) return openProject(() => candidate, 'import', signal);
+
+  const stored = await localStore.load(candidate.id);
+  if (!stored) return openProject(() => candidate, 'import', signal);
+  if (content(stored) === content(candidate)) return openStoredProject(candidate.id, signal);
+
+  const answer = await new Promise<ImportAnswer>(resolve => importQuestion.set({ name: stored.name, resolve }));
+  importQuestion.set(null);
+  if (answer === 'cancel' || signal?.aborted) return null;
+  if (answer === 'copy') {
+    candidate.id = globalThis.crypto?.randomUUID?.() ?? `project-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+    candidate.name = await nextFreeName(candidate.name);
+    candidate.createdAt = new Date();
+    return openProject(() => candidate, 'import', signal);
+  }
+  // Replace: the plan she had stays in its list of versions.
+  await saveSnapshot(stored, 'Before replacing with a file', true);
+  if (signal?.aborted) return null;
+  candidate.updatedAt = new Date();
+  loadProject(candidate);
+  if (candidate.displaySettings) applyDisplaySettings(candidate.displaySettings);
+  await autoSave();
+  return candidate;
 }

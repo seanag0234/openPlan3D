@@ -7,7 +7,9 @@
   import { goto } from '$app/navigation';
   import { base } from '$app/paths';
   import { localStore, storageErrorMessage, downloadLibraryBackup } from '$lib/services/datastore';
-  import { openProject } from '$lib/services/projectOpening';
+  import { openPlanFile, openProject, readPlanFile } from '$lib/services/projectOpening';
+  import { LibraryBackupFileError } from '$lib/services/libraryRestore';
+  import ImportError from '$lib/components/ImportError.svelte';
   import { createDefaultProject } from '$lib/stores/project';
   import WelcomeScreen from '$lib/components/WelcomeScreen.svelte';
   import LibraryRestoreDialog from '$lib/components/LibraryRestoreDialog.svelte';
@@ -15,6 +17,7 @@
   import LibraryStorageNote from '$lib/components/LibraryStorageNote.svelte';
   import ProjectActionsMenu from '$lib/components/ProjectActionsMenu.svelte';
   import { houseTemplates } from '$lib/utils/houseTemplates';
+  import { feedbackOpen } from '$lib/stores/ui';
 
   const openingLifetime = new AbortController();
   onDestroy(() => openingLifetime.abort());
@@ -66,9 +69,63 @@
     libraryError = null;
   }
 
+  /** The browser opened this copy's starting plan by itself once: a plan deleted after that stays deleted. */
+  const START_PLAN_OPENED = 'o3d_start_plan_opened';
+  let startPlanAvailable = $state(false);
+  let openError = $state<string | null>(null);
+
+  /** Fetch this copy's starting plan and open it. False when there is none or it could not be had; errors only when `report`. */
+  async function openStartPlan(report: boolean): Promise<boolean> {
+    try {
+      const response = await fetch(`${base}/api/start-plan`, { signal: AbortSignal.timeout(3000), cache: 'no-store' });
+      if (response.status !== 200) return false;
+      const text = await response.text();
+      const project = await openPlanFile(() => JSON.parse(text), openingLifetime.signal);
+      if (!project) return false;
+      try { localStorage.setItem(START_PLAN_OPENED, 'true'); } catch {}
+      goto(`${base}/editor?id=${encodeURIComponent(project.id)}`);
+      return true;
+    } catch (error) {
+      if (report && !openingLifetime.signal.aborted) openError = error instanceof Error ? error.message : String(error);
+      return false;
+    }
+  }
+
+  let planFileInput = $state<HTMLInputElement>();
+
+  /** Open a plan file: the same plan opens as it is, a changed one is asked about. */
+  async function onPlanFileChosen(event: Event) {
+    const input = event.currentTarget as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    openError = null;
+    try {
+      const project = await openPlanFile(() => readPlanFile(file), openingLifetime.signal);
+      if (project) goto(`${base}/editor?id=${encodeURIComponent(project.id)}`);
+    } catch (error) {
+      if (error instanceof LibraryBackupFileError) { openRestore(file); return; }
+      if (!openingLifetime.signal.aborted) openError = error instanceof Error ? error.message : String(error);
+    }
+  }
+
+  async function askStartPlan() {
+    try {
+      const response = await fetch(`${base}/api/start-plan?info=1`, { signal: AbortSignal.timeout(3000), cache: 'no-store' });
+      startPlanAvailable = response.ok && (await response.json())?.available === true;
+    } catch { startPlanAvailable = false; }
+  }
+
+  function startPlanOpenedBefore() {
+    try { return localStorage.getItem(START_PLAN_OPENED) !== null; } catch { return true; }
+  }
+
   onMount(() => {
+    void askStartPlan();
     void withLibraryError(async () => {
       await refreshProjects();
+      // A first visit to a copy with a starting plan lands in it, once.
+      if (projects.length === 0 && !startPlanOpenedBefore() && await openStartPlan(false)) return;
       const seen = localStorage.getItem('hasSeenWelcome');
       if (!seen && projects.length === 0) {
         showWelcome = true;
@@ -163,6 +220,8 @@
   <WelcomeScreen onRestoreLibrary={openRestore} onImportPackage={openPackage} onDismiss={() => { showWelcome = false; void withLibraryError(refreshProjects); }} />
 {/if}
 
+{#if openError}<ImportError title={$t('welcome.openFailed')} message={openError} onDismiss={() => openError = null} />{/if}
+
 {#if restoreOpen}<LibraryRestoreDialog file={restoreFile} onclose={() => restoreOpen = false} onrestored={afterRestore} />{/if}
 {#if packageOpen}<ProjectPackageDialog onclose={() => packageOpen = false} onimported={afterRestore} />{/if}
 
@@ -175,6 +234,14 @@
         <p class="text-sm text-white/50 mt-0.5">{loading ? $t('library.loading') : $t(projects.length === 1 ? 'library.countOne' : 'library.countMany', { count: projects.length })}</p>
       </div>
       <div class="flex flex-wrap items-center gap-3">
+        <input type="file" accept=".json,application/json" class="hidden" bind:this={planFileInput} onchange={onPlanFileChosen} />
+        <button
+          onclick={() => planFileInput?.click()}
+          class="px-4 py-2.5 bg-white/10 text-white rounded-lg hover:bg-white/20 font-medium text-sm transition-all flex items-center gap-2 border border-white/20"
+        >
+          <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          {$t('home.openPlanFile')}
+        </button>
         <button
           onclick={() => showTemplateModal = true}
           class="px-4 py-2.5 bg-white/10 text-white rounded-lg hover:bg-white/20 font-medium text-sm transition-all flex items-center gap-2 border border-white/20"
@@ -203,10 +270,12 @@
     <div class="mb-5 flex flex-wrap items-center justify-between gap-3 text-sm text-gray-500">
       <p>{$t('library.local')}</p>
       <div class="flex flex-wrap gap-4">
+        {#if startPlanAvailable}<button class="font-semibold text-blue-600 underline" onclick={() => { openError = null; void openStartPlan(true); }}>{$t('home.startPlan')}</button>{/if}
         {#if !libraryError}<button class="font-semibold text-blue-600 underline" onclick={backupLibrary}>{$t('library.backup')}</button>{/if}
         <button class="font-semibold text-blue-600 underline" onclick={() => openRestore()}>{$t('library.restore')}</button>
         <button class="font-semibold text-blue-600 underline" onclick={openPackage}>{$t('library.package')}</button>
         <a class="font-semibold text-blue-600 underline" href={USER_GUIDE_URL} target="_blank" rel="noopener">{$t('help.userGuide')}</a>
+        <button class="font-semibold text-blue-600 underline" onclick={() => feedbackOpen.set(true)}>{$t('home.feedback')}</button>
       </div>
     </div>
     <LibraryStorageNote active={projects.length > 0 && !libraryError} />

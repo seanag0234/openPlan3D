@@ -2,9 +2,8 @@
   import { t } from '$lib/i18n';
   import { templateLabels } from '$lib/i18n/templateLabels';
   import { onDestroy } from 'svelte';
-  import { isRoomPlanJson } from '$lib/utils/roomplanValidation';
-  import { openProject } from '$lib/services/projectOpening';
-  import { isLibraryBackup, LibraryBackupFileError } from '$lib/services/libraryRestore';
+  import { openProject, readPlanFile } from '$lib/services/projectOpening';
+  import { LibraryBackupFileError } from '$lib/services/libraryRestore';
   import ImportError from '$lib/components/ImportError.svelte';
   import { goto } from '$app/navigation';
   import { base } from '$app/paths';
@@ -62,14 +61,8 @@
     if (!file) return;
     importError = null;
     try {
-      const project = await openProject(async () => {
-        const data = JSON.parse(await file.text());
-        // A library backup holds every project: Restore previews it and adds them as copies.
-        if (isLibraryBackup(data)) throw new LibraryBackupFileError();
-        return isRoomPlanJson(data)
-          ? (await import('$lib/utils/roomplanImport')).createProjectFromRoomPlan(data, (await import('$lib/utils/interchange')).interchangeProjectName(data, file.name.replace(/\.json$/i, '')))
-          : data;
-      }, 'import', openingLifetime.signal);
+      // A library backup holds every project: readPlanFile refuses it, and Restore previews it.
+      const project = await openProject(() => readPlanFile(file), 'import', openingLifetime.signal);
       if (!project) return;
       markSeen();
       goto(`${base}/editor?id=${encodeURIComponent(project.id)}`);
