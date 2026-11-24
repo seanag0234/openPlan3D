@@ -1,7 +1,8 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { coarsePointer } from '$lib/stores/pointer';
-  import { panMode } from '$lib/stores/project';
+  import { panMode, selectedElementIds } from '$lib/stores/project';
+  import AlignmentToolbar from '../AlignmentToolbar.svelte';
   import { multiSelectMode } from '$lib/stores/ui';
 
   let { wallStarted, placingRotation, measuring, textMode, annotating, annotationStarted, ondone }: {
@@ -13,14 +14,15 @@
 
 <!-- Each message carries Done, so leaving a tool or a mode never needs the Escape key; on a touch screen it speaks of taps. -->
 {#snippet pill(colour: string, text: string, done: () => void)}
-  <div data-tool-hint class="pointer-events-auto flex items-center gap-2 {colour} text-white pl-3 pr-1 py-0.5 rounded-full shadow max-w-full {$coarsePointer ? 'text-sm' : 'text-xs'}">
+  <div data-tool-hint class="pointer-events-auto relative z-20 flex items-center gap-2 {colour} text-white pl-3 pr-1 py-0.5 rounded-full shadow max-w-full {$coarsePointer ? 'text-sm' : 'text-xs'}">
     <span class="min-w-0">{text}</span>
     <button class="shrink-0 rounded-full bg-white/90 px-2.5 py-0.5 font-semibold text-slate-800 hover:bg-white" onclick={done}>{$t('bars.done')}</button>
   </div>
 {/snippet}
 
-{#if anything}
-  <div class="pointer-events-none absolute top-2 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1 max-w-[calc(100%-1rem)]">
+<!-- One stack at the top of the plan: the pills, then the bar for several picked things, so neither can lie on the other. -->
+{#if anything || $selectedElementIds.size >= 2}
+  <div data-top-stack class="pointer-events-none absolute top-2 inset-x-2 flex flex-col items-center gap-1">
     {#if wallStarted}
       {@render pill('bg-blue-600', $coarsePointer ? $t('bars.hintWall') : $t('canvasHints.wall'), ondone)}
     {/if}
@@ -45,5 +47,6 @@
     {#if $multiSelectMode}
       {@render pill('bg-sky-600', $t($coarsePointer ? 'bars.pickingSeveral' : 'bars.pickingSeveralMouse'), () => multiSelectMode.set(false))}
     {/if}
+    <AlignmentToolbar />
   </div>
 {/if}
