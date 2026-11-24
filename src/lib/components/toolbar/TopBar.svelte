@@ -362,6 +362,7 @@
     };
     input.click();
     exportOpen = false;
+    moreOpen = false;
   }
 
   function onImportPackage() {
@@ -629,6 +630,8 @@
     </button>
     {#if moreOpen}
       <div data-popup="menu" class="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 w-56 z-50 max-h-[70vh] overflow-y-auto">
+        <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={onImportJSON}>{$t('bars.openPlanFile')}</button>
+        <div class="h-px bg-gray-100 my-1"></div>
         {#if floors.length > 1 || mode === '2d'}
           <div class="px-3 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-gray-400">{$t('floorControls.floors')}</div>
           {#each floors as fl}
@@ -686,6 +689,16 @@
 
   <div class="h-5 w-px bg-white/20 max-xl:hidden"></div>
 
+  <!-- Opening a plan file, where it is looked for; the Export menu keeps its Import JSON too. -->
+  <button
+    onclick={onImportJSON}
+    class="px-3 py-1.5 text-sm text-white/90 hover:text-white hover:bg-white/10 rounded transition-colors items-center gap-1.5 max-xl:hidden {$coarsePointer ? stacked : 'flex'}"
+    title={$t('bars.openPlanFile')}
+  >
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+    <span class={$coarsePointer ? 'block text-[10px] leading-none' : ''}>{$t('bars.open')}</span>
+  </button>
+
   <!-- Export dropdown -->
   <div class="relative" bind:this={exportRef}>
     <button
@@ -733,6 +746,7 @@
           {$t('exportMenu.pdf')}
         </button>
         <p class="px-3 pb-2 text-xs text-gray-500">{$t('exportMenu.planHelp')}</p>
+        <div aria-hidden="true" class="px-3 pt-1 text-[11px] text-gray-400">{$t('bars.savePlanFile')}</div>
         <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left flex items-center gap-2" onclick={onExportJSON}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
           {$t('exportMenu.json')}
@@ -749,6 +763,7 @@
         <div class="h-px bg-gray-100 my-1"></div>
         <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={onShareWithAssistant}>{$t('exportMenu.assistant')}</button>
         <div class="h-px bg-gray-100 my-1"></div>
+        <div aria-hidden="true" class="px-3 pt-1 text-[11px] text-gray-400">{$t('bars.openPlanFile')}</div>
         <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left flex items-center gap-2" onclick={onImportJSON}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           {$t('exportMenu.import')}

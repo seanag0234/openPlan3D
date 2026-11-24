@@ -4,4 +4,7 @@ export const barsEn = {
   "bars.showAll": "Show all",
   "bars.plans": "Plans",
   "bars.more": "More",
+  "bars.openPlanFile": "Open a plan file",
+  "bars.open": "Open",
+  "bars.savePlanFile": "Save this plan as a file",
 } as const;
