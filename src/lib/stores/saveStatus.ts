@@ -12,12 +12,16 @@ export const lastSavedAt = writable<Date | null>(null);
 export const saveError = writable<string | null>(null);
 export const saveConflict = writable(false);
 export const savingCopy = writable(false);
+/** A short message about saving for the person editing, shown by SaveNotice. */
+export const saveNotice = writable<'saving.caughtUp' | null>(null);
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let stopWatching: (() => void) | null = null;
 let revision = 0;
 let saveAttempt = 0;
 let lastProjectId: string | undefined;
+/** This tab has changes of its own that are not saved yet. */
+let ownEdits = false;
 
 /** One autosave owner per mounted editor. The caller must dispose on unmount. */
 export function initAutoSave() {
@@ -64,8 +68,24 @@ export function initAutoSave() {
       localStore.stashUnsaved(project);
     } catch {}
   };
+  // A tab that comes back with no change of its own catches up with a plan another tab saved meanwhile. A tab
+  // with changes of its own keeps the bar that offers a copy or a file. Only coming back starts this: while the
+  // tab stays in front, the bar appears as it always has.
+  const catchUp = async () => {
+    await checkCurrent();
+    const project = get(currentProject);
+    if (disposed || !project || !get(saveConflict) || ownEdits) return;
+    const stored = await localStore.load(project.id);
+    // A plan deleted in another tab keeps the bar.
+    if (!stored || disposed || get(currentProject) !== project || ownEdits) return;
+    loadProject(stored);
+    markClean();
+    saveNotice.set('saving.caughtUp');
+  };
   const onVisibility = () => {
-    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') stashUnsaved();
+    if (typeof document === 'undefined') return;
+    if (document.visibilityState === 'hidden') stashUnsaved();
+    else if (document.visibilityState === 'visible') void catchUp().catch(() => {});
   };
   if (typeof window !== 'undefined') {
     window.addEventListener('storage', onStorage);
@@ -99,6 +119,7 @@ function clearSaveTimer() {
 /** Mark project as dirty (unsaved). */
 export function markDirty() {
   revision++;
+  ownEdits = true;
   saveState.set('unsaved');
   clearSaveTimer();
   if (get(saveConflict)) return;
@@ -160,6 +181,7 @@ async function persist(manual: boolean): Promise<boolean> {
       saveError.set(null);
       saveConflict.set(false);
       lastSavedAt.set(new Date());
+      ownEdits = false;
       keepUndoSteps(p);
     }
     return true;
@@ -241,5 +263,6 @@ export function markClean() {
   saveConflict.set(false);
   lastSavedAt.set(null);
   lastProjectId = get(currentProject)?.id;
+  ownEdits = false;
   recallUndoSteps();
 }
