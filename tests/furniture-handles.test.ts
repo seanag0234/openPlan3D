@@ -59,4 +59,12 @@ describe('the handles of a selected piece', () => {
     expect(discs[0]).toEqual({ x: 0, y: -45 - 48, radius: 9 });
   });
 
+  it('are not drawn on a locked piece, which keeps its dashed outline', () => {
+    for (const coarse of [false, true]) {
+      const { outline, squares, discs } = selection({ ...piece, locked: true }, coarse);
+      expect(outline).toEqual({ name: 'strokeRect', args: [124, 94], at: { x: 0, y: 0 } });
+      expect(squares).toEqual([]);
+      expect(discs).toEqual([]);
+    }
+  });
 });
