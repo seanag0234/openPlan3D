@@ -7,9 +7,9 @@ const fixturePath = resolve('tests/fixtures/handoff-roomplan.json');
 
 async function addScanToPlan(page: Page) {
   const chooser = page.waitForEvent('filechooser');
-  await page.getByRole('button', { name: /Import RoomPlan iOS LiDAR scan/ }).click();
+  await page.getByRole('button', { name: /Add an iPhone room scan iOS LiDAR scan/ }).click();
   await (await chooser).setFiles(fixturePath);
-  const dialog = page.getByRole('dialog', { name: 'Import RoomPlan', exact: true });
+  const dialog = page.getByRole('dialog', { name: 'Add an iPhone room scan', exact: true });
   await dialog.getByRole('radio', { name: /Add to this plan/ }).check();
   await dialog.getByRole('button', { name: 'Import', exact: true }).click();
   await expect(dialog).toHaveCount(0);
@@ -88,9 +88,9 @@ test('a single-storey scan goes onto the floor picked in the dialog; a multi-sto
   await expect(floorSwitcher.locator('option')).toHaveText(['Basement', 'Upstairs']);
 
   const chooser = page.waitForEvent('filechooser');
-  await page.getByRole('button', { name: /Import RoomPlan iOS LiDAR scan/ }).click();
+  await page.getByRole('button', { name: /Add an iPhone room scan iOS LiDAR scan/ }).click();
   await (await chooser).setFiles({ name: 'upstairs.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(single)) });
-  const dialog = page.getByRole('dialog', { name: 'Import RoomPlan', exact: true });
+  const dialog = page.getByRole('dialog', { name: 'Add an iPhone room scan', exact: true });
   const floorPicker = dialog.getByRole('combobox', { name: 'Floor', exact: true });
   await expect(floorPicker).toHaveCount(0); // only offered when adding to this plan
   await dialog.getByRole('radio', { name: /Add to this plan/ }).check();
@@ -108,7 +108,7 @@ test('a single-storey scan goes onto the floor picked in the dialog; a multi-sto
 
   // A capture with several storeys keeps them on matching floors and says so instead of offering a floor.
   const again = page.waitForEvent('filechooser');
-  await page.getByRole('button', { name: /Import RoomPlan iOS LiDAR scan/ }).click();
+  await page.getByRole('button', { name: /Add an iPhone room scan iOS LiDAR scan/ }).click();
   await (await again).setFiles(fixturePath);
   await dialog.getByRole('radio', { name: /Add to this plan/ }).check();
   await expect(floorPicker).toHaveCount(0);

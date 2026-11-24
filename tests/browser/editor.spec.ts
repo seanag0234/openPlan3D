@@ -83,7 +83,7 @@ test('import, numeric edit, undo/redo, save/reload and export preserve a multi-f
 
   // Retry via the other import entry point; prepared iPhone geometry must not be straightened.
   const chooser = page.waitForEvent('filechooser');
-  await page.getByRole('button', { name: /Import RoomPlan iOS LiDAR scan/ }).click();
+  await page.getByRole('button', { name: /Add an iPhone room scan iOS LiDAR scan/ }).click();
   await (await chooser).setFiles(fixture);
   await expect(page.getByRole('checkbox', { name: /Straighten/ })).not.toBeChecked();
   await expect(page.getByRole('checkbox', { name: /orthogonal/i })).not.toBeChecked();

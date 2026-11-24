@@ -160,12 +160,12 @@ for (const locale of ['en', 'pt']) for (const width of [1440, 390]) test(`${loca
   const before = await storedRecords(page);
   if (width < 768) await page.getByRole('button', { name: locale === 'pt' ? 'Alternar painel de ferramentas' : 'Toggle tools panel', exact: true }).click();
   const pending = page.waitForEvent('filechooser');
-  await page.getByRole('button', { name: locale === 'pt' ? /Importar RoomPlan Escaneamento LiDAR/ : /Import RoomPlan iOS LiDAR scan/ }).click();
+  await page.getByRole('button', { name: locale === 'pt' ? /Adicionar um escaneamento de cômodo do iPhone Escaneamento LiDAR/ : /Add an iPhone room scan iOS LiDAR scan/ }).click();
   await (await pending).setFiles(resolve('tests/fixtures/handoff-roomplan.json'));
-  const dialog = await focusInside(page, locale === 'pt' ? 'Importar RoomPlan' : 'Import RoomPlan');
+  const dialog = await focusInside(page, locale === 'pt' ? 'Adicionar um escaneamento de cômodo do iPhone' : 'Add an iPhone room scan');
   await dialog.getByRole('checkbox', { name: locale === 'pt' ? /Alinhar paredes/ : /Straighten walls/ }).uncheck();
   await dialog.getByRole('spinbutton', { name: locale === 'pt' ? 'Distância para unir cantos (cm)' : 'Corner merge distance (cm)' }).fill('25');
-  await page.keyboard.press('Tab'); await focusInside(page, locale === 'pt' ? 'Importar RoomPlan' : 'Import RoomPlan');
+  await page.keyboard.press('Tab'); await focusInside(page, locale === 'pt' ? 'Adicionar um escaneamento de cômodo do iPhone' : 'Add an iPhone room scan');
   await page.keyboard.press('Escape'); await expect(dialog).toHaveCount(0);
   expect(await storedRecords(page)).toEqual(before);
   await page.goto('/');
