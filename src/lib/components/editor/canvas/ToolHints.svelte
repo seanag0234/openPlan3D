@@ -43,7 +43,7 @@
       {@render pill('bg-slate-700', $t('bars.moving'), () => panMode.set(false))}
     {/if}
     {#if $multiSelectMode}
-      {@render pill('bg-sky-600', $t('bars.pickingSeveral'), () => multiSelectMode.set(false))}
+      {@render pill('bg-sky-600', $t($coarsePointer ? 'bars.pickingSeveral' : 'bars.pickingSeveralMouse'), () => multiSelectMode.set(false))}
     {/if}
   </div>
 {/if}
