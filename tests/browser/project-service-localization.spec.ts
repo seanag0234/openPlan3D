@@ -79,7 +79,9 @@ for (const width of [1440, 390]) {
     await expect(page.getByRole('alert')).toHaveCount(0);
     expect((await savedProjects(page))[source.id].name).toBe(backup.name);
     await importJSON(page);
-    await expect(page.getByTitle('Clique para renomear', { exact: true })).toHaveText(`${source.name} (Imported copy)`);
+    // The saved plan carries the new name, so the file differs from it and is asked about.
+    await page.getByRole('dialog', { name: 'Você já tem esta planta' }).getByRole('button', { name: /Manter as duas/ }).click();
+    await expect(page.getByTitle('Clique para renomear', { exact: true })).toHaveText(`${source.name} (2)`);
     expect((await savedProjects(page))[source.id].name).toBe(backup.name);
   });
 }

@@ -64,7 +64,7 @@ for (const width of [1440, 390]) test(`Portuguese layers preserve visibility, se
     await expect(walls).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Mais ações', exact: true }).click();
-    await page.getByRole('button', { name: 'Camadas', exact: true }).click();
+    await page.getByRole('button', { name: 'Tudo na planta', exact: true }).click();
   } else {
     const layers = page.getByRole('button', { name: 'Mostrar ou ocultar a lista de tudo na planta', exact: true });
     await expect(layers).toHaveAttribute('aria-expanded', 'false');

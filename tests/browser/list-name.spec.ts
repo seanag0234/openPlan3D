@@ -19,3 +19,25 @@ for (const [locale, list, layers, opener, bar] of [['en', 'Everything on the pla
     await expect(page.getByRole('button', { name: `🗂 ${layers}`, exact: true })).toHaveCount(0);
   });
 }
+
+for (const [locale, list, layers, more, notes] of [['en', 'Everything on the plan', 'Layers', 'More actions', 'Notes'], ['pt', 'Tudo na planta', 'Camadas', 'Mais ações', 'Notas']] as const) {
+  test(`${locale}: the more menu calls the list by its own name`, async ({ page }) => {
+    await page.setViewportSize({ width: 1100, height: 800 });
+    await page.addInitScript(value => localStorage.setItem('o3d_locale', value), locale);
+    await page.goto('/editor');
+    await page.getByRole('button', { name: more, exact: true }).click();
+    const menu = page.locator('[data-popup="menu"]');
+    await expect(menu.getByRole('button', { name: list, exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: layers, exact: true })).toHaveCount(0);
+  });
+
+  test(`${locale}: on a narrow screen the more menu opens the notes`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(value => localStorage.setItem('o3d_locale', value), locale);
+    await page.goto('/editor');
+    await page.getByRole('button', { name: more, exact: true }).click();
+    const menu = page.locator('[data-popup="menu"]');
+    await menu.getByRole('button', { name: notes, exact: true }).click();
+    await expect(menu).toHaveCount(0);
+  });
+}

@@ -131,12 +131,12 @@ export function restoreHistory(steps: { undo: UndoEntry[]; redo: UndoEntry[]; sh
 }
 
 /** Reactive store exposing undo history for the UndoHistoryPanel */
-export const undoHistoryStore = writable<{ entries: { description: string; timestamp: number }[]; currentIndex: number }>({ entries: [], currentIndex: -1 });
+export const undoHistoryStore = writable<{ entries: { description: string; timestamp: number }[]; currentIndex: number; redoCount: number }>({ entries: [], currentIndex: -1, redoCount: 0 });
 
 function syncHistoryStore() {
   const entries = undoStack.map(e => ({ description: e.description, timestamp: e.timestamp }));
-  // currentIndex: undoStack.length means "current state" (top), entries are past states
-  undoHistoryStore.set({ entries, currentIndex: undoStack.length });
+  // currentIndex: undoStack.length means "current state" (top), entries are past states; redoCount is how many steps Redo has
+  undoHistoryStore.set({ entries, currentIndex: undoStack.length, redoCount: redoStack.length });
 }
 
 /** Current undo action description — set before calling mutate/snapshot */
@@ -257,6 +257,7 @@ function snapshot(description?: string, coalesceKey?: string, state?: string) {
   ) {
     _lastSnapshotTime = now;
     redoStack.length = 0;
+    syncHistoryStore();
     return;
   }
   pushHistory(undoStack, { state: state ?? shared.pack(p), description: description || _nextDescription || 'Edit', timestamp: now, selection: captureSelection() });

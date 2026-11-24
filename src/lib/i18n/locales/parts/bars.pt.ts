@@ -21,4 +21,5 @@ export const barsPt = {
   "bars.houseHint": "Paredes, portas, janelas e ambientes ficam no lugar enquanto a casa está fixa",
   "bars.sendPlan": "Enviar esta planta",
   "bars.feedback": "Comentários",
+  "bars.screenPicture": "Imagem da tela",
 } as const;

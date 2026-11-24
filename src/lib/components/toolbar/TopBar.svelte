@@ -10,7 +10,7 @@
   import { modalDialog, hasOpenModal } from '$lib/utils/modalDialog';
   import { focusInlineEditor } from '$lib/utils/inlineEditorFocus';
   import { MAX_FLOOR_NAME_LENGTH } from '$lib/utils/floors';
-  import { openProject, openStoredProject } from '$lib/services/projectOpening';
+  import { openProject, openStoredProject, openPlanFile, readPlanFile } from '$lib/services/projectOpening';
   import { saveConflict, savingCopy, saveCurrentAsCopy } from '$lib/stores/saveStatus';
   import ImportError from '$lib/components/ImportError.svelte';
   import ProjectPackageDialog from '$lib/components/ProjectPackageDialog.svelte';
@@ -22,10 +22,10 @@
   import { orderedFloors } from '$lib/utils/floors';
   import type { FloorPosition, FloorSeed } from '$lib/stores/project';
   import { projectSettings, withDisplaySettings } from '$lib/stores/settings';
-  import { currentProject, viewMode, undo, redo, addFloor, removeFloor, renameFloor, setActiveFloor, updateProjectName, createDefaultProject, snapEnabled, canvasZoom, canvasMinimumZoom, panMode, showFurnitureStore, layerVisibility, activeFloor, selectedElementId, elevationWallId, elevationPickMode } from '$lib/stores/project';
+  import { currentProject, viewMode, undo, redo, undoHistoryStore, addFloor, removeFloor, renameFloor, setActiveFloor, updateProjectName, createDefaultProject, snapEnabled, canvasZoom, canvasMinimumZoom, panMode, showFurnitureStore, layerVisibility, activeFloor, selectedElementId, elevationWallId, elevationPickMode } from '$lib/stores/project';
   import { get } from 'svelte/store';
   import type { Floor } from '$lib/models/types';
-  import { exportAsJSON } from '$lib/utils/export';
+  import { exportAsJSON, exportScreenPNG } from '$lib/utils/export';
   import { createProjectFromRoomPlan, extractRoomJsonFromZip, isRoomPlanJson } from '$lib/utils/roomplanImport';
   import SettingsDialog from './SettingsDialog.svelte';
   import AreaSummaryPanel from '$lib/components/sidebar/AreaSummaryPanel.svelte';
@@ -33,7 +33,7 @@
   import { initVersionHistory, stopVersionHistory, snapshotOnAction } from '$lib/stores/versionHistory';
   import VersionHistoryPanel from './VersionHistoryPanel.svelte';
   import { coarsePointer } from '$lib/stores/pointer';
-  import { feedbackOpen } from '$lib/stores/ui';
+  import { feedbackOpen, notesListOpen } from '$lib/stores/ui';
 
   /** On a touch screen a picture button stacks its word under its picture; nothing hovers to explain it. */
   const stacked = $derived($coarsePointer ? 'flex flex-col items-center justify-center gap-0.5' : '');
@@ -189,6 +189,16 @@
     const p = get(currentProject);
     if (p) void exportPNGWithFeedback(p);
     exportOpen = false;
+  }
+
+  /** The plan as the screen shows it now, saved as a picture. */
+  async function onExportScreenPNG() {
+    exportOpen = false; exportNotice.set(null);
+    const label = $t('canvas.editorLabel');
+    const canvas = [...document.querySelectorAll('canvas')].find(c => c.getAttribute('aria-label') === label);
+    try {
+      if (!canvas || !await exportScreenPNG(canvas, get(currentProject)?.name || 'floorplan')) throw new Error('no picture');
+    } catch { exportNotice.set({ title: 'exportNotice.pngTitle', message: 'exportNotice.pngFailed' }); }
   }
 
   let exporting3D = $state(false);
@@ -370,15 +380,16 @@
       const file = input.files?.[0];
       if (!file) return;
       try {
-        await openProject(async () => {
-          const data = /\.zip$/i.test(file.name)
-            ? await extractRoomJsonFromZip(file)
-            : JSON.parse(await file.text());
-          if (isLibraryBackup(data)) throw new LibraryBackupFileError();
-          return isRoomPlanJson(data)
-            ? createProjectFromRoomPlan(data, interchangeProjectName(data, file.name.replace(/\.(json|zip)$/i, '')))
-            : data;
-        }, 'import', openingLifetime.signal);
+        if (/\.zip$/i.test(file.name)) {
+          await openProject(async () => {
+            const data = await extractRoomJsonFromZip(file);
+            if (isLibraryBackup(data)) throw new LibraryBackupFileError();
+            return isRoomPlanJson(data) ? createProjectFromRoomPlan(data, interchangeProjectName(data, file.name.replace(/\.zip$/i, ''))) : data;
+          }, 'import', openingLifetime.signal);
+        } else {
+          // A plan already in the list opens as it is when the file matches it, and is asked about when it differs.
+          await openPlanFile(() => readPlanFile(file), openingLifetime.signal);
+        }
       } catch (e: any) {
         if (e instanceof LibraryBackupFileError) { restoreFile = file; return; }
         const message = e?.message ?? 'Could not read this file.';
@@ -410,7 +421,7 @@
   <!-- Back to Projects -->
   <a
     href={base || '/'}
-    class="flex items-center gap-1 text-white/70 hover:text-white text-sm transition-colors {stacked}"
+    class="flex items-center gap-1 text-white/70 hover:text-white text-sm transition-colors {stacked} {$coarsePointer ? 'min-w-[44px] min-h-[44px]' : ''}"
     title={$t('projectToolbar.back')}
   >
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
@@ -436,7 +447,7 @@
     />
   {:else}
     <button
-      class="font-semibold text-white text-sm hover:bg-white/10 px-2 py-0.5 rounded transition-colors max-w-[12rem] min-w-0 truncate max-xl:max-w-[8rem]"
+      class="font-semibold text-white text-sm hover:bg-white/10 px-2 py-0.5 rounded transition-colors max-w-[12rem] min-w-0 truncate max-xl:max-w-[8rem] {$coarsePointer ? 'max-sm:max-w-[5rem]' : ''}"
       onclick={() => editingName = true}
       title={$t('projectToolbar.rename')}
     >{projectName}</button>
@@ -513,13 +524,14 @@
 
   <div class="flex-1"></div>
 
-  <button onclick={undo} class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors {stacked}" title={$t('projectToolbar.undoHint')} aria-label={$t('projectToolbar.undo')}>
+  <!-- Never disabled: pressing either with nothing left is harmless; they only look switched off. -->
+  <button onclick={undo} aria-disabled={$undoHistoryStore.entries.length === 0} class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors {stacked} {$undoHistoryStore.entries.length === 0 ? 'opacity-40' : ''}" title={$t('projectToolbar.undoHint')} aria-label={$t('projectToolbar.undo')}>
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-    {#if $coarsePointer}<span aria-hidden="true" class="block text-[10px] leading-none">{$t('projectToolbar.undo')}</span>{/if}
+    {#if $coarsePointer}<span aria-hidden="true" class="block text-[10px] leading-none max-sm:hidden">{$t('projectToolbar.undo')}</span>{/if}
   </button>
-  <button onclick={redo} class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors {stacked}" title={$t('projectToolbar.redoHint')} aria-label={$t('projectToolbar.redo')}>
+  <button onclick={redo} aria-disabled={$undoHistoryStore.redoCount === 0} class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors {stacked} {$undoHistoryStore.redoCount === 0 ? 'opacity-40' : ''}" title={$t('projectToolbar.redoHint')} aria-label={$t('projectToolbar.redo')}>
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10"/></svg>
-    {#if $coarsePointer}<span aria-hidden="true" class="block text-[10px] leading-none">{$t('projectToolbar.redo')}</span>{/if}
+    {#if $coarsePointer}<span aria-hidden="true" class="block text-[10px] leading-none max-sm:hidden">{$t('projectToolbar.redo')}</span>{/if}
   </button>
 
   <div class="h-5 w-px bg-white/20 max-2xl:hidden"></div>
@@ -656,6 +668,10 @@
     </button>
     {#if moreOpen}
       <div data-popup="menu" class="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 w-56 z-50 max-h-[70vh] overflow-y-auto">
+        {#if $coarsePointer}
+          <!-- On a phone held in the hand Feedback leaves the bar for here. -->
+          <button class="sm:hidden w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={() => { feedbackOpen.set(true); moreOpen = false; }}>{$t('bars.feedback')}</button>
+        {/if}
         <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={onImportJSON}>{$t('bars.openPlanFile')}</button>
         <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={sendPlan}>{$t('bars.sendPlan')}</button>
         <div class="h-px bg-gray-100 my-1"></div>
@@ -698,8 +714,10 @@
           <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" aria-pressed={$snapEnabled} onclick={() => snapEnabled.update(v => !v)}>{$snapEnabled ? '✓ ' : ''}{$t('toolbarView.snap')}</button>
           <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={() => layerVisibility.update(v => ({ ...v, furniture: !v.furniture }))}>{$showFurnitureStore ? '✓ ' : ''}{$t('toolbarView.showFurniture')}</button>
           {#if onToggleLayers}
-            <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" aria-pressed={layersOpen} onclick={() => { onToggleLayers?.(); moreOpen = false; }}>{$t('layers.title')}</button>
+            <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" aria-pressed={layersOpen} onclick={() => { onToggleLayers?.(); moreOpen = false; }}>{$t('words.listTitle')}</button>
           {/if}
+          <!-- Below 768 px the plan's corner buttons are hidden: the notes are reached from here. -->
+          <button class="md:hidden w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={() => { notesListOpen.set(true); moreOpen = false; }}>{$t('panels.notes')}</button>
           <div class="h-px bg-gray-100 my-1"></div>
         {/if}
         <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={toggleElevationView}>{$elevationWallId ? '✓ ' : ''}{$t('toolbarView.elevationView')}</button>
@@ -730,7 +748,7 @@
   <button
     onclick={() => feedbackOpen.set(true)}
     data-feedback-open={$feedbackOpen}
-    class="px-2 py-1.5 text-sm text-white/90 hover:text-white hover:bg-white/10 rounded transition-colors {$coarsePointer ? stacked : 'flex items-center gap-1.5'}"
+    class="px-2 py-1.5 text-sm text-white/90 hover:text-white hover:bg-white/10 rounded transition-colors {$coarsePointer ? `${stacked} max-sm:hidden` : 'flex items-center gap-1.5'}"
     title={$t('bars.feedback')}
     aria-label={$t('bars.feedback')}
   >
@@ -769,6 +787,12 @@
           {$t('print.entry')}
         </button>
         <div class="h-px bg-gray-100 my-1"></div>
+        {#if mode === '2d' && !$elevationWallId}
+          <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left flex items-center gap-2" onclick={onExportScreenPNG}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+            {$t('bars.screenPicture')}
+          </button>
+        {/if}
         <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left flex items-center gap-2" onclick={onExport2DPNG}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
           {$t('exportMenu.png2d')}

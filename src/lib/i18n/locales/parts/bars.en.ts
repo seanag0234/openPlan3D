@@ -21,4 +21,5 @@ export const barsEn = {
   "bars.houseHint": "Walls, doors, windows and rooms stay put while the house is fixed",
   "bars.sendPlan": "Send this plan",
   "bars.feedback": "Feedback",
+  "bars.screenPicture": "Picture of the screen",
 } as const;
