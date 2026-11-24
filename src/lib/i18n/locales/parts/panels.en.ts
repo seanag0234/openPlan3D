@@ -9,4 +9,11 @@ export const panelsEn = {
   "panels.planNote": "About this plan",
   "panels.addPlanNote": "Add a note about this plan",
   "panels.removeNote": "Remove note",
+  "panels.copy": "Copy",
+  "panels.selectMore": "Select more",
+  "panels.unlock": "Unlock",
+  "panels.several": "{count} things",
+  "panels.flip": "Flip",
+  "panels.split": "Split",
+  "panels.move": "Floor",
 } as const;

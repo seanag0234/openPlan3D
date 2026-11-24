@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { openPlan, recordLabels, where } from './touch';
+import { fingers, ipadLandscape, openPlan, recordLabels, savedPlan, where } from './touch';
 
 const FIXTURE = 'tests/fixtures/room-with-boxes.openplan.json';
 type Rect = { x: number; y: number; width: number; height: number };
@@ -34,4 +34,59 @@ test('the bar stays clear of a large piece and its turn handle', async ({ page }
   const handle = { x: piece.x + piece.width / 2 - 5, y: piece.y - 18 - 5, width: 10, height: 10 };
   expect(overlaps(bar, handle)).toBe(false);
   expect(bar.y + bar.height).toBeLessThanOrEqual(handle.y);
+});
+
+test.describe('on a touch screen', () => {
+  test.use(ipadLandscape);
+
+  test('the bar names the selection and every button is finger-sized with a word', async ({ page }) => {
+    const hand = await fingers(page);
+    await recordLabels(page);
+    await openPlan(page, FIXTURE);
+    await page.keyboard.press('Escape');
+    const a = await where(page, 'Box A');
+    await hand.tap(a.x, a.y - 24);
+    const bar = page.locator('[data-selection-bar]');
+    await expect(bar).toContainText('Box A');
+    const buttons = bar.getByRole('button');
+    await expect(buttons).toHaveText(['Details', 'Note', 'Copy', 'Select more', 'Delete'].map(word => new RegExp(word)));
+    for (const button of await buttons.all()) {
+      const size = (await button.boundingBox())!;
+      expect(size.width).toBeGreaterThanOrEqual(44);
+      expect(size.height).toBeGreaterThanOrEqual(44);
+      expect((await button.innerText()).trim()).not.toBe('');
+    }
+    const more = bar.getByRole('button', { name: 'Select more' });
+    await expect(more).toHaveAttribute('aria-pressed', 'false');
+    await more.tap();
+    await expect(more).toHaveAttribute('aria-pressed', 'true');
+    await more.tap();
+    await expect(more).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('a locked piece offers Unlock instead of Delete', async ({ page }) => {
+    await openPlan(page, FIXTURE);
+    await page.keyboard.press('Escape');
+    // A press passes through locked things, so the rug is picked from the list of layers.
+    await page.getByRole('button', { name: 'Save', exact: true }).press('l');
+    await page.getByRole('button', { name: /Rug$/ }).first().tap();
+    const bar = page.locator('[data-selection-bar]');
+    await expect(bar).toContainText('Rug');
+    await expect(bar.getByRole('button', { name: 'Delete' })).toHaveCount(0);
+    await bar.getByRole('button', { name: 'Unlock' }).tap();
+    await expect(bar.getByRole('button', { name: 'Delete' })).toBeVisible();
+    const plan = await savedPlan(page);
+    expect(plan.floors[0].furniture.find((item: any) => item.id === 'rug').locked).toBeFalsy();
+  });
+});
+
+test('with a mouse the bar keeps its picture buttons and adds Note', async ({ page }) => {
+  await recordLabels(page);
+  await openPlan(page, FIXTURE);
+  await page.keyboard.press('Escape');
+  const a = await where(page, 'Box A');
+  await page.mouse.click(a.x, a.y - 24);
+  const buttons = page.locator('[data-selection-bar]').getByRole('button');
+  expect(await buttons.evaluateAll(list => list.map(b => b.getAttribute('title')))).toEqual(['Note', 'Duplicate', 'Delete']);
+  await expect(page.locator('[data-selection-bar]')).not.toContainText('Box A');
 });

@@ -9,4 +9,11 @@ export const panelsPt = {
   "panels.planNote": "Sobre esta planta",
   "panels.addPlanNote": "Adicionar uma nota sobre esta planta",
   "panels.removeNote": "Remover nota",
+  "panels.copy": "Copiar",
+  "panels.selectMore": "Selecionar mais",
+  "panels.unlock": "Desbloquear",
+  "panels.several": "{count} itens",
+  "panels.flip": "Inverter",
+  "panels.split": "Dividir",
+  "panels.move": "Andar",
 } as const;
