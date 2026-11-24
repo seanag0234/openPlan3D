@@ -12,6 +12,7 @@ import { getWallStartHeight, getWallEndHeight, getWallHeightAt, validWallHeight 
 import type { DetailTarget, ItemDetails } from '$lib/models/types';
 import { detailItem, itemDetails, validateItemDetails } from '$lib/utils/itemDetails';
 import { readProject } from '$lib/utils/projectValidation';
+import { createSharedStrings } from './packState';
 import { mergeRoomPlanFloors, selectableContentIds, type AddedContent } from '$lib/utils/roomplanMerge';
 import { movePlanSelection } from '$lib/utils/moveToFloor';
 import { doorJoin } from '$lib/utils/scanAlignment';
@@ -83,12 +84,27 @@ interface UndoEntry {
 const captureSelection = (): SelectionSnapshot => ({ id: get(selectedElementId), ids: [...get(selectedElementIds)] });
 const undoStack: UndoEntry[] = [];
 const redoStack: UndoEntry[] = [];
-function pushHistory(stack: UndoEntry[], entry: UndoEntry) {
+/** Long strings (pictures, photos) are kept once for every history state; each state names them by token. */
+const shared = createSharedStrings();
+const HISTORY_STEPS = 50, HISTORY_BYTES = 32 * 1024 * 1024;
+/** Add a history state. `keep` is a state that is out of both stacks for the moment (just popped to be restored)
+ *  whose long strings must survive the trim. */
+function pushHistory(stack: UndoEntry[], entry: UndoEntry, keep?: string) {
   stack.push(entry);
   // Photos must not multiply into an unbounded string history. Always retain
   // the latest step, even for an existing project larger than this budget.
-  let bytes = stack.reduce((sum, item) => sum + item.state.length * 2, 0);
-  while (stack.length > 1 && (stack.length > 50 || bytes > 32 * 1024 * 1024)) bytes -= stack.shift()!.state.length * 2;
+  const size = () => stack.reduce((sum, item) => sum + item.state.length * 2, 0) + shared.bytes();
+  while (stack.length > 1 && (stack.length > HISTORY_STEPS || size() > HISTORY_BYTES)) {
+    stack.shift();
+    retainHistoryStrings(keep);
+  }
+}
+
+function retainHistoryStrings(keep?: string) {
+  const states = [...undoStack, ...redoStack].map(item => item.state);
+  if (undoGroupSnapshot !== null) states.push(undoGroupSnapshot);
+  if (keep !== undefined) states.push(keep);
+  shared.retain(states);
 }
 
 /** Reactive store exposing undo history for the UndoHistoryPanel */
@@ -134,7 +150,7 @@ let undoGroupDepth = 0;
 export function beginUndoGroup() {
   if (undoGroupDepth === 0) {
     const p = get(currentProject);
-    undoGroupSnapshot = p ? JSON.stringify(p) : null;
+    undoGroupSnapshot = p ? shared.pack(p) : null;
     undoGroupUpdatedAt = p?.updatedAt;
     undoGroupSelection = captureSelection();
   }
@@ -155,7 +171,7 @@ export function endUndoGroup(description?: string) {
     resetCoalescing();
     const project = get(currentProject);
     // Drag frames bump updatedAt; only changed content earns an entry and discards Redo.
-    if (before !== null && project && JSON.stringify({ ...project, updatedAt }) !== before) {
+    if (before !== null && project && shared.pack({ ...project, updatedAt }) !== before) {
       pushHistory(undoStack, { state: before, description: action, timestamp: Date.now(), selection });
       redoStack.length = 0;
       syncHistoryStore();
@@ -220,7 +236,7 @@ function snapshot(description?: string, coalesceKey?: string, state?: string) {
     redoStack.length = 0;
     return;
   }
-  pushHistory(undoStack, { state: state ?? JSON.stringify(p), description: description || _nextDescription || 'Edit', timestamp: now, selection: captureSelection() });
+  pushHistory(undoStack, { state: state ?? shared.pack(p), description: description || _nextDescription || 'Edit', timestamp: now, selection: captureSelection() });
   redoStack.length = 0;
   _nextDescription = '';
   _lastCoalesceKey = coalesceKey ?? null;
@@ -271,7 +287,7 @@ function pruneFloorContext(project: Project) {
 
 /** Restore a history state with the selection recorded for it; entries without one keep the current selection, pruned. */
 function restoreHistoryProject(state: string, selection?: SelectionSnapshot) {
-  const project = reviveDates(JSON.parse(state));
+  const project = reviveDates(shared.unpack(state));
   if (get(currentProject)?.activeFloorId !== project.activeFloorId) clearFloorContext();
   currentProject.set(project);
   if (selection) {
@@ -286,7 +302,7 @@ export function undo() {
   const prev = undoStack.pop();
   if (!prev) return;
   const cur = get(currentProject);
-  if (cur) pushHistory(redoStack, { state: JSON.stringify(cur), description: prev.description, timestamp: prev.timestamp, selection: captureSelection() });
+  if (cur) pushHistory(redoStack, { state: shared.pack(cur), description: prev.description, timestamp: prev.timestamp, selection: captureSelection() }, prev.state);
   restoreHistoryProject(prev.state, prev.selection);
   syncHistoryStore();
 }
@@ -296,7 +312,7 @@ export function redo() {
   const next = redoStack.pop();
   if (!next) return;
   const cur = get(currentProject);
-  if (cur) pushHistory(undoStack, { state: JSON.stringify(cur), description: next.description, timestamp: next.timestamp, selection: captureSelection() });
+  if (cur) pushHistory(undoStack, { state: shared.pack(cur), description: next.description, timestamp: next.timestamp, selection: captureSelection() }, next.state);
   restoreHistoryProject(next.state, next.selection);
   syncHistoryStore();
 }
@@ -313,10 +329,10 @@ export function jumpToUndoStep(targetIndex: number) {
   // Pair each redo state with the action that produced it, just as undo() does.
   // Publish only the final state rather than every intermediate project.
   const stepsBack = total - targetIndex;
-  let state = JSON.stringify(cur), selection: SelectionSnapshot | undefined = captureSelection();
+  let state = shared.pack(cur), selection: SelectionSnapshot | undefined = captureSelection();
   for (let i = 0; i < stepsBack; i++) {
     const entry = undoStack.pop()!;
-    pushHistory(redoStack, { state, description: entry.description, timestamp: entry.timestamp, selection });
+    pushHistory(redoStack, { state, description: entry.description, timestamp: entry.timestamp, selection }, entry.state);
     state = entry.state;
     selection = entry.selection;
   }
@@ -329,9 +345,9 @@ function mutate(fn: (floor: Floor) => void, description?: string, coalesceKey?: 
   const p = get(currentProject);
   const floor = p?.floors.find((f) => f.id === p.activeFloorId);
   if (!p || !floor) return;
-  const before = JSON.stringify(p);
+  const before = shared.pack(p);
   fn(floor);
-  if (JSON.stringify(p) === before) return;
+  if (shared.pack(p) === before) return;
   snapshot(description, coalesceKey, before);
   p.updatedAt = new Date();
   currentProject.set({ ...p });
@@ -1102,6 +1118,7 @@ export function updateProjectDescription(description: string) {
 export function loadProject(project: Project) {
   undoStack.length = 0;
   redoStack.length = 0;
+  shared.clear();
   undoGroupDepth = 0;
   undoGroupSnapshot = null;
   undoGroupSelection = undefined;
