@@ -2,7 +2,7 @@
   import { furnitureName } from '$lib/i18n/furnitureNames';
   import { t, locale } from '$lib/i18n';
   import { entourageLabels } from '$lib/i18n/entourageLabels';
-  import { catalogCategoryLabels, normalizeCatalogSearch } from '$lib/i18n/catalogCategories';
+  import { catalogCategoryLabels } from '$lib/i18n/catalogCategories';
   import { roomPresetLabels, roomTemplateLabels } from '$lib/i18n/roomLabels';
   import { modalDialog } from '$lib/utils/modalDialog';
   import { openProject } from '$lib/services/projectOpening';
@@ -27,6 +27,7 @@
   import { interchangeProjectName } from '$lib/utils/interchange';
   import { projectSettings } from '$lib/stores/settings';
   import { sizeText } from '$lib/utils/sizeText';
+  import { matchesCatalogSearch } from '$lib/utils/catalogSearch';
 
   const openingLifetime = new AbortController();
   onDestroy(() => openingLifetime.abort());
@@ -125,17 +126,14 @@
 
   let filtered = $derived(
     (() => {
-      const s = normalizeCatalogSearch(search);
       let items = selectedCategory === 'Favorites'
         ? favoriteItems
         : furnitureCatalog.filter((f) => {
             const matchCat = selectedCategory === 'All' || f.category === selectedCategory;
             return matchCat;
           });
-      if (s) {
-        items = items.filter(f => [f.name, furnitureName(f.id, $locale), f.category, catalogCategoryLabels[f.category] ? $t(catalogCategoryLabels[f.category]) : f.category]
-          .some(value => normalizeCatalogSearch(value).includes(s)));
-      }
+      if (search.trim()) items = items.filter(f => matchesCatalogSearch(search, f.id,
+        [f.name, furnitureName(f.id, $locale), f.category, catalogCategoryLabels[f.category] ? $t(catalogCategoryLabels[f.category]) : f.category]));
       return items;
     })()
   );
