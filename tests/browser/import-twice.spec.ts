@@ -69,13 +69,27 @@ for (const [device, use] of [['mouse at 1366 px', { viewport: { width: 1366, hei
       expect(Object.values(stored).map((plan: any) => plan.name).sort()).toEqual(['Room with boxes', 'Room with boxes (2)']);
       expect(boxA(stored[ID]).position.x).toBeGreaterThan(160);
 
-      // Once more, replacing mine: Box A is back where the file has it, and mine is a version.
+      // Mine opened again in the editor: its newest version is now the plan as it is.
+      await page.goto(`/editor?id=${ID}`);
+      await inEditor();
+      await expect.poll(async () => (await storedRecords(page, 'history'))[ID] ?? '').toContain('Session start');
+
+      // Once more, replacing mine: Box A is back where the file has it, and mine is a version named for it.
       await openFile();
       await press(question().getByRole('button', { name: /Replace mine with the file/ }));
       await inEditor();
       await expect.poll(async () => boxA((await savedProjects(page))[ID]).position.x).toBe(150);
       expect(Object.keys(await savedProjects(page))).toHaveLength(2);
       await expect.poll(async () => (await storedRecords(page, 'history'))[ID] ?? '').toContain('Before replacing with a file');
+      if (!touch) await press(page.getByRole('button', { name: 'Version History', exact: true }));
+      else {
+        await press(page.getByRole('button', { name: 'More actions', exact: true }));
+        await press(page.getByRole('button', { name: 'Version History', exact: true }));
+      }
+      const versions = page.getByRole('dialog', { name: 'Version History', exact: true });
+      await expect(versions.getByRole('group', { name: 'Before replacing with a file', exact: true })).toBeVisible();
+      await press(versions.getByRole('button', { name: 'Close', exact: true }));
+      await expect(versions).toBeHidden();
 
       // Moved again, then Cancel: nothing changes.
       await moveBoxA(page);

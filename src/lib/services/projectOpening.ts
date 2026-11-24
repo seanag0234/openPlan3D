@@ -155,7 +155,7 @@ export async function openPlanFile(readCandidate: () => unknown | Promise<unknow
     return openProject(() => candidate, 'import', signal);
   }
   // Replace: the plan she had stays in its list of versions.
-  await saveSnapshot(stored, 'Before replacing with a file', true);
+  await saveSnapshot(stored, 'Before replacing with a file', false);
   if (signal?.aborted) return null;
   candidate.updatedAt = new Date();
   loadProject(candidate);
