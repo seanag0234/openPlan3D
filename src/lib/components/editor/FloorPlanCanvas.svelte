@@ -42,6 +42,7 @@
   import { fitIds } from '$lib/utils/fitBounds';
   import { drawNoteMarks, noteMarkAt } from '$lib/utils/noteMarks';
   import { noteTarget } from '$lib/stores/ui';
+  import { coarsePointer } from '$lib/stores/pointer';
   import { gridLineStepCm, resizeStep, snapPieceMove, snapValue, stopAtWalls, type SnapContext } from '$lib/utils/snapPolicy';
   import { furnitureSizeLabel } from '$lib/utils/furnitureCaption';
   import { drawWall as _drawWall, drawDoorOnWall as _drawDoorOnWall, drawWindowOnWall as _drawWindowOnWall, drawDoorDistanceDimensions as _drawDoorDistanceDimensions, drawWindowDistanceDimensions as _drawWindowDistanceDimensions, drawFurnitureItem, drawStair as _drawStair, drawColumn as _drawColumn, drawGuides as _drawGuides, drawPersistedMeasurements as _drawPersistedMeasurements, drawTextAnnotations as _drawTextAnnotations, drawAnnotation as _drawAnnotation, drawAnnotations as _drawAnnotations, drawRooms as _drawRooms, drawWallJoints as _drawWallJoints, drawSnapPoints as _drawSnapPoints, drawMinimap as _drawMinimap, drawEntourageItems as _drawEntourageItems, drawEntourageGhost as _drawEntourageGhost, drawFloorBelowGhost as _drawFloorBelowGhost, entourageAspect } from '$lib/utils/canvasRenderer';
@@ -74,7 +75,7 @@
   let drawing: ReturnType<typeof createDrawScheduler> | undefined;
   function markDirty() { drawing?.invalidate(); }
   onDestroy(locale.subscribe(() => markDirty()));
-  function getCS(): CanvasState { return { ctx, width, height, zoom, camX, camY }; }
+  function getCS(): CanvasState { return { ctx, width, height, zoom, camX, camY, coarse: currentCoarse }; }
   // Sync zoom with shared store
   onDestroy(canvasZoom.subscribe(v => { zoom = v; }));
   $effect(() => { canvasZoom.set(zoom); });
@@ -140,6 +141,7 @@
   let dragStartRotation: number = 0;
   let dragStartPosition: Point = { x: 0, y: 0 };
   let currentHouseFixed = $state(false);
+  let currentCoarse = $state(false);
   let dragWasWallSnapped: boolean = false;
   let draggingDoorId: string | null = $state(null);
   let draggingWindowId: string | null = $state(null);
@@ -1894,6 +1896,7 @@
     const unsub10 = snapEnabled.subscribe((v) => { currentSnapEnabled = v; markDirty(); });
     const unsub_snapgrid = projectSettings.subscribe((s) => { currentSnapToGrid = s.snapToGrid; currentSnapToWalls = s.snapToWalls; currentGridSize = s.gridSize; markDirty(); });
     const unsub_house = houseFixed.subscribe((value) => { currentHouseFixed = value; markDirty(); });
+    const unsub_coarse = coarsePointer.subscribe((value) => { currentCoarse = value; markDirty(); });
     const unsub11 = placingStair.subscribe((v) => { isPlacingStair = v; markDirty(); });
     const unsubEnt1 = placingEntourageId.subscribe((id) => { currentEntourageDefId = id; if (id) { placingStair.set(false); placingColumn.set(false); } markDirty(); });
     const unsubEnt2 = currentProject.subscribe((pr) => {
@@ -1986,7 +1989,7 @@
     canvas.addEventListener('touchend', onTouchEnd, { passive: false });
     canvas.addEventListener('touchcancel', onTouchEnd, { passive: false });
 
-    return () => { mounted = false; drawing?.stop(); stopTextures(); resizeObs.disconnect(); unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsub13(); unsub_multi(); unsub_elevopen(); unsub_elevpick(); unsub_join(); unsub14(); unsub_col(); unsub_cols(); unsub_layers(); unsub_snapgrid(); unsub_house(); unsubEnt1(); unsubEnt2(); document.removeEventListener('paste', handlePaste); canvas.removeEventListener('touchstart', onTouchStart); canvas.removeEventListener('touchmove', onTouchMove); canvas.removeEventListener('touchend', onTouchEnd); canvas.removeEventListener('touchcancel', onTouchEnd); };
+    return () => { mounted = false; drawing?.stop(); stopTextures(); resizeObs.disconnect(); unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsub13(); unsub_multi(); unsub_elevopen(); unsub_elevpick(); unsub_join(); unsub14(); unsub_col(); unsub_cols(); unsub_layers(); unsub_snapgrid(); unsub_house(); unsub_coarse(); unsubEnt1(); unsubEnt2(); document.removeEventListener('paste', handlePaste); canvas.removeEventListener('touchstart', onTouchStart); canvas.removeEventListener('touchmove', onTouchMove); canvas.removeEventListener('touchend', onTouchEnd); canvas.removeEventListener('touchcancel', onTouchEnd); };
   });
 
   /** Compute world bounding box of all elements */
