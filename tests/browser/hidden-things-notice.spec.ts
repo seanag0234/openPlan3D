@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { ipadLandscape, labels, openPlan, recordLabels } from './touch';
+import { ipadLandscape, ipadPortrait, labels, openPlan, recordLabels } from './touch';
 
 const PLAN = 'tests/fixtures/room-with-boxes.openplan.json';
 
@@ -34,8 +34,8 @@ test('the popup is called Show and hide', async ({ page }) => {
   await expect(page.getByRole('checkbox', { name: 'Walls', exact: true })).toBeChecked();
 });
 
-test.describe('on a touch screen', () => {
-  test.use(ipadLandscape);
+for (const [name, device] of [['iPad landscape', ipadLandscape], ['iPad portrait', ipadPortrait]] as const) test.describe(name, () => {
+  test.use(device);
 
   test('the popup\'s Furniture tick box hides the pieces, and Show all brings them back', async ({ page }) => {
     await recordLabels(page);
@@ -45,6 +45,10 @@ test.describe('on a touch screen', () => {
     await bar.getByRole('button', { name: '🗂 Show and hide', exact: true }).click();
     await page.getByRole('checkbox', { name: 'Furniture', exact: true }).click();
     await bar.getByRole('button', { name: '🗂 Show and hide', exact: true }).click();
+    // The notice sits clear of the zoom buttons, so nothing covers Show all.
+    const notice = (await page.getByRole('status').filter({ hasText: 'Some things are hidden' }).boundingBox())!;
+    const zoom = (await page.locator('[data-bar="zoom"]').boundingBox())!;
+    expect(notice.y + notice.height <= zoom.y || notice.x >= zoom.x + zoom.width).toBe(true);
     await expectNoticeBringsThingsBack(page);
   });
 });

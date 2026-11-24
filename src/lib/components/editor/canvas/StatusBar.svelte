@@ -85,9 +85,10 @@
 </div>
 <!-- Hidden things leave the plan without a word otherwise. -->
 {#if somethingHidden}
-  <!-- Centred above the bar, clear of the zoom buttons at the left and the map at the right. -->
+  <!-- Centred above the bar, clear of the zoom buttons at the left and the map at the right; on a touch screen
+       the zoom buttons sit above the bar, so the notice sits above them. -->
   <div role="status" style:--visible-bottom={`${bottomInset}px`} class="absolute left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 rounded-full bg-amber-100 border border-amber-300 pl-3 pr-1 py-0.5 text-amber-900 shadow whitespace-nowrap {$coarsePointer
-    ? 'bottom-16 text-sm'
+    ? 'bottom-32 text-sm'
     : 'bottom-10 max-md:bottom-[calc(var(--visible-bottom)+5.5rem)] text-xs'}">
     <span>{$t('bars.someHidden')}</span>
     <button class="rounded-full bg-white px-2 py-0.5 font-semibold text-amber-900 hover:bg-amber-50" onclick={showAll}>{$t('bars.showAll')}</button>
