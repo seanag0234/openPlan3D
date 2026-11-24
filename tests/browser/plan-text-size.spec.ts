@@ -104,3 +104,35 @@ test('the plan draws no text under 12 px and the ruler writes whole feet', async
   }
   expectReadable(await settled(page), 'at the smallest zoom');
 });
+
+test('the ruler numbers every major mark, with no whole foot left out', async ({ page }) => {
+  test.setTimeout(90_000);
+  const plan = JSON.parse(await readFile(FIXTURE, 'utf8'));
+  plan.displaySettings = { units: 'imperial' };
+  const file = test.info().outputPath('feet.openplan.json');
+  await writeFile(file, JSON.stringify(plan));
+  await recordTexts(page);
+  await openPlan(page, file);
+  await page.keyboard.press('Escape');
+
+  /** The feet along the top ruler, left to right, with the origin as 0: each one step on from the last. */
+  async function expectUnbroken(moment: string) {
+    const feet = (await settled(page)).filter(t => t.ruler === 'top').sort((a, b) => a.x - b.x)
+      .map(t => t.text === '0' ? 0 : Number(/^(-?\d+)'$/.exec(t.text)?.[1] ?? NaN));
+    expect(feet.length, moment).toBeGreaterThan(3);
+    const step = feet[1] - feet[0];
+    expect(feet.map((ft, i) => ft - feet[0] - i * step), `${moment}: ${feet.join(', ')}`).toEqual(feet.map(() => 0));
+  }
+
+  await expectUnbroken('after the plan opens');
+  const percent = page.getByRole('button', { name: 'Zoom to 100%', exact: true });
+  const zoomOut = page.getByRole('button', { name: 'Zoom out', exact: true });
+  for (let i = 0; i < 40; i++) {
+    const before = await percent.textContent();
+    if (await zoomOut.isDisabled()) break;
+    await zoomOut.click();
+    await frame(page);
+    if ((await percent.textContent()) === before) break;
+  }
+  await expectUnbroken('at the smallest zoom');
+});

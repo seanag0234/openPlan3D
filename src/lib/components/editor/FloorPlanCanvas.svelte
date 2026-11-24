@@ -1042,6 +1042,9 @@
       minorStep = tickStep / minorDiv;
     }
 
+    // The marks are reached by adding minorStep, so one can land a hair either side of a multiple.
+    const onStep = (w: number, step: number) => Math.abs(w - Math.round(w / step) * step) < 0.01;
+
     // --- Horizontal ruler (top) ---
     ctx.fillStyle = '#f1f3f5';
     ctx.fillRect(R, 0, width - R, R);
@@ -1062,8 +1065,8 @@
     for (let wx = startTick; wx <= worldRight; wx += minorStep) {
       const sx = worldToScreen(wx, 0).x;
       if (sx < R) continue;
-      const isMajor = Math.abs(wx % tickStep) < 0.01;
-      const isMid = !isMajor && Math.abs(wx % (tickStep / 2)) < 0.01 && minorDiv >= 4;
+      const isMajor = onStep(wx, tickStep);
+      const isMid = !isMajor && onStep(wx, tickStep / 2) && minorDiv >= 4;
       const tickH = isMajor ? R * 0.7 : isMid ? R * 0.45 : R * 0.25;
 
       // Highlight origin tick
@@ -1101,8 +1104,8 @@
     for (let wy = startTickY; wy <= worldBottom; wy += minorStep) {
       const sy = worldToScreen(0, wy).y;
       if (sy < R) continue;
-      const isMajor = Math.abs(wy % tickStep) < 0.01;
-      const isMid = !isMajor && Math.abs(wy % (tickStep / 2)) < 0.01 && minorDiv >= 4;
+      const isMajor = onStep(wy, tickStep);
+      const isMid = !isMajor && onStep(wy, tickStep / 2) && minorDiv >= 4;
       const tickH = isMajor ? R * 0.7 : isMid ? R * 0.45 : R * 0.25;
 
       const isOrigin = Math.abs(wy) < 0.01;
