@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 test('Portuguese presentation symbols retain their IDs and sizes through placement and undo', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('o3d_locale', 'pt'));
   await page.goto('/editor');
-  await page.getByRole('button', { name: 'Objetos', exact: true }).click();
+  await page.getByRole('button', { name: 'Coisas', exact: true }).click();
   for (const name of ['Pessoa','Duas pessoas','Sedã','SUV','Picape','Árvore caducifólia','Conífera','Arbusto','Cerca viva','Planta em vaso','Grama','Ombrelone']) {
     await expect(page.getByRole('button', { name, exact: true })).toHaveCount(1);
   }

@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 test('Portuguese category filters and accent-free search retain original catalog items', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('o3d_locale', 'pt'));
   await page.goto('/editor');
-  await page.getByRole('button', { name: 'Objetos', exact: true }).click();
+  await page.getByRole('button', { name: 'Coisas', exact: true }).click();
   const search = page.getByRole('textbox', { name: 'Pesquisar móveis...', exact: true });
   const outlet = page.getByRole('button', { name: /^Tomada(?: Tomada)? 15×15cm$/ });
   const stove = page.getByRole('button', { name: /^Fogão(?: Fogão)? 60×60cm$/ });

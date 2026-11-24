@@ -60,7 +60,7 @@ test('Portuguese tool hints guide walls, openings, furniture, measuring, text an
   await page.keyboard.press('Escape');
   await expect(wallHint).toHaveCount(0);
 
-  await page.getByRole('button', { name: 'Objetos', exact: true }).click();
+  await page.getByRole('button', { name: 'Coisas', exact: true }).click();
   await page.getByRole('button', { name: /^Sof[aá](?: Sof[aá])?(?: 200×90cm)?$/ }).first().click();
   await expect(page.getByText('Clique para posicionar · Role ou pressione R para girar (0°) · Esc para cancelar', { exact: true })).toBeVisible();
   await canvas.press('r');

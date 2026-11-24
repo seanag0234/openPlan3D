@@ -15,7 +15,7 @@ test('Portuguese model controls retain user names and explain invalid sources an
   page.on('request', request => { if (request.url().includes('example.invalid')) external.push(request.url()); });
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/editor');
-  await page.getByRole('button', { name: 'Objetos', exact: true }).click();
+  await page.getByRole('button', { name: 'Coisas', exact: true }).click();
   const panel = page.getByRole('region', { name: 'Meus modelos 3D', exact: true });
   await panel.locator('input[type=file]').setInputFiles('tests/fixtures/local-model-textured-box.glb');
   const dialog = page.getByRole('dialog', { name: 'Adicionar um modelo 3D (arquivo GLB)', exact: true });
@@ -49,7 +49,7 @@ function glb(document: unknown) {
 test('Portuguese GLB diagnostics preserve extension identifiers and explain invalid geometry', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('o3d_locale', 'pt'));
   await page.goto('/editor');
-  await page.getByRole('button', { name: 'Objetos', exact: true }).click();
+  await page.getByRole('button', { name: 'Coisas', exact: true }).click();
   const input = page.getByRole('region', { name: 'Meus modelos 3D', exact: true }).locator('input[type=file]');
   const dialog = page.getByRole('dialog', { name: 'Adicionar um modelo 3D (arquivo GLB)', exact: true });
   await input.setInputFiles({ name: 'extension.glb', mimeType: 'model/gltf-binary', buffer: glb({ asset: { version: '2.0' }, extensionsUsed: ['CUSTOM_{name}'] }) });
