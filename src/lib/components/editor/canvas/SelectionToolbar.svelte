@@ -4,7 +4,7 @@
   import { duplicateSelection, selectedElementIds, selectedElementId, updateDoor, beginUndoGroup, endUndoGroup, removeElement } from '$lib/stores/project';
   import MoveToFloorMenu from '../MoveToFloorMenu.svelte';
   import { coarsePointer } from '$lib/stores/pointer';
-  import { detailsOpen } from '$lib/stores/ui';
+  import { detailsOpen, noteTarget } from '$lib/stores/ui';
 
   type Extra = { kind: 'measurement' | 'annotation' | 'text'; id: string; x: number; y: number };
   let { anchor, box, selectedId, selectedIds, floorId, locked, extra, onsplit, ondeleteextra }: {
@@ -22,6 +22,14 @@
 >
   {#if $coarsePointer}
     <button class="h-7 px-2 text-xs rounded hover:bg-gray-100 text-gray-700" onclick={() => detailsOpen.set(true)}>{$t('panels.details')}</button>
+  {/if}
+  {#if selectedId && selectedIds.size <= 1 && (anchor.type === 'furniture' || anchor.type === 'wall')}
+    <button
+      class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+      title={$t('panels.note')}
+      aria-label={$t('panels.note')}
+      onclick={() => { if (selectedId) noteTarget.set({ floorId, kind: anchor.type === 'wall' ? 'walls' : 'furniture', id: selectedId }); }}
+    ><span aria-hidden="true">📝</span></button>
   {/if}
   <button
     class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"

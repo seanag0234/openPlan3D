@@ -337,6 +337,7 @@
       aria-label={$t('editorPanels.history')}
         aria-expanded={showUndoHistory}
     >⟲</button>
+    <NotesList />
   </div>
 
   <UndoHistoryPanel bind:visible={showUndoHistory} returnFocusTo={historyTrigger} />
@@ -529,7 +530,6 @@
   <CommandPalette bind:open={commandPaletteOpen} />
   <PrintLayout bind:open={printOpen} />
   <NoteSheet />
-  <NotesList />
   <OnboardingTooltip />
 {:else}
   <div class="h-screen flex flex-col items-center justify-center gap-3">
