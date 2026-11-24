@@ -25,6 +25,8 @@
   import { orderedFloors } from '$lib/utils/floors';
   import { selectableContentIds, type AddedContent } from '$lib/utils/roomplanMerge';
   import { interchangeProjectName } from '$lib/utils/interchange';
+  import { coarsePointer } from '$lib/stores/pointer';
+  import { buildPanelFolded } from '$lib/stores/ui';
   import { projectSettings } from '$lib/stores/settings';
   import { sizeText } from '$lib/utils/sizeText';
   import { matchesCatalogSearch } from '$lib/utils/catalogSearch';
@@ -56,10 +58,16 @@
   /** The open plan's floors, lowest first, as the floor switcher lists them. */
   const importFloors = $derived($currentProject ? orderedFloors($currentProject.floors).map(entry => entry.floor) : []);
 
+  /** On a tablet held upright, fold the list once something is picked, so the plan is free to place it on. */
+  function foldForPlacing() {
+    if (get(coarsePointer) && typeof window !== 'undefined' && window.innerHeight > window.innerWidth) buildPanelFolded.set(true);
+  }
+
   function setTool(tool: Tool) {
     if (tool === 'measure' || tool === 'annotate') activateMeasurementTool(tool);
     else selectedTool.set(tool);
     placingFurnitureId.set(null);
+    if (tool === 'wall' || tool === 'text' || tool === 'annotate' || tool === 'measure') foldForPlacing();
   }
 
   let currentTool = $state<Tool>('select');
@@ -83,6 +91,7 @@
     selectedTool.set('furniture');
     placingFurnitureId.set(item.id);
     addToRecent(item.id);
+    foldForPlacing();
   }
 
   let withFurniture = $state(true);
@@ -98,6 +107,7 @@
     selectedTool.set('select'); placingFurnitureId.set(null);
     selectedElementId.set(id); selectedElementIds.set(new Set());
     search = '';
+    foldForPlacing();
   }
 
   let search = $state('');
@@ -182,12 +192,14 @@
     selectedDoorType = type;
     placingDoorType.set(type);
     setTool('door');
+    foldForPlacing();
   }
 
   function setWindowType(type: Win['type']) {
     selectedWindowType = type;
     placingWindowType.set(type);
     setTool('window');
+    foldForPlacing();
   }
 
   let isPlacingStair = $state(false);
@@ -205,8 +217,10 @@
   let entourageFileInput = $state<HTMLInputElement | null>(null);
 
   function armEntourage(id: string) {
-    placingEntourageId.set(placingEntId === id ? null : id);
+    const arming = placingEntId !== id;
+    placingEntourageId.set(arming ? id : null);
     setTool('select');
+    if (arming) foldForPlacing();
   }
 
   let symbolUploadError = $state<'tooLarge' | 'readFailed' | 'invalid' | null>(null);
@@ -418,7 +432,7 @@
   };
 </script>
 
-<div class="w-64 bg-white border-r border-gray-200 flex flex-col h-full overflow-hidden">
+<div class="w-64 bg-white border-r border-gray-200 flex flex-col h-full overflow-hidden" data-build-folded={$buildPanelFolded}>
   <!-- Tabs -->
   <div class="flex border-b border-gray-200">
     <button
