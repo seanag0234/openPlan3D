@@ -9,7 +9,7 @@ const item = (id: string, locked?: boolean): FurnitureItem => ({ id, catalogId: 
 function furnished(): Floor {
   const floor = roomProject().floors[0];
   return { ...floor, furniture: [item('box-a'), item('box-b'), item('rug', true)],
-    columns: [{ id: 'column', position: { x: 10, y: 10 }, shape: 'square', width: 30, depth: 30, height: 250 } as Floor['columns'][number]],
+    columns: [{ id: 'column', position: { x: 10, y: 10 }, rotation: 0, shape: 'square', diameter: 30, height: 250, color: '#cccccc' }],
     textAnnotations: [{ id: 'note', x: 0, y: 0, text: 'Reading corner', fontSize: 16, color: '#1e293b', rotation: 0 }] };
 }
 
