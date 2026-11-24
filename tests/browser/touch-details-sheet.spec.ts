@@ -51,3 +51,31 @@ test('with a mouse, the details panel opens on selection as before', async ({ pa
   await expect(page.locator('[data-plan-properties]')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Details', exact: true })).toHaveCount(0);
 });
+
+test.describe('the list of things to add on an upright iPad', () => {
+  test.use(ipadPortrait);
+
+  test('starts folded so the plan keeps its width, and Add brings it back', async ({ page }) => {
+    const hand = await fingers(page);
+    await recordLabels(page);
+    await openPlan(page, FIXTURE);
+    await page.keyboard.press('Escape');
+    expect((await canvasBox(page)).width).toBeGreaterThanOrEqual(780);
+    const objects = page.getByRole('button', { name: 'Objects', exact: true });
+    await expect(objects).toBeHidden();
+
+    const a = onPiece(await where(page, 'Box A'));
+    await hand.tap(a.x, a.y);
+    await expect(page.getByRole('button', { name: 'Details', exact: true })).toBeVisible();
+    expect((await canvasBox(page)).width).toBeGreaterThanOrEqual(780);
+
+    await page.getByRole('button', { name: 'Add', exact: true }).tap();
+    await expect(objects).toBeVisible();
+    const hide = page.getByRole('button', { name: 'Hide the list', exact: true });
+    expect((await hide.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await hide.tap();
+    await expect(objects).toBeHidden();
+    expect((await canvasBox(page)).width).toBeGreaterThanOrEqual(780);
+  });
+});
+
