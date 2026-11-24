@@ -405,7 +405,8 @@
   }
 </script>
 
-<div data-bar="top" class="h-12 bg-gradient-to-r from-slate-800 to-slate-700 flex items-center px-4 gap-2 max-xl:px-2 max-xl:gap-1 shrink-0 shadow-sm">
+<!-- From 1280 to 1535 px the bar holds every control in one line: dividers hide and gaps tighten so Save stays on screen. -->
+<div data-bar="top" class="h-12 bg-gradient-to-r from-slate-800 to-slate-700 flex items-center px-4 gap-2 max-2xl:gap-1.5 max-xl:px-2 max-xl:gap-1 shrink-0 shadow-sm">
   <!-- Back to Projects -->
   <a
     href={base || '/'}
@@ -421,7 +422,7 @@
     {/if}
   </a>
 
-  <div class="h-5 w-px bg-white/20 max-xl:hidden"></div>
+  <div class="h-5 w-px bg-white/20 max-2xl:hidden"></div>
 
   {#if editingName}
     <input
@@ -441,7 +442,7 @@
     >{projectName}</button>
   {/if}
 
-  <div class="h-5 w-px bg-white/20 max-xl:hidden"></div>
+  <div class="h-5 w-px bg-white/20 max-2xl:hidden"></div>
 
   <!-- Floor selector as buttons (in overflow menu on mobile) -->
   <div class="flex items-center gap-1 max-xl:hidden">
@@ -458,7 +459,7 @@
       />
     {:else}
       <select aria-label={$t('floorControls.current')} value={activeFloorId} onchange={(e) => setActiveFloor(e.currentTarget.value)}
-        class="w-32 rounded bg-slate-700 px-2 py-1 text-xs text-white" title={$t('floorControls.switch')}>
+        class="w-32 max-2xl:w-28 rounded bg-slate-700 px-2 py-1 text-xs text-white" title={$t('floorControls.switch')}>
         {#each floors as fl}<option value={fl.id}>{fl.name}</option>{/each}
       </select>
       <button
@@ -521,7 +522,7 @@
     {#if $coarsePointer}<span aria-hidden="true" class="block text-[10px] leading-none">{$t('projectToolbar.redo')}</span>{/if}
   </button>
 
-  <div class="h-5 w-px bg-white/20 max-xl:hidden"></div>
+  <div class="h-5 w-px bg-white/20 max-2xl:hidden"></div>
 
   <!-- Snap to grid toggle: drawn from the store, which the Command Palette also toggles -->
   <button
@@ -570,7 +571,7 @@
     </svg>
   </button>
 
-  <div class="h-5 w-px bg-white/20 max-xl:hidden"></div>
+  <div class="h-5 w-px bg-white/20 max-2xl:hidden"></div>
 
   <!-- Plan / Elevation sub-toggle (2D only) — sits left of the 2D/3D pill so the
        two switches read as a family; mobile (<md) uses the overflow menu instead -->
@@ -693,7 +694,7 @@
           <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={() => canvasZoom.update(z => Math.min(10, z * 1.25))}>{$t('toolbarView.zoomIn')}</button>
           <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={() => canvasZoom.update(z => Math.max($canvasMinimumZoom, z / 1.25))}>{$t('toolbarView.zoomOut')}</button>
           <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={() => canvasZoom.set(1)}>{$t('toolbarView.resetZoom')} ({$canvasZoom < 0.01 ? ($canvasZoom * 100).toPrecision(2) : Math.round($canvasZoom * 100)}%)</button>
-          <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={() => panMode.update(v => !v)}>{$panMode ? '✓ ' : ''}{$t('toolbarView.pan')}</button>
+          <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={() => { panMode.update(v => !v); moreOpen = false; }}>{$panMode ? '✓ ' : ''}{$t('toolbarView.pan')}</button>
           <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" aria-pressed={$snapEnabled} onclick={() => snapEnabled.update(v => !v)}>{$snapEnabled ? '✓ ' : ''}{$t('toolbarView.snap')}</button>
           <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={() => layerVisibility.update(v => ({ ...v, furniture: !v.furniture }))}>{$showFurnitureStore ? '✓ ' : ''}{$t('toolbarView.showFurniture')}</button>
           {#if onToggleLayers}
@@ -713,12 +714,12 @@
     {/if}
   </div>
 
-  <div class="h-5 w-px bg-white/20 max-xl:hidden"></div>
+  <div class="h-5 w-px bg-white/20 max-2xl:hidden"></div>
 
   <!-- Opening a plan file, where it is looked for; the Export menu keeps its Import JSON too. -->
   <button
     onclick={onImportJSON}
-    class="px-3 py-1.5 text-sm text-white/90 hover:text-white hover:bg-white/10 rounded transition-colors items-center gap-1.5 max-xl:hidden {$coarsePointer ? stacked : 'flex'}"
+    class="px-3 max-2xl:px-2 py-1.5 text-sm text-white/90 hover:text-white hover:bg-white/10 rounded transition-colors items-center gap-1.5 max-xl:hidden {$coarsePointer ? stacked : 'flex'}"
     title={$t('bars.openPlanFile')}
   >
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
@@ -737,7 +738,7 @@
     {#if $coarsePointer}
       <span aria-hidden="true" class="block text-[10px] leading-none">{$t('bars.feedback')}</span>
     {:else}
-      <span class="max-xl:hidden">{$t('bars.feedback')}</span>
+      <span class="max-2xl:hidden">{$t('bars.feedback')}</span>
     {/if}
   </button>
 
@@ -745,7 +746,7 @@
   <div class="relative" bind:this={exportRef}>
     <button
       onclick={() => { exportOpen = !exportOpen; if (exportOpen) triggerTip('first-export', 300, 60); }}
-      class="px-3 py-1.5 max-xl:px-2 text-sm text-white/90 hover:text-white hover:bg-white/10 rounded transition-colors {$coarsePointer ? stacked : 'flex items-center gap-1.5'}"
+      class="px-3 py-1.5 max-2xl:px-2 text-sm text-white/90 hover:text-white hover:bg-white/10 rounded transition-colors {$coarsePointer ? stacked : 'flex items-center gap-1.5'}"
       title={$t('exportMenu.title')}
       aria-label={$t('exportMenu.title')}
     >

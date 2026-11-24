@@ -114,14 +114,26 @@ test('with a mouse the bars keep their sizes', async ({ page }) => {
   await expect(page.locator('[data-bar="bottom"]').getByText(/walls$/)).toBeVisible();
 });
 
-test('with a mouse the feedback button is a picture below 1280 px and says Feedback from 1280 px', async ({ page }) => {
+test('with a mouse the feedback button is a picture below 1536 px and says Feedback from 1536 px', async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 800 });
   await openPlan(page, PLAN);
   const feedback = page.locator('[data-bar="top"]').getByRole('button', { name: 'Feedback', exact: true });
   await expect(feedback).toBeVisible();
   await expect(feedback.getByText('Feedback', { exact: true })).toBeHidden();
-  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.setViewportSize({ width: 1536, height: 900 });
   await expect(feedback.getByText('Feedback', { exact: true })).toBeVisible();
   await feedback.click();
   await expect(feedback).toHaveAttribute('data-feedback-open', 'true');
 });
+
+for (const [locale, width] of [['en', 1280], ['pt', 1280], ['pt', 1440]] as const) {
+  test(`with a mouse at ${width} px in ${locale} the top bar holds every control and Save stays on screen`, async ({ page }) => {
+    await page.addInitScript(l => localStorage.setItem('o3d_locale', l), locale);
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/editor');
+    const top = page.locator('[data-bar="top"]');
+    await expect(top.getByRole('button', { name: locale === 'en' ? 'Save' : 'Salvar', exact: true })).toBeVisible();
+    const room = await top.evaluate(bar => ({ scroll: bar.scrollWidth, client: bar.clientWidth }));
+    expect(room.scroll).toBeLessThanOrEqual(room.client);
+  });
+}
