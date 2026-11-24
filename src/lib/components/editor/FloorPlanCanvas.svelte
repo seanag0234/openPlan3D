@@ -54,6 +54,7 @@
   import { translatedWallGeometry, wallGeometryOf, type WallGeometry } from '$lib/utils/wallTranslation';
   import { marqueeSelectionIds } from '$lib/utils/marqueeSelection';
   import { isTracingImageType } from '$lib/utils/tracingImage';
+  import { rulerLabel } from '$lib/utils/rulerLabel';
   import { findRoomLabelAt as _findRoomLabelAt, positionOnWall, findWallAt as _findWallAt, findHandleAt as _findHandleAt, findFurnitureAt as _findFurnitureAt, findColumnAt as _findColumnAt, findStairAt as _findStairAt, findDoorAt as _findDoorAt, findWindowAt as _findWindowAt, findRoomAt as _findRoomAt, hitTestMeasurement as _hitTestMeasurement, hitTestAnnotation as _hitTestAnnotation, hitTestTextAnnotation as _hitTestTextAnnotation, findEntourageAt } from '$lib/utils/hitTesting';
 
   let canvas: HTMLCanvasElement;
@@ -996,24 +997,6 @@
 
   function drawColumn(col: Column, selected: boolean) {
     _drawColumn(getCS(), col, selected);
-  }
-
-  function rulerLabel(worldCm: number, tickStep: number, isImperial: boolean): string {
-    if (isImperial) {
-      const inches = worldCm / 2.54;
-      const ft = inches / 12;
-      if (tickStep / 2.54 >= 12) {
-        // Show feet
-        return `${ft % 1 === 0 ? ft.toFixed(0) : ft.toFixed(1)}'`;
-      }
-      return `${Math.round(inches)}"`;
-    }
-    // Metric
-    if (tickStep >= 100) {
-      const m = worldCm / 100;
-      return `${worldCm % 100 === 0 ? m.toFixed(0) : m.toFixed(1)}m`;
-    }
-    return `${Math.round(worldCm)}`;
   }
 
   function drawRulers() {
