@@ -1,6 +1,6 @@
 import {expect,test} from '@playwright/test';
 import {readFile} from 'node:fs/promises';
-for(const [key,label] of [['textAnnotations','Copy note'],['measurements','Measurement 1'],['annotations','Annotation 1']]) {
+for(const [key,label] of [['textAnnotations','Copy note'],['measurements','Measurement 1'],['annotations','Dimension line 1']]) {
   test(`${key} clipboard survives deletion and supports independent repeat pastes`,async({page})=>{
     test.setTimeout(90_000);await page.setViewportSize({width:390,height:900});
     await page.addInitScript(()=>{

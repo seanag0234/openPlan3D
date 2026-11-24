@@ -531,7 +531,7 @@ export const en = {
   "layers.column": "{shape} column {number}",
   "layers.guide": "{orientation} guide {number}",
   "layers.measurement": "Measurement {number} ({distance} cm)",
-  "layers.annotation": "Annotation {number} ({label})",
+  "layers.annotation": "Dimension line {number} ({label})",
   "layers.note": "Note {number} ({text})",
   "layers.value.single": "single",
   "layers.value.double": "double",
