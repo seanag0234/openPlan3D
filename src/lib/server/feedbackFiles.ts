@@ -1,22 +1,13 @@
 import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { isAbsolute, join } from 'node:path';
+import type { FeedbackMessage } from '$lib/services/feedbackOutbox';
+export type { FeedbackMessage };
 
 /** Feedback a copy of the editor takes, and how much: a picture under 300 KB keeps a request under the server's default size limit. */
 export const FEEDBACK_LIMITS = { maxText: 5000, maxPictureBytes: 300_000, maxFiles: 500, perHour: 30 };
 
 export class FeedbackRejected extends Error {
   constructor(public status: number, message: string) { super(message); }
-}
-
-/** What the sheet sends: the same shape in the outbox, on the wire and here. */
-export interface FeedbackMessage {
-  id: string;
-  createdAt: string;
-  text: string;
-  about: string | null;
-  planName: string | null;
-  context: Record<string, string | number | boolean>;
-  picture: string | null;
 }
 
 const JPEG_PREFIX = 'data:image/jpeg;base64,';
