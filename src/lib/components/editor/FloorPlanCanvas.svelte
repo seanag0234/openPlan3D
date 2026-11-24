@@ -2765,6 +2765,14 @@
       if (wall) {
         if (selectElement(wall.id, e.shiftKey)) return;
       } else {
+        // A tap reaches a locked label or piece when nothing else is under the finger; a drag
+        // still passes through it. Everything found here is locked: the rest was found above.
+        if (touchPress === 'tap' && currentFloor) {
+          const label = hitTestTextAnnotation(wp, currentFloor);
+          if (label) { selectAuxiliary('text', label); return; }
+          const piece = _findFurnitureAt(wp, currentFloor.furniture) ?? findEntourageAt(wp, currentFloor.entourage, d => entourageAspect(d, customEntourageDefs));
+          if (piece) { selectElement(piece.id, false); return; }
+        }
         // Check if clicking on a room label (for dragging)
         const labelRoom = findRoomLabelAt(wp);
         if (labelRoom) {

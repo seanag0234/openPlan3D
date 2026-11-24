@@ -185,3 +185,32 @@ test('a finger 6 px inside the corner of the selected Box A moves it', async ({ 
   expect(item(after, 'box-a').position.x).toBe(item(before, 'box-a').position.x + 50);
   expect(after.floors[0].walls).toEqual(before.floors[0].walls);
 });
+
+test('a tap on the locked Rug selects it; a drag on it leaves it where it is', async ({ page }) => {
+  const { hand, before, scale } = await open(page);
+  const rug = await where(page, 'Rug');
+  const bar = page.getByRole('button', { name: 'Duplicate', exact: true }).filter({ visible: true });
+  await expect(bar).toHaveCount(0);
+  await hand.tap(rug.x, rug.y);
+  await expect(bar).toHaveCount(1);
+  expect((await savedPlan(page)).floors).toEqual(before.floors);
+  await page.keyboard.press('Escape');
+  // A drag passes through the locked Rug: it is not picked and does not move.
+  // Bare paper 60 cm above the room clears the selection.
+  await hand.tap(rug.x, rug.y - 380 * scale);
+  await expect(bar).toHaveCount(0);
+  await hand.drag([rug.x + 30, rug.y], [rug.x + 130, rug.y + 40]);
+  await expect(bar).toHaveCount(0);
+  expect(item(await savedPlan(page), 'rug')).toEqual(item(before, 'rug'));
+});
+
+test('a tap on the locked Reading corner label selects it and changes nothing', async ({ page }) => {
+  const { hand, before } = await open(page);
+  const label = await where(page, 'Reading corner');
+  await hand.tap(label.x, label.y);
+  await expect(page.getByRole('heading', { name: /Text Annotation/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Room Properties/ })).toBeHidden();
+  // No text box opens over the plan.
+  await expect(page.locator('input.absolute')).toHaveCount(0);
+  expect((await savedPlan(page)).floors).toEqual(before.floors);
+});
