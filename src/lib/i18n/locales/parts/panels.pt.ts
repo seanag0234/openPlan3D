@@ -24,4 +24,11 @@ export const panelsPt = {
   "panels.touchHelp4": "Um dedo no papel vazio desliza a planta.",
   "panels.touchHelp5": "Toque e segure para mais opções.",
   "panels.touchHelp6": "Concluído em uma mensagem encerra o que você estava fazendo.",
+  "panels.list": "Lista",
+  "panels.history": "Histórico",
+  "panels.hide": "Ocultar",
+  "panels.smaller": "Menor",
+  "panels.bigger": "Maior",
+  "panels.fit": "Ajustar",
+  "panels.fitThis": "Ajustar isto",
 } as const;

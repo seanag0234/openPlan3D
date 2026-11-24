@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { readFile, writeFile } from 'node:fs/promises';
 import { fingers, ipadLandscape, openPlan, recordLabels, savedPlan, where } from './touch';
 
 const FIXTURE = 'tests/fixtures/room-with-boxes.openplan.json';
@@ -78,6 +79,26 @@ test.describe('on a touch screen', () => {
     const plan = await savedPlan(page);
     expect(plan.floors[0].furniture.find((item: any) => item.id === 'rug').locked).toBeFalsy();
   });
+
+  test('a locked label offers Unlock instead of Delete', async ({ page }, testInfo) => {
+    const plan = JSON.parse(await readFile(FIXTURE, 'utf8'));
+    plan.floors[0].textAnnotations[0].locked = true;
+    const file = testInfo.outputPath('locked-label.openplan.json');
+    await writeFile(file, JSON.stringify(plan));
+    const hand = await fingers(page);
+    await recordLabels(page);
+    await openPlan(page, file);
+    await page.keyboard.press('Escape');
+    const label = await where(page, 'Reading corner');
+    await hand.tap(label.x, label.y);
+    const bar = page.locator('[data-selection-bar][data-extra-kind="text"]');
+    await expect(bar.getByRole('button')).toHaveText([/Details/, /Unlock/]);
+    await expect(bar.getByRole('button', { name: 'Delete' })).toHaveCount(0);
+    await bar.getByRole('button', { name: 'Unlock' }).tap();
+    await expect(bar.getByRole('button', { name: 'Delete' })).toBeVisible();
+    const saved = await savedPlan(page);
+    expect(saved.floors[0].textAnnotations.find((item: any) => item.id === 'label-reading').locked).toBeFalsy();
+  });
 });
 
 test('with a mouse the bar keeps its picture buttons and adds Note', async ({ page }) => {
@@ -99,11 +120,6 @@ test('a selected measuring line has a bin', async ({ page }) => {
   const k = await scale(page), label = await where(page, 'Reading corner');
   await page.mouse.click(label.x + (150 - 300) * k, label.y + (370 - 60) * k);
   const bar = page.locator('[data-selection-bar][data-extra-kind]');
-  // The plan hands the bar a selected measuring line only once the drawing work is merged.
-  if (!await bar.count()) {
-    await page.waitForTimeout(500);
-    test.skip(!await bar.count(), 'The plan does not hand the bar a selected measuring line yet');
-  }
   await expect(bar).toHaveAttribute('data-extra-kind', 'measurement');
   await bar.getByRole('button', { name: 'Delete' }).click();
   expect((await savedPlan(page)).floors[0].measurements ?? []).toEqual([]);

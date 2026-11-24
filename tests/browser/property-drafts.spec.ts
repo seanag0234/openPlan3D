@@ -50,11 +50,14 @@ for (const width of [1440, 390]) {
     await page.getByRole('button', { name: 'Dimensions', exact: true }).click();
     await page.getByRole('button', { name: 'ft, inch', exact: true }).click();
     await page.getByRole('button', { name: 'Close settings', exact: true }).click();
-    const inches = page.getByRole('spinbutton', { name: 'Width (in)', exact: true });
-    await inches.click(); await inches.press('Tab');
+    // A symbol's width is feet and inches, as a piece's: focusing both boxes and leaving changes nothing.
+    const feet = page.getByRole('spinbutton', { name: 'Width (ft)', exact: true });
+    await feet.click(); await feet.press('Tab'); await page.keyboard.press('Tab');
     expect((await exportFloor(page)).entourage).toEqual(floor.entourage);
+    await edit('Width (ft)', '0');
     await edit('Width (in)', '.5');
     expect((await exportFloor(page)).entourage[0].width).toBe(1.27);
+    // Two edits to the width within 800 ms join into one Undo step, as digits typed into one box do.
     await page.getByRole('button', { name: 'Undo', exact: true }).click();
     expect((await exportFloor(page)).entourage).toEqual(floor.entourage);
     await page.getByRole('button', { name: '📦 qa-furniture', exact: true }).click();

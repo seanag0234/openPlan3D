@@ -51,13 +51,17 @@ for (const width of [1440, 390]) {
     await page.getByRole('button', { name: 'Dimensions', exact: true }).click();
     await page.getByRole('button', { name: 'ft, inch', exact: true }).click();
     await page.getByRole('button', { name: 'Close settings', exact: true }).click();
-    for (const name of ['Diameter (in)', 'Height (in)']) {
+    // A column's sizes are feet and inches, as a piece's: focusing each box and leaving changes nothing.
+    for (const name of ['Diameter (ft)', 'Diameter (in)', 'Height (ft)', 'Height (in)']) {
       const field = page.getByRole('spinbutton', { name, exact: true });
       await field.click(); await field.press('Tab');
     }
     expect((await exportedFloor(page)).columns).toEqual(plan.floors[0].columns);
+    await expect(page.getByRole('spinbutton', { name: 'Diameter (ft)', exact: true })).toHaveValue('0');
     await edit('Diameter (in)', '5'); // 12.7 cm is within the physical 10–200 cm range.
-    await edit('Height (in)', '20'); // 50.8 cm is within the physical 50–1000 cm range.
+    // 9 ft 2.3 in to 1 ft 8 in (50.8 cm, within 50–1000 cm): inches first, as 1 ft 2.3 in is under the minimum.
+    await edit('Height (in)', '8');
+    await edit('Height (ft)', '1');
     const changed = await exportedFloor(page);
     expect(changed.columns[0]).toMatchObject({ diameter: 12.7, height: 50.8 });
     await page.getByRole('button', { name: 'Save', exact: true }).click();
