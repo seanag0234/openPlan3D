@@ -414,7 +414,7 @@ export const en = {
   "models.foundOne": "{count} model found. Type to search or enter another model ID.",
   "exportMenu.title": "Export",
   "exportMenu.png2d": "Export 2D as PNG",
-  "exportMenu.png3d": "Export 3D as PNG",
+  "exportMenu.png3d": "Save the 3D view as a picture (PNG)",
   "exportMenu.svg": "Export as SVG",
   "exportMenu.dxf": "Export as DXF",
   "exportMenu.dwg": "Export for AutoCAD (DWG)",

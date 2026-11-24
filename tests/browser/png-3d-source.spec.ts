@@ -23,7 +23,7 @@ test('3D PNG waits for the main viewer and restores 2D after success or failure'
  });
  const main=page.locator('canvas[data-plan3d-canvas="true"]');await expect(main).toHaveCount(0);
  await page.getByRole('button',{name:'Export',exact:true}).click();
- const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Export 3D as PNG',exact:true}).click();
+ const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Save the 3D view as a picture (PNG)',exact:true}).click();
  const downloaded=await Promise.race([pending, page.getByRole('alert').waitFor().then(async()=>{
   throw new Error('Capture failure: '+JSON.stringify(await page.locator('body').evaluate(body=>({...body.dataset}))));
  })]);
@@ -35,7 +35,7 @@ test('3D PNG waits for the main viewer and restores 2D after success or failure'
  await page.evaluate(()=>{HTMLCanvasElement.prototype.toBlob=callback=>callback(null);});
  let downloads=0;page.on('download',()=>downloads++);
  await page.getByRole('button',{name:'Export',exact:true}).click();
- await page.getByRole('button',{name:'Export 3D as PNG',exact:true}).click();
+ await page.getByRole('button',{name:'Save the 3D view as a picture (PNG)',exact:true}).click();
  await expect(page.getByRole('alert')).toContainText("Couldn't export 3D PNG");
  await expect(main).toHaveCount(0);expect(downloads).toBe(0);
  await testInfo.attach('main-3d.png',{body:png,contentType:'image/png'});

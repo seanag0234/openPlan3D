@@ -54,9 +54,9 @@ test('3D view explains missing WebGL, offers no dead controls and leaves 2D edit
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   await expect(thickness).toHaveValue('20');
 
-  // Export 3D as PNG opens the view to capture it; with nothing to capture it reports the failure.
+  // Save the 3D view as a picture (PNG) opens the view to capture it; with nothing to capture it reports the failure.
   await page.getByRole('button', { name: 'Export', exact: true }).click();
-  await page.getByRole('button', { name: 'Export 3D as PNG', exact: true }).click();
+  await page.getByRole('button', { name: 'Save the 3D view as a picture (PNG)', exact: true }).click();
   await expect(viewer.getByRole('alert')).toHaveText(message);
   await expect(page.getByRole('alert').filter({ hasText: "Couldn't export 3D PNG" })).toBeVisible({ timeout: 30_000 });
   await expect(viewer).toHaveCount(0);
