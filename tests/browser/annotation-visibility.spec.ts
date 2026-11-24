@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 import {readFile} from 'node:fs/promises';
-for(const [key,category,label] of [['textAnnotations','Text notes','Note 1 (Hidden note)'],['measurements','Measurements','Measurement 1 (200 cm)'],['annotations','Annotations','Annotation 1 (Hidden dimension)']]) {
+for(const [key,category,label] of [['textAnnotations','Text notes','Note 1 (Hidden note)'],['measurements','Measurements','Measurement 1 (200 cm)'],['annotations','Dimension lines','Annotation 1 (Hidden dimension)']]) {
  test(`${category} visibility preserves data and excludes hidden selections`,async({page})=>{
   test.setTimeout(90_000);await page.setViewportSize({width:390,height:900});
   await page.addInitScript(()=>{

@@ -513,7 +513,7 @@ export const en = {
   "layers.columns": "Columns",
   "layers.guides": "Guides",
   "layers.measurements": "Measurements",
-  "layers.annotations": "Annotations",
+  "layers.annotations": "Dimension lines",
   "layers.textAnnotations": "Text notes",
   "layers.rooms": "Rooms",
   "layers.empty": "Empty",
