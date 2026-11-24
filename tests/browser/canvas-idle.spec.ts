@@ -75,7 +75,7 @@ test('2D sleeps between display, camera, tool, geometry and history changes', as
   await page.getByTitle('Zoom to Fit (F)', { exact: true }).first().press('Enter'); await idle(page);
   let bounds = (await canvas(page).boundingBox())!;
   const move = (x: number, y: number) => page.mouse.move(bounds.x + bounds.width * x, bounds.y + bounds.height * y);
-  await page.getByRole('button', { name: 'Measure Measure distances (M)', exact: true }).press('Enter'); await idle(page);
+  await page.getByRole('button', { name: 'Measure M Measure distances (M)', exact: true }).press('Enter'); await idle(page);
   await move(0.35, 0.3); await page.mouse.click(bounds.x + bounds.width * 0.35, bounds.y + bounds.height * 0.3);
   await idle(page);
   await changed(page, () => move(0.65, 0.4));
