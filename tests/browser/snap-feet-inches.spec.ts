@@ -89,11 +89,35 @@ test.describe('walls', () => {
     expect(box).toBeGreaterThanOrEqual(face - 0.5);
   });
 
+  test('stop a piece while the house is fixed and Snap to walls pulls it toward the wall', async ({ page }, testInfo) => {
+    await recordLabels(page);
+    // Snap to walls is left on: its pull may only place the box where the box can get to.
+    await page.addInitScript(() => localStorage.setItem('o3d_settings', JSON.stringify({ snapToWalls: true })));
+    await openPlan(page, await planWith(testInfo, plan => { plan.houseFixed = true; }));
+    await page.keyboard.press('Escape');
+    await drag(page, await where(page, 'Box A'), -400, 0, 10);
+    const { box, face } = leftEdges(await savedPlan(page));
+    expect(box).toBeGreaterThanOrEqual(face - 0.5);
+  });
+
   test('let a piece through while the house is not fixed', async ({ page }) => {
     await recordLabels(page);
     await openPlan(page, FIXTURE);
     await page.keyboard.press('Escape');
     await drag(page, await where(page, 'Box A'), -400, 0, 10);
     expect(boxA(await savedPlan(page)).position.x).toBeLessThan(0);
+  });
+
+  test('let Snap to walls pull a piece through while the house is not fixed', async ({ page }) => {
+    await recordLabels(page);
+    await page.addInitScript(() => localStorage.setItem('o3d_settings', JSON.stringify({ snapToWalls: true })));
+    await openPlan(page, FIXTURE);
+    await page.keyboard.press('Escape');
+    await drag(page, await where(page, 'Box A'), -400, 0, 10);
+    const moved = boxA(await savedPlan(page));
+    // Where this drag ended before a fixed house's walls could stop the pull: on the wall's far face.
+    expect(moved.position.x).toBeCloseTo(-175, 1);
+    expect(moved.position.y).toBeCloseTo(200, 1);
+    expect(moved.rotation || 0).toBe(0);
   });
 });

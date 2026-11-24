@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { gridLineStepCm, gridLinesPx, gridMajorStepCm, pieceStepCm, resizeStep, snapPieceMove, snapValue, stopAtWalls, type SnapContext } from '$lib/utils/snapPolicy';
+import { gridLineStepCm, gridLinesPx, gridMajorStepCm, pieceStepCm, resizeStep, snapPieceMove, slideAlongWalls, snapValue, stopAtWalls, type SnapContext } from '$lib/utils/snapPolicy';
 import { snap } from '$lib/utils/canvasInteraction';
 import type { FurnitureItem, Wall } from '$lib/models/types';
 
@@ -38,6 +38,15 @@ describe('snap policy in metres', () => {
   it('lets a piece go where it is dragged, walls or not', () => {
     const wanted = { x: 200, y: 0 };
     expect(stopAtWalls(wanted, piece.position, piece, [wall])).toBe(wanted);
+  });
+
+  it('hands back the very point asked for when walls leave the way free, and another when they stop it', () => {
+    const free = { x: 160, y: 120 };
+    expect(slideAlongWalls(free, piece.position, piece, [wall])).toBe(free);
+    const across = { x: 100, y: -100 };
+    const stopped = slideAlongWalls(across, piece.position, piece, [wall]);
+    expect(stopped).not.toBe(across);
+    expect(stopped.y - 45).toBeGreaterThanOrEqual(7.5 - 0.01);
   });
 });
 

@@ -3174,7 +3174,10 @@
       const basePos = { x: mousePos.x - dragOffset.x, y: mousePos.y - dragOffset.y };
       const fi = currentFloor?.furniture.find(f => f.id === draggingFurnitureId);
       if (fi) {
-        const wallSnap = snapFurnitureToWall(basePos, fi);
+        const walls = currentFloor?.walls ?? [];
+        const pulled = snapFurnitureToWall(basePos, fi);
+        // A pull toward a wall counts only where the piece can get to: a fixed house's walls stop it first.
+        const wallSnap = pulled && stopAtWalls(pulled.position, fi.position, { ...fi, rotation: pulled.rotation }, walls) === pulled.position ? pulled : null;
         if (wallSnap) {
           transformFurnitureDuringDrag(draggingFurnitureId, { position: wallSnap.position, rotation: wallSnap.rotation });
           dragWasWallSnapped = true;
@@ -3193,10 +3196,12 @@
               }
             }
           }
-          transformFurnitureDuringDrag(draggingFurnitureId, {
-            position: stopAtWalls(snapped, fi.position, fi, currentFloor?.walls ?? []),
-            ...(dragWasWallSnapped ? { rotation: dragStartRotation } : {}),
-          });
+          // Leaving a pull turns the piece back as it was: check the way with that turn, from where the drag began,
+          // since turned back where it stands the piece may already reach into the wall it was pulled against.
+          transformFurnitureDuringDrag(draggingFurnitureId, dragWasWallSnapped ? {
+            position: stopAtWalls(snapped, dragStartPosition, { ...fi, rotation: dragStartRotation }, walls),
+            rotation: dragStartRotation,
+          } : { position: stopAtWalls(snapped, fi.position, fi, walls) });
           dragWasWallSnapped = false;
           wallSnapInfo = null;
         }

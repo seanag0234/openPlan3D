@@ -81,7 +81,10 @@ function advance(from: Point, to: Point, hits: (p: Point) => boolean): Point {
   return at(lo);
 }
 
-/** Where the piece ends up going from `previous` towards `wanted`: it stops at a wall's face and slides along it. A piece already in a wall is let out. */
+/**
+ * Where the piece ends up going from `previous` towards `wanted`: it stops at a wall's face and slides along it. A piece already in a wall is let out.
+ * When the way is free it returns the very object `wanted`, never a copy: callers test `=== wanted` to tell a free way from a stop.
+ */
 export function slideAlongWalls(wanted: Point, previous: Point, piece: FurnitureItem, walls: readonly Wall[]): Point {
   const { hx, hy } = halfBox(piece), hits = (p: Point) => walls.some(w => overlapsWall(p, hx, hy, w));
   if (hits(previous)) return wanted;
@@ -92,7 +95,7 @@ export function slideAlongWalls(wanted: Point, previous: Point, piece: Furniture
   return gain(alongX) >= gain(alongY) ? alongX : alongY;
 }
 
-/** The nearest place to `wanted` the piece may stand, coming from `previous`: walls stop it only while the house is fixed. */
+/** The nearest place to `wanted` the piece may stand, coming from `previous`: walls stop it only while the house is fixed. Returns `wanted` itself when the way is free. */
 export function stopAtWalls(wanted: Point, previous: Point, piece: FurnitureItem, walls: readonly Wall[]): Point {
   return get(houseFixed) ? slideAlongWalls(wanted, previous, piece, walls) : wanted;
 }
