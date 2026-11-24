@@ -36,7 +36,7 @@
 
 <!-- On a touch screen the picture has its word under it, as the other buttons beside it do. -->
 <button
-  class="pointer-events-auto relative {$coarsePointer ? 'w-11 min-h-[44px] rounded-lg flex flex-col items-center justify-center' : 'w-8 h-8 rounded-full text-sm'} shadow-lg transition-colors {$notesListOpen ? 'bg-blue-600 text-white' : 'bg-slate-700 text-gray-100 hover:bg-slate-600'}"
+  class="max-md:hidden pointer-events-auto relative {$coarsePointer ? 'w-11 min-h-[44px] rounded-lg flex flex-col items-center justify-center' : 'w-8 h-8 rounded-full text-sm'} shadow-lg transition-colors {$notesListOpen ? 'bg-blue-600 text-white' : 'bg-slate-700 text-gray-100 hover:bg-slate-600'}"
   aria-label={$t('panels.notes')} title={$t('panels.notes')} aria-expanded={$notesListOpen}
   data-note-marks={noted.length}
   onclick={() => notesListOpen.update(open => !open)}
