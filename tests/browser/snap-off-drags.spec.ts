@@ -34,7 +34,7 @@ async function openPlanWithSnappingOff(page: Page) {
   await page.getByRole('button', { name: 'Import JSON', exact: true }).click();
   await (await chooser).setFiles({ name: 'snap-off.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(plan)) });
   await expect(page.getByRole('button', { name: plan.name, exact: true })).toBeVisible();
-  const snapping = page.getByRole('button', { name: 'Snap to Grid', exact: true });
+  const snapping = page.getByRole('button', { name: 'Move in steps', exact: true });
   await snapping.click();
   await expect(snapping).toHaveAttribute('aria-pressed', 'false');
   return floor;

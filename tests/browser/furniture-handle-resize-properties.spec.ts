@@ -20,7 +20,7 @@ test('Properties width follows an edge-handle resize and typed sizes stay exact 
   });
   await page.goto('/editor');
   // Snapping off keeps the sofa centered exactly where it is clicked.
-  const snapping = page.getByRole('button', { name: 'Snap to Grid', exact: true });
+  const snapping = page.getByRole('button', { name: 'Move in steps', exact: true });
   await snapping.click();
   await expect(snapping).toHaveAttribute('aria-pressed', 'false');
   await page.getByRole('button', { name: 'Objects', exact: true }).click();

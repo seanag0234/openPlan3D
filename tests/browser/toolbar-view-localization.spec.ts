@@ -12,7 +12,7 @@ for (const width of [390, 1440]) test(`Portuguese view controls at ${width}px pr
     await expect(pan).not.toHaveText(before!);
     await pan.click();
     await expect(pan).toHaveText(before!);
-    const snap = page.getByRole('button', { name: /Ajustar à grade/ });
+    const snap = page.getByRole('button', { name: /Mover em passos/ });
     const snapBefore = await snap.textContent();
     await snap.click();
     await expect(snap).not.toHaveText(snapBefore!);
@@ -22,7 +22,7 @@ for (const width of [390, 1440]) test(`Portuguese view controls at ${width}px pr
     await expect(page.getByRole('button', { name: /Redefinir zoom/ })).toContainText('100%');
     await expect(page.getByRole('button', { name: /Mostrar móveis/ })).toBeVisible();
   } else {
-    const snap = page.getByRole('button', { name: 'Ajustar à grade', exact: true });
+    const snap = page.getByRole('button', { name: 'Mover em passos', exact: true });
     const before = await snap.getAttribute('title');
     await snap.click();
     await expect(snap).not.toHaveAttribute('title', before!);
