@@ -1345,7 +1345,7 @@ export const pt = {
   "undoAction.wall": "Parede adicionada",
   "undoAction.elevation": "Elevação do pavimento alterada",
   "undoAction.slab": "Espessura da laje alterada",
-  "undoAction.deleteElement": "Elemento excluído",
+  "undoAction.deleteElement": "Coisa excluída",
   "undoAction.deleteFurniture": "Móvel excluído",
   "undoAction.deleteRoom": "Ambiente excluído",
   "undoAction.deleteWall": "Parede excluída",

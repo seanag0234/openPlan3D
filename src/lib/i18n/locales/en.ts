@@ -1345,7 +1345,7 @@ export const en = {
   "undoAction.wall": "Added wall",
   "undoAction.elevation": "Changed floor elevation",
   "undoAction.slab": "Changed slab thickness",
-  "undoAction.deleteElement": "Deleted element",
+  "undoAction.deleteElement": "Deleted a thing",
   "undoAction.deleteFurniture": "Deleted furniture",
   "undoAction.deleteRoom": "Deleted room",
   "undoAction.deleteWall": "Deleted wall",
