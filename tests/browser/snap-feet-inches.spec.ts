@@ -100,6 +100,29 @@ test.describe('walls', () => {
     expect(box).toBeGreaterThanOrEqual(face - 0.5);
   });
 
+  test('keep the way a piece faces and where it stands along a wall while the house is fixed', async ({ page }, testInfo) => {
+    await recordLabels(page);
+    await page.addInitScript(() => localStorage.setItem('o3d_settings', JSON.stringify({ snapToWalls: true })));
+    // Turned a quarter, so a pull that turns its back to the wall would show.
+    await openPlan(page, await planWith(testInfo, plan => { plan.houseFixed = true; boxA(plan).rotation = 90; }));
+    await page.keyboard.press('Escape');
+    const zoom = await zoomOf(page);
+    // Let go a few cm short of the wall, so the pull, not the wall's stop, decides where the box ends:
+    // turned, its left edge is 45 cm from its centre at x 150, and the wall's face is at x 7.5.
+    // A little sideways as well: a bit more than one 25 cm grid step down the wall.
+    await drag(page, await where(page, 'Box A'), -Math.round((150 - 45 - 7.5 - 4) * zoom), Math.round(30 * zoom), 10);
+    const saved = await savedPlan(page);
+    const box = boxA(saved);
+    expect(box.rotation).toBe(90);
+    // leftEdges takes the turn into account: turned a quarter, the box's 90 cm depth runs across the wall.
+    const { box: edge, face } = leftEdges(saved);
+    expect(Math.abs(edge - face)).toBeLessThanOrEqual(0.5);
+    // Along the wall it moved in whole grid steps from where it started, and is not set back on the wall's middle.
+    const steps = (box.position.y - 200) / 25;
+    expect(steps).toBeCloseTo(Math.round(steps), 3);
+    expect(box.position.y).not.toBe(200);
+  });
+
   test('let a piece through while the house is not fixed', async ({ page }) => {
     await recordLabels(page);
     await openPlan(page, FIXTURE);

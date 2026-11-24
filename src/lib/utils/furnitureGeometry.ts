@@ -78,3 +78,60 @@ export function snapFurnitureToWalls(
     }
     return bestResult;
 }
+
+/** Set a placed piece flush against the nearest straight wall it already stands square to, changing nothing but its distance to that wall. */
+export function pushFurnitureFlush(
+  pos: Point,
+  furniture: FurnitureItem,
+  walls: readonly Wall[],
+): { position: Point; rotation: number; wallId: string; side: 'normal' | 'anti'; wallAngle: number } | null {
+  const size = getFurnitureSize(furniture);
+  const rotation = furniture.rotation || 0;
+
+  let bestDist = WALL_SNAP_DIST;
+  let bestResult: { position: Point; rotation: number; wallId: string; side: 'normal' | 'anti'; wallAngle: number } | null = null;
+
+  for (const wall of walls) {
+    const wx = wall.end.x - wall.start.x;
+    const wy = wall.end.y - wall.start.y;
+    const wLen = Math.hypot(wx, wy);
+    if (wLen < 1 || wall.curvePoint) continue;
+
+    const ux = wx / wLen, uy = wy / wLen;
+    const nx = -uy, ny = ux;
+
+    // Only a piece already square to the wall is pushed; which of its sides runs across
+    // the wall depends on whether it stands along the wall or a quarter turn from it.
+    const wallAngle = Math.atan2(wy, wx) * 180 / Math.PI;
+    const rel = ((((rotation - wallAngle) % 180) + 180) % 180);
+    let halfAcross: number;
+    if (rel < 1 || rel > 179) halfAcross = size.depth / 2;
+    else if (Math.abs(rel - 90) < 1) halfAcross = size.width / 2;
+    else continue;
+
+    const dx = pos.x - wall.start.x;
+    const dy = pos.y - wall.start.y;
+    const along = dx * ux + dy * uy;
+    const perp = dx * nx + dy * ny;
+
+    // A piece whose middle is past the wall's end is not this wall's to push.
+    if (along < 0 || along > wLen) continue;
+
+    const absDist = Math.abs(perp) - wall.thickness / 2;
+    const snapDist = Math.abs(absDist - halfAcross);
+    if (snapDist >= bestDist) continue;
+    bestDist = snapDist;
+
+    // Move the piece along the wall's normal only, so it keeps its place along the wall.
+    const sign = perp >= 0 ? 1 : -1;
+    const targetPerp = sign * (wall.thickness / 2 + halfAcross);
+    bestResult = {
+      position: { x: pos.x + nx * (targetPerp - perp), y: pos.y + ny * (targetPerp - perp) },
+      rotation,
+      wallId: wall.id,
+      side: perp >= 0 ? 'normal' : 'anti',
+      wallAngle,
+    };
+  }
+  return bestResult;
+}

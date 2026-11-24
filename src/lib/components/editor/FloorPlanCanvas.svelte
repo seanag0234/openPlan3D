@@ -19,7 +19,7 @@
   import { getFloorBelow } from '$lib/utils/floors';
   import { detectOuterWalls } from '$lib/utils/outerWalls';
   import { getMaterial } from '$lib/utils/materials';
-  import { snapFurnitureToWalls } from '$lib/utils/furnitureGeometry';
+  import { pushFurnitureFlush, snapFurnitureToWalls } from '$lib/utils/furnitureGeometry';
   import { getCatalogItem, getFurnitureSize, type FurnitureDef } from '$lib/utils/furnitureCatalog';
   import { drawFurnitureIcon } from '$lib/utils/furnitureIcons';
   import { handleGlobalShortcut, isEditingField, isControlKey } from '$lib/utils/shortcuts';
@@ -3186,7 +3186,9 @@
       const fi = currentFloor?.furniture.find(f => f.id === draggingFurnitureId);
       if (fi) {
         const walls = currentFloor?.walls ?? [];
-        const pulled = snapFurnitureToWall(basePos, fi);
+        const pulled = currentHouseFixed
+          ? (currentSnapToWalls ? pushFurnitureFlush(snapPieceMove(basePos, dragStartPosition, snapContext()), fi, walls) : null)
+          : snapFurnitureToWall(basePos, fi);
         // A pull toward a wall counts only where the piece can get to: a fixed house's walls stop it first.
         const wallSnap = pulled && stopAtWalls(pulled.position, fi.position, { ...fi, rotation: pulled.rotation }, walls) === pulled.position ? pulled : null;
         if (wallSnap) {
