@@ -1,5 +1,6 @@
 import { writable, get } from 'svelte/store';
-import { currentProject, loadProject } from './project';
+import { currentProject, historyForJournal, loadProject, restoreHistory } from './project';
+import { buildJournal, journalFor, readUndoJournal, writeUndoJournal } from '$lib/services/undoJournal';
 import { localStore, storageErrorMessage, ProjectConflictError, PROJECTS_STORAGE_KEY, LIBRARY_CHANGE_KEY } from '$lib/services/datastore';
 import { saveSnapshot } from '$lib/stores/versionHistory';
 import type { Project } from '$lib/models/types';
@@ -142,6 +143,7 @@ async function persist(manual: boolean): Promise<boolean> {
       saveError.set(null);
       saveConflict.set(false);
       lastSavedAt.set(new Date());
+      keepUndoSteps(p);
     }
     return true;
   } catch (e) {
@@ -186,6 +188,29 @@ export async function saveCurrentAsCopy(): Promise<boolean> {
   } finally { savingCopy.set(false); }
 }
 
+/** Write the newest Undo steps beside the plan just saved, so a reload can give them back. Never waits or throws. */
+function keepUndoSteps(p: Project) {
+  try {
+    const history = historyForJournal();
+    if (!history) return;
+    const journal = buildJournal({ ...history, planUpdatedAt: new Date(p.updatedAt).toISOString(), now: Date.now() });
+    void writeUndoJournal(p.id, journal).catch(() => {});
+  } catch {}
+}
+
+/** Give the plan just loaded the Undo steps it had before the page was reloaded. Never waits or throws. */
+function recallUndoSteps() {
+  try {
+    const project = get(currentProject);
+    if (!project) return;
+    void readUndoJournal(project.id).then(journal => {
+      if (get(currentProject) !== project) return;
+      const steps = journalFor(journal, new Date(project.updatedAt).toISOString());
+      if (steps) restoreHistory(steps);
+    }).catch(() => {});
+  } catch {}
+}
+
 /** Call after loading a project that is already persisted. */
 export function markClean() {
   clearSaveTimer();
@@ -196,4 +221,5 @@ export function markClean() {
   saveConflict.set(false);
   lastSavedAt.set(null);
   lastProjectId = get(currentProject)?.id;
+  recallUndoSteps();
 }

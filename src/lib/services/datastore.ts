@@ -2,6 +2,7 @@ import { readProject } from '$lib/utils/projectValidation';
 import type { Project } from '$lib/models/types';
 import { withDatabase, transaction, request, records, readRecord, libraryBackup, notifyLibraryChange } from './localDatabase';
 import { requestPersistentStorage } from './storagePersistence';
+import { deleteUndoJournal } from './undoJournal';
 export { PROJECTS_STORAGE_KEY, LIBRARY_CHANGE_KEY } from './localDatabase';
 
 export interface DataStore {
@@ -160,6 +161,8 @@ export function createLocalStore(): DataStore {
         listed.delete(id);
         notifyLibraryChange(id);
       });
+      // The plan's kept Undo steps go with it; they never hold the delete up.
+      void deleteUndoJournal(id).catch(() => {});
     },
 
     async duplicate(id) {

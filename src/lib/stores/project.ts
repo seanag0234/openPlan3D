@@ -107,6 +107,25 @@ function retainHistoryStrings(keep?: string) {
   shared.retain(states);
 }
 
+/** The newest steps and what they need, for keeping across a reload. */
+export function historyForJournal(): { current: string; undo: UndoEntry[]; redo: UndoEntry[]; tokens: (s: string) => string[]; text: (t: string) => string | undefined } | null {
+  const p = get(currentProject);
+  if (!p) return null;
+  return { current: shared.pack(p), undo: [...undoStack], redo: [...redoStack], tokens: shared.tokens, text: shared.text };
+}
+
+/** Give back steps kept from before a reload. Does nothing once the plan has steps of its own or a gesture is open. */
+export function restoreHistory(steps: { undo: UndoEntry[]; redo: UndoEntry[]; shared: Record<string, string> }): boolean {
+  if (undoStack.length || redoStack.length || undoGroupDepth > 0 || !get(currentProject)) return false;
+  if (!steps.undo.length && !steps.redo.length) return false;
+  for (const [token, text] of Object.entries(steps.shared)) shared.add(token, text);
+  undoStack.push(...steps.undo.map(entry => ({ ...entry })));
+  redoStack.push(...steps.redo.map(entry => ({ ...entry })));
+  resetCoalescing();
+  syncHistoryStore();
+  return true;
+}
+
 /** Reactive store exposing undo history for the UndoHistoryPanel */
 export const undoHistoryStore = writable<{ entries: { description: string; timestamp: number }[]; currentIndex: number }>({ entries: [], currentIndex: -1 });
 
