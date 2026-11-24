@@ -26,14 +26,14 @@ test('Portuguese package rejection leaves saved records unchanged and allows ano
     [Buffer.from(writePackageZip(invalidGeometry)), 'A planta editada no iPhone contém geometria ou referências inválidas.'],
   ] as const) {
     const chooser = page.waitForEvent('filechooser');
-    await dialog.getByRole('button', { name: 'Escolher pacote de projeto', exact: true }).click();
+    await dialog.getByRole('button', { name: 'Escolher o arquivo', exact: true }).click();
     await (await chooser).setFiles({ name: 'invalid.zip', mimeType: 'application/zip', buffer });
     await expect(dialog.getByRole('alert')).toHaveText(`Pacote de projeto inválido: ${message}`);
     await expect(dialog.getByRole('button', { name: 'Importar como cópia', exact: true })).toBeDisabled();
     expect(await storedRecords(page)).toEqual(before);
   }
   const chooser = page.waitForEvent('filechooser');
-  await dialog.getByRole('button', { name: 'Escolher pacote de projeto', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Escolher o arquivo', exact: true }).click();
   const retainedImage = readPackageZip(await readFile('tests/fixtures/native-project-package.zip'));
   retainedImage['assets/chair.png'] = new Uint8Array([1, 2, 3]);
   const retainedBytes = Buffer.from(writePackageZip(retainedImage));
@@ -134,7 +134,7 @@ test('Portuguese backup rejection preserves each original file and saved records
 
 for (const flow of [
   { title: 'Recuperar um backup de todas as plantas', choose: 'Escolher arquivo de backup', original: 'Baixar backup original', confirm: 'Restaurar como cópias', success: '1 projeto restaurado.', file: 'tests/fixtures/library-backup.json', preview: '1 projeto pronto para restaurar' },
-  { title: 'Abrir uma planta com as imagens', choose: 'Escolher pacote de projeto', original: 'Baixar pacote original', confirm: 'Importar como cópia', success: 'Projeto importado.', file: 'tests/fixtures/native-project-package.zip', preview: 'arquivos anexos' },
+  { title: 'Abrir uma planta com as imagens', choose: 'Escolher o arquivo', original: 'Baixar pacote original', confirm: 'Importar como cópia', success: 'Projeto importado.', file: 'tests/fixtures/native-project-package.zip', preview: 'arquivos anexos' },
 ]) {
   test(`Portuguese transfer preserves original bytes and requires confirmation: ${flow.title}`, async ({ page }) => {
     await page.addInitScript(() => {
