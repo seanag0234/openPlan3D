@@ -1,1 +1,3 @@
-export const addingPt = {} as const;
+export const addingPt = {
+  "adding.nothingCalled": "Nada na lista se chama “{query}”.",
+} as const;

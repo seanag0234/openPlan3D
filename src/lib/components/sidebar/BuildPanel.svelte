@@ -685,7 +685,11 @@
           {/if}
         </div>
         {#if search}
-          <div class="text-[10px] text-gray-400 px-1">{$t(filtered.length === 1 ? 'objectControls.result' : 'objectControls.results', { count: filtered.length, query: search })}</div>
+          {@const found = filtered.length + symbolMatches.length}
+          <div class="text-xs text-gray-600 px-1">{$t(found === 1 ? 'objectControls.result' : 'objectControls.results', { count: found, query: search })}</div>
+          {#if found === 0}
+            <p class="text-xs text-gray-600 px-1">{$t('adding.nothingCalled', { query: search.trim() })}</p>
+          {/if}
         {/if}
         <!-- Category filter -->
         <div class="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
