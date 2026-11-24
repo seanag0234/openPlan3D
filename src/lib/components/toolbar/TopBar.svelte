@@ -25,7 +25,7 @@
   import { currentProject, viewMode, undo, redo, addFloor, removeFloor, renameFloor, setActiveFloor, updateProjectName, createDefaultProject, snapEnabled, canvasZoom, canvasMinimumZoom, panMode, showFurnitureStore, layerVisibility, activeFloor, selectedElementId, elevationWallId, elevationPickMode } from '$lib/stores/project';
   import { get } from 'svelte/store';
   import type { Floor } from '$lib/models/types';
-  import { exportAsJSON } from '$lib/utils/export';
+  import { exportAsJSON, exportScreenPNG } from '$lib/utils/export';
   import { createProjectFromRoomPlan, extractRoomJsonFromZip, isRoomPlanJson } from '$lib/utils/roomplanImport';
   import SettingsDialog from './SettingsDialog.svelte';
   import AreaSummaryPanel from '$lib/components/sidebar/AreaSummaryPanel.svelte';
@@ -189,6 +189,16 @@
     const p = get(currentProject);
     if (p) void exportPNGWithFeedback(p);
     exportOpen = false;
+  }
+
+  /** The plan as the screen shows it now, saved as a picture. */
+  async function onExportScreenPNG() {
+    exportOpen = false; exportNotice.set(null);
+    const label = $t('canvas.editorLabel');
+    const canvas = [...document.querySelectorAll('canvas')].find(c => c.getAttribute('aria-label') === label);
+    try {
+      if (!canvas || !await exportScreenPNG(canvas, get(currentProject)?.name || 'floorplan')) throw new Error('no picture');
+    } catch { exportNotice.set({ title: 'exportNotice.pngTitle', message: 'exportNotice.pngFailed' }); }
   }
 
   let exporting3D = $state(false);
@@ -770,6 +780,12 @@
           {$t('print.entry')}
         </button>
         <div class="h-px bg-gray-100 my-1"></div>
+        {#if mode === '2d' && !$elevationWallId}
+          <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left flex items-center gap-2" onclick={onExportScreenPNG}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+            {$t('bars.screenPicture')}
+          </button>
+        {/if}
         <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left flex items-center gap-2" onclick={onExport2DPNG}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
           {$t('exportMenu.png2d')}
