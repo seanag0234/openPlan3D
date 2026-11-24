@@ -26,9 +26,6 @@ import { interiorRoomExtent } from '$lib/utils/interiorArea';
 
 // ── Wall geometry helpers ────────────────────────────────────────────
 
-/** The plan's wall colours on screen, which the saved picture and the print page share. */
-export const WALL_FILL = '#404040', WALL_EDGE = '#333333';
-
 export function wallLength(w: Wall): number {
   if (w.curvePoint) {
     let len = 0;
@@ -189,8 +186,8 @@ export function drawWall(
       innerPts.push({ x: px - nx, y: py - ny });
     }
 
-    ctx.fillStyle = selected ? '#93c5fd' : WALL_FILL;
-    ctx.strokeStyle = selected ? '#3b82f6' : WALL_EDGE;
+    ctx.fillStyle = selected ? '#93c5fd' : '#404040';
+    ctx.strokeStyle = selected ? '#3b82f6' : '#333333';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(outerPts[0].x, outerPts[0].y);
@@ -259,8 +256,8 @@ export function drawWall(
   const nx = (-dy / len) * thickness / 2;
   const ny = (dx / len) * thickness / 2;
 
-  ctx.fillStyle = selected ? '#93c5fd' : WALL_FILL;
-  ctx.strokeStyle = selected ? '#3b82f6' : WALL_EDGE;
+  ctx.fillStyle = selected ? '#93c5fd' : '#404040';
+  ctx.strokeStyle = selected ? '#3b82f6' : '#333333';
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(s.x + nx, s.y + ny);
@@ -1603,8 +1600,8 @@ export function drawWallJoints(cs: CanvasState, floor: Floor, selId: string | nu
     const maxThickness = Math.max(...entries.map(e => e.thickness));
     const s = wts(cs, entries[0].x, entries[0].y);
     const r = Math.max(maxThickness * zoom, 4) / 2 + 0.5;
-    ctx.fillStyle = anySelected ? '#93c5fd' : WALL_FILL;
-    ctx.strokeStyle = anySelected ? '#3b82f6' : WALL_EDGE;
+    ctx.fillStyle = anySelected ? '#93c5fd' : '#404040';
+    ctx.strokeStyle = anySelected ? '#3b82f6' : '#333333';
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
   }

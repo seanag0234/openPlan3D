@@ -7,7 +7,7 @@ import { projectSettings, formatArea } from '$lib/stores/settings';
 import { currentPlanExportVisibility } from '$lib/stores/planVisibility';
 import { visiblePlanFloor, type PlanExportVisibility } from './exportVisibility';
 import { resolveRooms } from './roomDetection';
-import { drawRooms, drawDoorOnWall, drawWindowOnWall, drawFurnitureItem, drawStair, drawColumn, drawAnnotations, drawPersistedMeasurements, drawTextAnnotations, drawEntourageItems, WALL_FILL } from './canvasRenderer';
+import { drawRooms, drawDoorOnWall, drawWindowOnWall, drawFurnitureItem, drawStair, drawColumn, drawAnnotations, drawPersistedMeasurements, drawTextAnnotations, drawEntourageItems } from './canvasRenderer';
 import { worldToScreen, type CanvasState } from './canvasInteraction';
 import { activePrintFloor, printPageLayout, type PrintInk, type PrintOptions } from './printLayout';
 
@@ -57,7 +57,7 @@ export function renderPrintPage(canvas: HTMLCanvasElement, project: Project, opt
   const cs: CanvasState = { ctx, width: area.width * PIXELS_PER_MM, height: area.height * PIXELS_PER_MM, zoom: mmPerCm * PIXELS_PER_MM, camX: center.x, camY: center.y };
   const settings = get(projectSettings);
   drawRooms(cs, floor, resolveRooms(floor), null, visibility.roomLabels, visibility.roomDimensions, settings);
-  ctx.strokeStyle = WALL_FILL;
+  ctx.strokeStyle = '#334155';
   ctx.lineCap = 'round';
   for (const wall of visibility.walls ? floor.walls : []) {
     const a = worldToScreen(cs, wall.start.x, wall.start.y), b = worldToScreen(cs, wall.end.x, wall.end.y);
