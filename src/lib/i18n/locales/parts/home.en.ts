@@ -9,4 +9,6 @@ export const homeEn = {
   "home.haveCancelHelp": "Nothing changes.",
   "home.startPlan": "Get the starting plan",
   "home.openPlanFile": "Open a plan file",
+  "home.notAPlan": "This file is not a plan. Nothing was changed: your plans are as they were.",
+  "home.details": "Details",
 } as const;

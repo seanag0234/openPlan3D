@@ -9,4 +9,6 @@ export const homePt = {
   "home.haveCancelHelp": "Nada muda.",
   "home.startPlan": "Abrir a planta inicial",
   "home.openPlanFile": "Abrir um arquivo de planta",
+  "home.notAPlan": "Este arquivo não é uma planta. Nada foi alterado: suas plantas continuam como estavam.",
+  "home.details": "Detalhes",
 } as const;
