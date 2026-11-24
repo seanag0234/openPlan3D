@@ -114,8 +114,9 @@ test('while picking several, a drag that starts outside the picked pieces slides
   const more = (await page.getByRole('menu').getByRole('menuitem', { name: /Select more/ }).boundingBox())!;
   await hand.tap(more.x + more.width / 2, more.y + more.height / 2);
   await hand.tap(b.x, b.y);
-  // Bare floor inside the room, 80 cm above Box A.
-  await hand.drag([a.x, a.y - 80 * scale], [a.x + 100, a.y - 80 * scale]);
+  // Bare floor inside the room, below and left of Box A: clear of the bar over the two picked pieces.
+  const from: [number, number] = [a.x - 30 * scale, a.y + 105 * scale];
+  await hand.drag(from, [from[0] + 100, from[1]]);
   const a2 = await where(page, 'Box A');
   expect(Math.abs(a2.x - (a.x + 100))).toBeLessThanOrEqual(3);
   // Both are still picked: a drag of Box A carries Box B.
@@ -189,7 +190,7 @@ test('a finger 6 px inside the corner of the selected Box A moves it', async ({ 
 test('a tap on the locked Rug selects it; a drag on it leaves it where it is', async ({ page }) => {
   const { hand, before, scale } = await open(page);
   const rug = await where(page, 'Rug');
-  const bar = page.getByRole('button', { name: 'Duplicate', exact: true }).filter({ visible: true });
+  const bar = page.locator('[data-selection-bar]').getByRole('button', { name: 'Copy', exact: true });
   await expect(bar).toHaveCount(0);
   await hand.tap(rug.x, rug.y);
   await expect(bar).toHaveCount(1);
@@ -208,6 +209,10 @@ test('a tap on the locked Reading corner label selects it and changes nothing', 
   const { hand, before } = await open(page);
   const label = await where(page, 'Reading corner');
   await hand.tap(label.x, label.y);
+  // Under a finger the label's details open from the bar at the selection.
+  const details = page.locator('[data-selection-bar][data-extra-kind="text"]').getByRole('button', { name: 'Details', exact: true });
+  await expect(details).toHaveCount(1);
+  await details.tap();
   await expect(page.getByRole('heading', { name: /Text label/ })).toBeVisible();
   await expect(page.getByRole('heading', { name: /Room Properties/ })).toBeHidden();
   // No text box opens over the plan.

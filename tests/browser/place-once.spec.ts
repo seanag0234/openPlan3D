@@ -25,8 +25,9 @@ async function pickSofa(page: Page, press: (button: ReturnType<Page['getByRole']
 }
 
 async function expectOnePlaced(page: Page, before: any) {
-  // The bar at the selection shows only with the Select tool and something selected.
-  await expect(page.getByRole('button', { name: 'Duplicate', exact: true }).filter({ visible: true })).toHaveCount(1);
+  // The bar at the selection shows only with the Select tool and something selected. Its copy button is
+  // named Duplicate with a mouse and Copy under a finger.
+  await expect(page.locator('[data-selection-bar]').getByRole('button', { name: /^(Duplicate|Copy)$/ })).toHaveCount(1);
   const after = await savedPlan(page);
   const added = after.floors[0].furniture.filter((f: any) => !before.floors[0].furniture.some((g: any) => g.id === f.id));
   expect(added.map((f: any) => f.catalogId)).toEqual(['sofa']);

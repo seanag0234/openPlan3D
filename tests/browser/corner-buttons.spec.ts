@@ -32,7 +32,7 @@ test('the corner buttons keep clear of one another in 2D, and of the Lighting bu
   const button = (name: string) => page.getByRole('button', { name, exact: true });
   const help = button('Keyboard Shortcuts'), history = button('Toggle Undo History'), notes = button('Notes');
 
-  expectApart(await boxes({ help, list: button('Toggle Layers Panel'), history, notes }));
+  expectApart(await boxes({ help, list: button('Show or hide the list of everything on the plan'), history, notes }));
 
   await page.getByRole('button', { name: '3D', exact: true }).click();
   await expect(page.getByRole('region', { name: '3D floor plan viewer' })).toBeVisible({ timeout: 60_000 });

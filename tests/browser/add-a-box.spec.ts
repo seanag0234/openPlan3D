@@ -39,6 +39,8 @@ test.describe('on an iPad held upright', () => {
 
   test('picking a thing to place folds the list out of the way', async ({ page }) => {
     await openPlan(page, FIXTURE);
+    // Held upright the list starts folded away; Add brings it back.
+    await page.getByRole('button', { name: 'Add', exact: true }).click();
     await page.getByRole('button', { name: 'Objects', exact: true }).click();
     const search = page.getByRole('textbox', { name: 'Search furniture...', exact: true });
     await expect(search).toBeVisible();

@@ -76,7 +76,9 @@ for (const locale of ['en', 'pt']) test(`${locale}: requested annotation editing
   await expect(canvas).toBeFocused();
   await canvas.press('Shift+F10');
   await expect(items.first()).toBeFocused();
+  // Zoom to Fit, the last entry that acts at once: the note about the plan under it opens a sheet.
   await page.keyboard.press('End');
+  await page.keyboard.press('ArrowUp');
   await page.keyboard.press('Enter');
   await expect(menu).toHaveCount(0);
   await expect(canvas).toBeFocused();
