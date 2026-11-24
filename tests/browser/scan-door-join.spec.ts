@@ -79,7 +79,7 @@ test('joining a door of the second scan to one of the first snaps the scan onto 
   await expect(status).toContainText(`${groundWalls} walls`);
   await addScanToPlan(page);
   await expect(status).toContainText(`${groundWalls * 2} walls`);
-  await expect(status.getByText(`${selectable} selected`, { exact: true })).toBeVisible();
+  await expect(status.locator('[data-bar="bottom"]').getByText(`${selectable} selected`, { exact: true })).toBeVisible();
 
   const before = await exportJSON(page), floor = before.floors[0];
   const [first, second] = floor.rooms;
@@ -110,7 +110,7 @@ test('joining a door of the second scan to one of the first snaps the scan onto 
   await page.mouse.click(targetAt.x, targetAt.y);
   await expect(refused).toHaveCount(0);
   await expect(hint).toHaveCount(0);
-  await expect(status.getByText(`${selectable} selected`, { exact: true })).toBeVisible();
+  await expect(status.locator('[data-bar="bottom"]').getByText(`${selectable} selected`, { exact: true })).toBeVisible();
 
   const after = await exportJSON(page), joined = after.floors[0];
   // The first scan, every opening's fraction and the room records are untouched.

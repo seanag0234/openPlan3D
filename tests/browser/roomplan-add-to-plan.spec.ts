@@ -37,7 +37,7 @@ test('adding a RoomPlan scan twice stitches both beside the plan with unique ids
   await expect(status).toContainText(`${groundWalls} walls`);
   await expect(page.getByRole('combobox', { name: 'Current floor', exact: true }).locator('option')).toHaveText(['Ground Floor', 'Loft', 'Future Floor']);
   // The scan arrives selected as one group, ready to be moved or rotated into place.
-  await expect(status.getByText(`${selectable} selected`, { exact: true })).toBeVisible();
+  await expect(status.locator('[data-bar="bottom"]').getByText(`${selectable} selected`, { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Area Summary', exact: true }).click();
   const summary = page.getByRole('dialog', { name: 'Area Summary', exact: true });
   await expect(summary).toContainText(roomName);
@@ -46,7 +46,7 @@ test('adding a RoomPlan scan twice stitches both beside the plan with unique ids
 
   await addScanToPlan(page);
   await expect(status).toContainText(`${groundWalls * 2} walls`);
-  await expect(status.getByText(`${selectable} selected`, { exact: true })).toBeVisible();
+  await expect(status.locator('[data-bar="bottom"]').getByText(`${selectable} selected`, { exact: true })).toBeVisible();
   const twice = await exportJSON(page), ground = twice.floors[0];
   expect(twice.floors).toHaveLength(3);
   expect(ground.walls).toHaveLength(groundWalls * 2);
