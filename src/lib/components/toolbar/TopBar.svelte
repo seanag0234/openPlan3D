@@ -410,7 +410,7 @@
     />
   {:else}
     <button
-      class="font-semibold text-white text-sm hover:bg-white/10 px-2 py-0.5 rounded transition-colors max-w-[12rem] truncate max-xl:max-w-[4rem]"
+      class="font-semibold text-white text-sm hover:bg-white/10 px-2 py-0.5 rounded transition-colors max-w-[12rem] min-w-0 truncate max-xl:max-w-[8rem]"
       onclick={() => editingName = true}
       title={$t('projectToolbar.rename')}
     >{projectName}</button>
@@ -780,12 +780,13 @@
     {/if}
   </div>
 
-  <!-- Reserve the widest translated status so autosave cannot move toolbar targets. -->
-  <span class="inline-grid shrink-0 text-[11px] font-medium max-xl:hidden">
+  <!-- Reserve the widest translated status so autosave cannot move toolbar targets. Shown at every width;
+       when room is short the plan's name gives way first. -->
+  <span class="inline-grid shrink-0 text-[11px] font-medium">
     {#each (['saveControls.saving', 'saveControls.saved', 'saveControls.unsaved'] as const) as key}
       <span aria-hidden="true" data-save-label={$t(key)} class="invisible col-start-1 row-start-1 whitespace-nowrap before:content-[attr(data-save-label)]"></span>
     {/each}
-    <span class="col-start-1 row-start-1 whitespace-nowrap transition-colors duration-300 {$saveState === 'saved' ? 'text-emerald-400' : $saveState === 'saving' ? 'text-amber-300 animate-pulse' : 'text-white/50'}" title={lastSavedText}>
+    <span data-save-state class="col-start-1 row-start-1 whitespace-nowrap transition-colors duration-300 {$saveState === 'saved' ? 'text-emerald-400' : $saveState === 'saving' ? 'text-amber-300 animate-pulse' : 'text-white/50'}" title={lastSavedText}>
     {#if $saveState === 'saving'}
       {$t('saveControls.saving')}
     {:else if $saveState === 'saved'}
