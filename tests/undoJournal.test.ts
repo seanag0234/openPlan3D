@@ -47,6 +47,15 @@ describe('buildJournal', () => {
     expect(buildJournal(base({ undo: [], redo: [] }))).toBeNull();
     expect(buildJournal(base({ text: () => undefined }))).toBeNull();
   });
+
+  it('writes the plan alone for an empty history when asked to', () => {
+    const journal = buildJournal(base({ undo: [], redo: [], keepEmpty: true }))!;
+    expect(journal.undo).toEqual([]);
+    expect(journal.redo).toEqual([]);
+    expect(Object.values(journal.shared)).toEqual([picture]);
+    const later = journalFor(journal, '2026-01-02T03:04:06.000Z')!;
+    expect(later.undo).toEqual([{ state: journal.current, description: 'Edit', timestamp: 5000 }]);
+  });
 });
 
 describe('journalFor', () => {

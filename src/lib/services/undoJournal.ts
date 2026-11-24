@@ -21,14 +21,19 @@ export interface UndoJournal {
   shared: Record<string, string>;
 }
 
-/** The steps to keep for a plan, or null when there are none or they cannot be written whole. */
+/**
+ * The steps to keep for a plan, or null when there are none or they cannot be written whole. With `keepEmpty`, a
+ * plan with no steps still gets a journal of the plan alone: a change made in the last second before the page went
+ * away then has a step to go back to after the reload (see journalFor).
+ */
 export function buildJournal(input: {
   planUpdatedAt: string; current: string; undo: UndoEntry[]; redo: UndoEntry[];
-  tokens: (state: string) => string[]; text: (token: string) => string | undefined; now: number;
+  tokens: (state: string) => string[]; text: (token: string) => string | undefined; now: number; keepEmpty?: boolean;
 }, maxChars = JOURNAL_MAX_CHARS): UndoJournal | null {
   const undo = input.undo.slice(-JOURNAL_STEPS);
   const redo = input.redo.slice(-JOURNAL_STEPS);
-  if (!undo.length && !redo.length) return null;
+  const empty = !undo.length && !redo.length;
+  if (empty && !input.keepEmpty) return null;
   const collect = () => {
     const shared: Record<string, string> = {};
     for (const state of [input.current, ...undo.map(e => e.state), ...redo.map(e => e.state)]) {
@@ -53,7 +58,7 @@ export function buildJournal(input: {
     else return null;
     shared = collect()!;
   }
-  if (!undo.length && !redo.length) return null;
+  if (!empty && !undo.length && !redo.length) return null;
   return { v: 1, planUpdatedAt: input.planUpdatedAt, writtenAt: input.now, current: input.current, undo, redo, shared };
 }
 

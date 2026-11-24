@@ -56,10 +56,25 @@ export function initAutoSave() {
     if (event.storageArea && event.storageArea !== localStorage) return;
     void checkCurrent();
   };
+  // A page going away within the save wait leaves a copy the browser writes at once; the next load picks it up.
+  const stashUnsaved = () => {
+    try {
+      const project = get(currentProject);
+      if (!project || get(saveState) === 'saved' || get(saveConflict)) return;
+      localStore.stashUnsaved(project);
+    } catch {}
+  };
+  const onVisibility = () => {
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') stashUnsaved();
+  };
   if (typeof window !== 'undefined') {
     window.addEventListener('storage', onStorage);
     window.addEventListener('focus', checkCurrent);
+    window.addEventListener('pagehide', stashUnsaved);
   }
+  // The document listened to, kept so `stop` removes from the same one.
+  const doc = typeof document !== 'undefined' && typeof document.addEventListener === 'function' ? document : null;
+  doc?.addEventListener('visibilitychange', onVisibility);
   const stop = () => {
     disposed = true;
     unsubscribe();
@@ -67,7 +82,9 @@ export function initAutoSave() {
     if (typeof window !== 'undefined') {
       window.removeEventListener('storage', onStorage);
       window.removeEventListener('focus', checkCurrent);
+      window.removeEventListener('pagehide', stashUnsaved);
     }
+    try { doc?.removeEventListener('visibilitychange', onVisibility); } catch {}
     if (stopWatching === stop) stopWatching = null;
   };
   stopWatching = stop;
@@ -193,7 +210,7 @@ function keepUndoSteps(p: Project) {
   try {
     const history = historyForJournal();
     if (!history) return;
-    const journal = buildJournal({ ...history, planUpdatedAt: new Date(p.updatedAt).toISOString(), now: Date.now() });
+    const journal = buildJournal({ ...history, planUpdatedAt: new Date(p.updatedAt).toISOString(), now: Date.now(), keepEmpty: true });
     void writeUndoJournal(p.id, journal).catch(() => {});
   } catch {}
 }
@@ -207,6 +224,9 @@ function recallUndoSteps() {
       if (get(currentProject) !== project) return;
       const steps = journalFor(journal, new Date(project.updatedAt).toISOString());
       if (steps) restoreHistory(steps);
+      // A plan with no steps kept for it gets the plan itself, so a change lost to a reload in the next second
+      // (left behind with stashUnsaved) still has a step to go back to.
+      else if (get(saveState) === 'saved') keepUndoSteps(project);
     }).catch(() => {});
   } catch {}
 }
