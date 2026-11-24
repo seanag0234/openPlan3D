@@ -532,7 +532,7 @@ export const en = {
   "layers.guide": "{orientation} guide {number}",
   "layers.measurement": "Measurement {number} ({distance} cm)",
   "layers.annotation": "Dimension line {number} ({label})",
-  "layers.note": "Note {number} ({text})",
+  "layers.note": "Label {number} ({text})",
   "layers.value.single": "single",
   "layers.value.double": "double",
   "layers.value.sliding": "sliding",

@@ -12,7 +12,7 @@ for (const width of [1440,390]) test(`multiline note properties preserve line br
   const save=page.getByRole('button',{name:'Save',exact:true});
   async function exported(){await page.getByRole('button',{name:'Export',exact:true}).click();const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Download JSON',exact:true}).click();return JSON.parse(await readFile((await(await pending).path())!,'utf8')).floors[0];}
   const before=await exported();
-  await save.press('l');await page.getByRole('button',{name:/Note 1 \(Original Third line\)/}).click();await save.press('l');
+  await save.press('l');await page.getByRole('button',{name:/Label 1 \(Original Third line\)/}).click();await save.press('l');
   const field=page.locator('[data-plan-properties]').getByRole('textbox',{name:'Text',exact:true});
   await expect(field).toHaveValue('Original\n\nThird line');
   await expect(field).toHaveJSProperty('tagName','TEXTAREA');

@@ -80,7 +80,7 @@ for (const width of [1440, 390]) test(`Portuguese layers preserve visibility, se
   await wall.click();
   await expect(hide).toBeVisible();
   await expect(wall).toHaveClass(/bg-blue-100/);
-  const note = page.getByRole('button', { name: 'T Nota 1 (Original {number} note)', exact: true });
+  const note = page.getByRole('button', { name: 'T Rótulo 1 (Original {number} note)', exact: true });
   await note.click();
   await expect(note).toHaveClass(/bg-blue-100/);
   const after = await exported();

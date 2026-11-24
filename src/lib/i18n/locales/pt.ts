@@ -532,7 +532,7 @@ export const pt = {
   "layers.guide": "Guia {orientation} {number}",
   "layers.measurement": "Medição {number} ({distance} cm)",
   "layers.annotation": "Linha de cota {number} ({label})",
-  "layers.note": "Nota {number} ({text})",
+  "layers.note": "Rótulo {number} ({text})",
   "layers.value.single": "simples",
   "layers.value.double": "dupla",
   "layers.value.sliding": "de correr",
