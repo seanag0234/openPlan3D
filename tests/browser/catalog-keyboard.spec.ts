@@ -46,7 +46,7 @@ for (const locale of ['en', 'pt']) test(`${locale}: requested annotation editing
   await page.getByRole('option', { name: locale === 'pt' ? /Ferramenta de Texto/ : /Text Tool/ }).click();
   const canvas = page.getByLabel(/^(?:Floor plan editor canvas|Área de edição da planta baixa)$/, { exact: true });
   await canvas.click({ position: { x: 250, y: 250 } });
-  const input = page.getByRole('textbox', { name: locale === 'pt' ? 'Texto da anotação' : 'Annotation text', exact: true });
+  const input = page.getByRole('textbox', { name: locale === 'pt' ? 'Texto do rótulo' : 'Label text', exact: true });
   await expect(input).toBeFocused();
   await input.fill('Keyboard {number} annotation');
   await input.press('Enter');
