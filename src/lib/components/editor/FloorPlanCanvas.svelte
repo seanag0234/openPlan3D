@@ -2326,6 +2326,7 @@
   let selectionPress: { floorId: string; x: number; y: number; world: Point } | null = null;
   /** A mouse press on a locked label or piece with nothing else under it: picked on release if the pointer has not moved. */
   let lockedPress: (() => void) | null = null;
+  let pickPress: string | null = null;
 
   function sameSelectionPress(e: MouseEvent) {
     return currentTool === 'select' && selectionPress !== null && selectionPress.floorId === currentFloor?.id &&
@@ -2367,28 +2368,40 @@
     if (e.button === 0 && e.detail >= 2 && sameSelectionPress(e)) return;
     selectionPress = null;
     lockedPress = null;
+    pickPress = null;
     canvasGestureActive = true;
     canvasPressPosition = { x: e.clientX, y: e.clientY };
-    if (e.button === 0 && e.shiftKey && currentTool === 'select' && currentFloor && !spaceDown && !$panMode) {
-      const rect = canvas.getBoundingClientRect();
-      const wp = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
-      const measurement = hitTestMeasurement(wp, currentFloor);
-      const note = measurement ? null : hitTestTextAnnotation(wp, currentFloor);
-      const dimension = measurement || note ? null : hitTestAnnotation(wp, currentFloor);
-      const id = measurement || note || dimension;
-      if (id) {
-        selectAnnotationTarget(measurement ? 'measurement' : note ? 'text' : 'annotation', id, e, wp);
-        return;
-      }
+    // What a Shift-press or a picking click adds or drops: a measurement, a text label or a dimension first, then a piece.
+    const thingAt = (wp: Point): string | null => {
+      if (!currentFloor) return null;
+      const aux = hitTestMeasurement(wp, currentFloor) || hitTestTextAnnotation(wp, currentFloor) || hitTestAnnotation(wp, currentFloor);
+      if (aux) return aux;
       const entourage = () => findEntourageAt(wp, currentFloor!.entourage, d => entourageAspect(d, customEntourageDefs));
       const object = fixed ? findFurnitureAt(wp) || entourage() : findColumnAt(wp) || findStairAt(wp) || findFurnitureAt(wp) ||
         entourage() || findDoorAt(wp) || findWindowAt(wp) || findWallAt(wp);
-      if (object) {
-        toggleSelectionTarget(object.id);
-        return;
-      }
+      return object?.id ?? null;
+    };
+    // While picking several, a mouse click adds or drops what is under it, as a finger's tap does. Where a drag would move
+    // what is picked the press stays plain and the release settles the click; anywhere else it is a Shift-press at once.
+    let adding = e.shiftKey;
+    if (touchPress === null && !touchPan && e.button === 0 && !e.shiftKey && !e.ctrlKey && !e.metaKey
+        && currentTool === 'select' && get(multiSelectMode) && currentFloor && !spaceDown && !$panMode) {
+      const rect = canvas.getBoundingClientRect();
+      const wp = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
+      const id = thingAt(wp);
+      const box = currentSelectedIds.size >= 2 ? getMultiSelectBBox() : null;
+      const inBox = !!box && wp.x >= box.minX && wp.x <= box.maxX && wp.y >= box.minY && wp.y <= box.maxY;
+      const onlyPicked = id !== null && currentSelectedIds.size < 2 && !isLocked(currentFloor, id)
+        && [currentSelectedId, selectedMeasurementId, selectedAnnotationId, selectedTextAnnotationId].includes(id);
+      if (inBox || onlyPicked) pickPress = id;
+      else adding = true;
     }
-    if (e.button === 1 || (e.button === 0 && (touchPan || spaceDown || $panMode || (e.shiftKey && currentTool === 'select')))) {
+    if (e.button === 0 && adding && currentTool === 'select' && currentFloor && !spaceDown && !$panMode) {
+      const rect = canvas.getBoundingClientRect();
+      const id = thingAt(screenToWorld(e.clientX - rect.left, e.clientY - rect.top));
+      if (id) { toggleSelectionTarget(id); return; }
+    }
+    if (e.button === 1 || (e.button === 0 && (touchPan || spaceDown || $panMode || (adding && currentTool === 'select')))) {
       isPanning = true;
       panStartX = e.clientX;
       panStartY = e.clientY;
@@ -3294,6 +3307,11 @@
     if (lockedPress) {
       const pick = lockedPress; lockedPress = null;
       if (canvasPressPosition && Math.hypot(e.clientX - canvasPressPosition.x, e.clientY - canvasPressPosition.y) <= 4) { selectedRoomId.set(null); pick(); }
+    }
+    // A click on what is picked, or inside the picked pieces, while picking several adds or drops what is under it; a drag there has moved them.
+    if (pickPress) {
+      const id = pickPress; pickPress = null;
+      if (Math.hypot(e.clientX - canvasPressPosition.x, e.clientY - canvasPressPosition.y) <= 4) toggleSelectionTarget(id);
     }
 
     if (furnitureGestureStarted) {
