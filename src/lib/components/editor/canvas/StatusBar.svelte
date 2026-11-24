@@ -15,7 +15,7 @@
 </script>
 
 <!-- Keep controls above classic horizontal scrollbars, which consume height on Linux. -->
-<div style:--visible-bottom={`${bottomInset}px`} class="absolute bottom-2 right-2 max-md:bottom-[calc(var(--visible-bottom)+3rem)] max-md:left-2 max-md:overflow-x-auto max-md:min-h-12 max-md:items-center max-md:whitespace-nowrap max-md:[&>*]:shrink-0 bg-white/80 rounded px-2 py-1 text-xs text-gray-500 flex gap-3">
+<div data-bar="bottom" style:--visible-bottom={`${bottomInset}px`} class="absolute bottom-2 right-2 max-md:bottom-[calc(var(--visible-bottom)+3rem)] max-md:left-2 max-md:overflow-x-auto max-md:min-h-12 max-md:items-center max-md:whitespace-nowrap max-md:[&>*]:shrink-0 bg-white/80 rounded px-2 py-1 text-xs text-gray-500 flex gap-3">
   {#if rooms.length > 0}
     <span>{$t(rooms.length === 1 ? 'canvasStatus.roomsOne' : 'canvasStatus.roomsMany', { count: rooms.length })}</span>
     <span>{formatArea(rooms.reduce((s, r) => s + r.area, 0), $projectSettings.units)}</span>

@@ -7,7 +7,7 @@
 </script>
 
 <!-- Zoom Controls (bottom-left) -->
-<div style:bottom={`${bottom}px`} class="absolute left-3 max-md:left-20 z-20 flex items-center gap-1 bg-white rounded-lg shadow-lg border border-gray-200 px-1 py-0.5">
+<div data-bar="zoom" style:bottom={`${bottom}px`} class="absolute left-3 max-md:left-20 z-20 flex items-center gap-1 bg-white rounded-lg shadow-lg border border-gray-200 px-1 py-0.5">
   <button
     class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-600 hover:text-gray-800 font-bold text-lg"
     title={$t('canvasZoom.outHint')}
