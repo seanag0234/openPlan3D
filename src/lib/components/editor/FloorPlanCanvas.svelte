@@ -46,6 +46,7 @@
   import { coarsePointer } from '$lib/stores/pointer';
   import { gridLineStepCm, resizeStep, snapPieceMove, snapValue, stopAtWalls, type SnapContext } from '$lib/utils/snapPolicy';
   import { furnitureSizeLabel } from '$lib/utils/furnitureCaption';
+  import { createTouchGestures, type TouchSample } from '$lib/utils/touchGestures';
   import { drawWall as _drawWall, drawDoorOnWall as _drawDoorOnWall, drawWindowOnWall as _drawWindowOnWall, drawDoorDistanceDimensions as _drawDoorDistanceDimensions, drawWindowDistanceDimensions as _drawWindowDistanceDimensions, drawFurnitureItem, drawStair as _drawStair, drawColumn as _drawColumn, drawGuides as _drawGuides, drawPersistedMeasurements as _drawPersistedMeasurements, drawTextAnnotations as _drawTextAnnotations, drawAnnotation as _drawAnnotation, drawAnnotations as _drawAnnotations, drawRooms as _drawRooms, drawWallJoints as _drawWallJoints, drawSnapPoints as _drawSnapPoints, drawMinimap as _drawMinimap, drawEntourageItems as _drawEntourageItems, drawEntourageGhost as _drawEntourageGhost, drawFloorBelowGhost as _drawFloorBelowGhost, entourageAspect } from '$lib/utils/canvasRenderer';
   import { getEntourageDef } from '$lib/utils/entourageCatalog';
   import { translatedOpeningPosition } from '$lib/utils/openingTranslation';
@@ -3303,20 +3304,20 @@
   }
 
   // ── Touch input (phones/tablets) ──────────────────────────────────
-  // One finger drives the existing mouse pipeline via synthetic MouseEvents
-  // (so every tool works unchanged); two fingers pinch-zoom and pan.
-  // Listeners are registered manually in onMount with { passive: false }
-  // because we must preventDefault to stop scrolling and the browser's
-  // compatibility mouse events (which would double-fire the handlers).
-  let pinchState: { dist: number; cx: number; cy: number } | null = null;
-  let singleTouchActive = false;
-  let singleTouchOrigin: { clientX: number; clientY: number } | null = null;
-  let singleTouchMoved = false;
-  let lastTapTime = 0;
-  let lastTapX = 0;
-  let lastTapY = 0;
+  // touchGestures turns the fingers into one gesture: a tap, a long press, a one-finger drag or
+  // a two-finger pinch. Nothing is pressed until the finger has moved past the slop or lifted,
+  // so a pinch never selects what its first finger landed on. Taps and drags drive the existing
+  // mouse pipeline through synthetic MouseEvents (so every tool works unchanged); a pinch zooms
+  // and pans. Listeners are registered manually in onMount with { passive: false } because we
+  // must preventDefault to stop scrolling and the browser's compatibility mouse events (which
+  // would double-fire the handlers).
+  let touchPress: 'tap' | 'drag' | null = null;   // set only while a touch's mousedown is being handled
 
-  function dispatchMouse(type: 'mousedown' | 'mousemove' | 'mouseup' | 'click' | 'dblclick', clientX: number, clientY: number) {
+  function samples(list: ArrayLike<{ identifier?: number; clientX: number; clientY: number }>): TouchSample[] {
+    return Array.from(list, (t, i) => ({ id: t.identifier ?? i, x: t.clientX, y: t.clientY }));
+  }
+
+  function dispatchMouse(type: 'mousedown' | 'mousemove' | 'mouseup' | 'click' | 'dblclick', clientX: number, clientY: number, init: MouseEventInit = {}) {
     canvas.dispatchEvent(new MouseEvent(type, {
       clientX,
       clientY,
@@ -3324,101 +3325,52 @@
       buttons: type === 'mousedown' || type === 'mousemove' ? 1 : 0,
       bubbles: true,
       cancelable: true,
+      ...init,
     }));
   }
 
-  function onTouchStart(e: TouchEvent) {
-    e.preventDefault();
-    if (e.touches.length === 1) {
-      singleTouchActive = true;
-      singleTouchOrigin = { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
-      singleTouchMoved = false;
-      dispatchMouse('mousedown', e.touches[0].clientX, e.touches[0].clientY);
-    } else if (e.touches.length === 2) {
-      lastTapTime = 0;
-      singleTouchOrigin = null;
-      // Second finger landed: abandon any single-finger drag and start pinching
-      if (singleTouchActive) {
-        dispatchMouse('mouseup', e.touches[0].clientX, e.touches[0].clientY);
-        singleTouchActive = false;
-      }
-      const a = e.touches[0], b = e.touches[1];
-      pinchState = {
-        dist: Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY),
-        cx: (a.clientX + b.clientX) / 2,
-        cy: (a.clientY + b.clientY) / 2,
-      };
-    }
+  /** Two fingers: zoom about their centre by `scale` and let the plan follow the centre. */
+  function pinchBy(event: { centerX: number; centerY: number; scale: number; dx: number; dy: number }) {
+    const rect = canvas.getBoundingClientRect();
+    const sx = event.centerX - rect.left, sy = event.centerY - rect.top;
+    // Zoom about the pinch midpoint (same math as onWheel)
+    const newZoom = Math.max(minimumZoom, Math.min(10, zoom * event.scale));
+    const worldX = (sx - width / 2) / zoom + camX;
+    const worldY = (sy - height / 2) / zoom + camY;
+    camX = worldX - (sx - width / 2) / newZoom;
+    camY = worldY - (sy - height / 2) / newZoom;
+    zoom = newZoom;
+    // Two-finger pan: camera follows the midpoint
+    camX -= event.dx / newZoom;
+    camY -= event.dy / newZoom;
+    markDirty();
   }
 
-  function onTouchMove(e: TouchEvent) {
-    e.preventDefault();
-    if (pinchState && e.touches.length >= 2) {
-      const a = e.touches[0], b = e.touches[1];
-      const dist = Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
-      const cx = (a.clientX + b.clientX) / 2;
-      const cy = (a.clientY + b.clientY) / 2;
-      const rect = canvas.getBoundingClientRect();
-      const sx = cx - rect.left, sy = cy - rect.top;
-      // Zoom about the pinch midpoint (same math as onWheel)
-      const newZoom = Math.max(minimumZoom, Math.min(10, zoom * (dist / (pinchState.dist || dist))));
-      const worldX = (sx - width / 2) / zoom + camX;
-      const worldY = (sy - height / 2) / zoom + camY;
-      camX = worldX - (sx - width / 2) / newZoom;
-      camY = worldY - (sy - height / 2) / newZoom;
-      zoom = newZoom;
-      // Two-finger pan: camera follows the midpoint
-      camX -= (cx - pinchState.cx) / newZoom;
-      camY -= (cy - pinchState.cy) / newZoom;
-      pinchState = { dist, cx, cy };
-      markDirty();
-    } else if (singleTouchActive && e.touches.length === 1) {
-      if (singleTouchOrigin && Math.hypot(e.touches[0].clientX - singleTouchOrigin.clientX,
-          e.touches[0].clientY - singleTouchOrigin.clientY) > 10) singleTouchMoved = true;
-      dispatchMouse('mousemove', e.touches[0].clientX, e.touches[0].clientY);
+  const gestures = createTouchGestures(event => {
+    if (!canvas?.isConnected) return;   // a long press can come due after the plan has closed
+    switch (event.type) {
+      case 'tap':
+        touchPress = 'tap';
+        dispatchMouse('mousedown', event.x, event.y);
+        touchPress = null;
+        dispatchMouse('mouseup', event.x, event.y);
+        // Synthesize click so document-level click-outside handlers (menus) fire
+        dispatchMouse('click', event.x, event.y);
+        // Double-tap → dblclick (finish wall chains, rename rooms, …)
+        if (event.count === 2) dispatchMouse('dblclick', event.x, event.y);
+        break;
+      case 'dragStart': touchPress = 'drag'; dispatchMouse('mousedown', event.x, event.y); touchPress = null; break;
+      case 'dragMove': dispatchMouse('mousemove', event.x, event.y); break;
+      case 'dragEnd': dispatchMouse('mouseup', event.x, event.y); break;
+      case 'pinchMove': pinchBy(event); break;
     }
-  }
+  });
 
+  function onTouchStart(e: TouchEvent) { e.preventDefault(); gestures.start(samples(e.touches)); }
+  function onTouchMove(e: TouchEvent) { e.preventDefault(); gestures.move(samples(e.touches)); }
   function onTouchEnd(e: TouchEvent) {
     e.preventDefault();
-    if (e.type === 'touchcancel') {
-      pinchState = null;
-      lastTapTime = 0;
-      if (singleTouchActive) {
-        singleTouchActive = false;
-        const touch = e.changedTouches[0] ?? singleTouchOrigin;
-        if (touch) dispatchMouse('mouseup', touch.clientX, touch.clientY);
-      }
-      singleTouchOrigin = null;
-      return;
-    }
-    if (pinchState) {
-      // Leaving pinch: ignore the remaining finger until it lifts too
-      if (e.touches.length < 2) pinchState = null;
-      return;
-    }
-    if (singleTouchActive && e.touches.length === 0) {
-      const t = e.changedTouches[0] ?? singleTouchOrigin;
-      singleTouchActive = false;
-      if (t && singleTouchOrigin && Math.hypot(t.clientX - singleTouchOrigin.clientX,
-          t.clientY - singleTouchOrigin.clientY) > 10) singleTouchMoved = true;
-      singleTouchOrigin = null;
-      if (!t) return;
-      dispatchMouse('mouseup', t.clientX, t.clientY);
-      if (singleTouchMoved) { lastTapTime = 0; return; }
-      // Synthesize click so document-level click-outside handlers (menus) fire
-      dispatchMouse('click', t.clientX, t.clientY);
-      // Double-tap → dblclick (finish wall chains, rename rooms, …)
-      const now = Date.now();
-      if (now - lastTapTime < 350 && Math.hypot(t.clientX - lastTapX, t.clientY - lastTapY) < 30) {
-        dispatchMouse('dblclick', t.clientX, t.clientY);
-        lastTapTime = 0;
-      } else {
-        lastTapTime = now;
-        lastTapX = t.clientX;
-        lastTapY = t.clientY;
-      }
-    }
+    if (e.type === 'touchcancel') gestures.cancel(); else gestures.end(samples(e.touches), samples(e.changedTouches));
   }
 
   // ── Exact-length wall entry (issue #6) ────────────────────────────

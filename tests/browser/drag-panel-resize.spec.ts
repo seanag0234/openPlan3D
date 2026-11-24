@@ -89,9 +89,11 @@ test('a touch drag on an unselected piece follows the finger while the panel ope
     node.dispatchEvent(event);
   }, { type, x, y });
   await touch('touchstart', piece.x, piece.y);
+  // A finger presses nothing until it has moved past the 10 px slop: the second step starts the drag.
+  for (let step = 1; step <= 2; step++) await touch('touchmove', piece.x, piece.y + travel * step / 6);
   await expect(page.locator('[data-plan-properties]')).toBeVisible();
   await settle(page);
-  for (let step = 1; step <= 6; step++) await touch('touchmove', piece.x, piece.y + travel * step / 6);
+  for (let step = 3; step <= 6; step++) await touch('touchmove', piece.x, piece.y + travel * step / 6);
   await touch('touchend', piece.x, piece.y + travel);
   expectMovedStraightDown(await exportedPiece(page), zoom);
 });
