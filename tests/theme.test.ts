@@ -140,3 +140,139 @@ describe('theme preference', () => {
     expect(storageListeners).toHaveLength(0);
   });
 });
+
+/** A page that can carry attributes on <html>, as every browser's can. */
+function attributePage() {
+  const setAttribute = vi.fn();
+  const removeAttribute = vi.fn();
+  vi.stubGlobal('document', { documentElement: { classList: { toggle }, setAttribute, removeAttribute } });
+  return { setAttribute, removeAttribute };
+}
+
+describe('looks that are easier on the eyes', () => {
+  it('puts a look on the light theme even when the system theme is dark', async () => {
+    mockStorage();
+    systemDark = true;
+    const { setAttribute } = attributePage();
+    const { themePreference } = await load();
+    themePreference.set('soft');
+    expect(setAttribute).toHaveBeenCalledWith('data-comfort', 'soft');
+    expect(toggle).toHaveBeenLastCalledWith('dark', false);
+  });
+
+  it('takes the look away when Light is chosen', async () => {
+    mockStorage();
+    const { removeAttribute } = attributePage();
+    const { themePreference } = await load();
+    themePreference.set('soft');
+    removeAttribute.mockClear();
+    themePreference.set('light');
+    expect(removeAttribute).toHaveBeenCalledWith('data-comfort');
+    expect(toggle).toHaveBeenLastCalledWith('dark', false);
+  });
+
+  it('remembers Night across a reload and applies it', async () => {
+    const data = mockStorage();
+    attributePage();
+    (await load()).themePreference.set('night');
+    expect(data.get('o3d_theme')).toBe('night');
+    vi.resetModules();
+    const { setAttribute } = attributePage();
+    const { themePreference } = await load();
+    expect(get(themePreference)).toBe('night');
+    expect(setAttribute).toHaveBeenCalledWith('data-comfort', 'night');
+    expect(toggle).toHaveBeenLastCalledWith('dark', false);
+  });
+
+  it('applies a look chosen in another tab', async () => {
+    const data = mockStorage();
+    const { setAttribute } = attributePage();
+    const here = await openTab();
+    const other = await openTab();
+    other.themePreference.set('rose');
+    setAttribute.mockClear();
+    here.storageChanged('o3d_theme', data.get('o3d_theme')!);
+    expect(get(here.themePreference)).toBe('rose');
+    expect(setAttribute).toHaveBeenCalledWith('data-comfort', 'rose');
+  });
+
+  it('does not throw on a page without attribute methods', async () => {
+    mockStorage();
+    const { themePreference } = await load();
+    expect(() => themePreference.set('soft')).not.toThrow();
+    expect(toggle).toHaveBeenLastCalledWith('dark', false);
+  });
+
+  it('lists the four looks', async () => {
+    const { COMFORT_LOOKS } = await load();
+    expect(COMFORT_LOOKS).toEqual(['soft', 'rose', 'dim', 'night']);
+  });
+});
+
+describe('less motion', () => {
+  it('is off by default', async () => {
+    mockStorage();
+    const { setAttribute, removeAttribute } = attributePage();
+    const { lessMotion } = await load();
+    expect(get(lessMotion)).toBe(false);
+    expect(setAttribute).not.toHaveBeenCalledWith('data-less-motion', '');
+    expect(removeAttribute).toHaveBeenCalledWith('data-less-motion');
+  });
+
+  it('is stored and marked on the page when switched on, and both go when switched off', async () => {
+    const data = mockStorage();
+    const { setAttribute, removeAttribute } = attributePage();
+    const { lessMotion } = await load();
+    lessMotion.set(true);
+    expect(get(lessMotion)).toBe(true);
+    expect(data.get('o3d_less_motion')).toBe('1');
+    expect(setAttribute).toHaveBeenCalledWith('data-less-motion', '');
+    removeAttribute.mockClear();
+    lessMotion.set(false);
+    expect(get(lessMotion)).toBe(false);
+    expect(data.has('o3d_less_motion')).toBe(false);
+    expect(removeAttribute).toHaveBeenCalledWith('data-less-motion');
+  });
+
+  it('is remembered across a reload', async () => {
+    mockStorage();
+    attributePage();
+    (await load()).lessMotion.set(true);
+    vi.resetModules();
+    const { setAttribute } = attributePage();
+    const { lessMotion } = await load();
+    expect(get(lessMotion)).toBe(true);
+    expect(setAttribute).toHaveBeenCalledWith('data-less-motion', '');
+  });
+
+  it('survives blocked site storage', async () => {
+    blockStorage();
+    const { setAttribute } = attributePage();
+    const { lessMotion } = await load();
+    expect(get(lessMotion)).toBe(false);
+    expect(() => lessMotion.set(true)).not.toThrow();
+    expect(get(lessMotion)).toBe(true);
+    expect(setAttribute).toHaveBeenCalledWith('data-less-motion', '');
+    expect(() => lessMotion.set(false)).not.toThrow();
+  });
+
+  it('applies a change made in another tab', async () => {
+    mockStorage();
+    const { setAttribute, removeAttribute } = attributePage();
+    const here = await openTab();
+    const { lessMotion } = await import('../src/lib/stores/theme');
+    setAttribute.mockClear();
+    here.storageChanged('o3d_less_motion', '1');
+    expect(get(lessMotion)).toBe(true);
+    expect(setAttribute).toHaveBeenCalledWith('data-less-motion', '');
+    here.storageChanged('o3d_less_motion', null);
+    expect(get(lessMotion)).toBe(false);
+    expect(removeAttribute).toHaveBeenCalledWith('data-less-motion');
+  });
+
+  it('does not throw on a page without attribute methods', async () => {
+    mockStorage();
+    const { lessMotion } = await load();
+    expect(() => lessMotion.set(true)).not.toThrow();
+  });
+});
