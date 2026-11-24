@@ -2,7 +2,7 @@
   import { t } from '$lib/i18n';
   import { templateLabels } from '$lib/i18n/templateLabels';
   import { onDestroy } from 'svelte';
-  import { openProject, readPlanFile } from '$lib/services/projectOpening';
+  import { openProject, openPlanFile, readPlanFile } from '$lib/services/projectOpening';
   import { LibraryBackupFileError } from '$lib/services/libraryRestore';
   import ImportError from '$lib/components/ImportError.svelte';
   import { goto } from '$app/navigation';
@@ -62,7 +62,7 @@
     importError = null;
     try {
       // A library backup holds every project: readPlanFile refuses it, and Restore previews it.
-      const project = await openProject(() => readPlanFile(file), 'import', openingLifetime.signal);
+      const project = await openPlanFile(() => readPlanFile(file), openingLifetime.signal);
       if (!project) return;
       markSeen();
       goto(`${base}/editor?id=${encodeURIComponent(project.id)}`);
