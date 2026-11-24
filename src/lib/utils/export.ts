@@ -21,7 +21,7 @@ import { wallDimensionLabel } from './wallDimensionLabel';
 import type { Project, Floor, FurnitureItem } from '$lib/models/types';
 import { getCatalogItem, getFurnitureSize } from '$lib/utils/furnitureCatalog';
 import { resolveRooms, getRoomPolygon, roomLabelPosition } from '$lib/utils/roomDetection';
-import { drawStair, drawFurnitureItem, drawColumn, drawDoorOnWall, drawWindowOnWall, drawEntourageItems, drawTextAnnotations, drawAnnotations, drawPersistedMeasurements } from '$lib/utils/canvasRenderer';
+import { drawStair, drawFurnitureItem, drawColumn, drawDoorOnWall, drawWindowOnWall, drawEntourageItems, drawTextAnnotations, drawAnnotations, drawPersistedMeasurements, getRoomFill, WALL_FILL } from '$lib/utils/canvasRenderer';
 import type { CanvasState } from '$lib/utils/canvasInteraction';
 import { projectSettings, formatArea, formatLength } from '$lib/stores/settings';
 import { currentPlanExportVisibility } from '$lib/stores/planVisibility';
@@ -255,7 +255,6 @@ export async function exportAsPNG(canvas: HTMLCanvasElement | null, project?: Pr
       ctx.fillRect(0, 0, w, h);
 
       // Draw room fills
-      const ROOM_COLORS = ['#bfdbfe', '#fde68a', '#bbf7d0', '#fecaca', '#ddd6fe', '#a5f3fc', '#fed7aa'];
       const rooms = resolveRooms(floor);
       const polygons = rooms.map(room => getRoomPolygon(room, floor.walls));
       const holes = roomHoles(polygons);
@@ -263,11 +262,10 @@ export async function exportAsPNG(canvas: HTMLCanvasElement | null, project?: Pr
         const room = rooms[ri];
         const poly = polygons[ri];
         if (poly.length < 3) continue;
-        ctx.fillStyle = ROOM_COLORS[ri % ROOM_COLORS.length];
-        ctx.globalAlpha = 0.4;
+        // The room's own colour, as the screen paints it.
+        ctx.fillStyle = getRoomFill(room, ri);
         traceRoomRings(ctx, poly, holes[ri], p => ({x:p.x-minX+pad,y:p.y-minY+pad}));
         if (!room.floorOpening) ctx.fill('evenodd');
-        ctx.globalAlpha = 1;
         if (!visibility.roomLabels) continue;
         // Room label
         const c = roomLabelPosition(room, poly, holes[ri]);
@@ -281,7 +279,7 @@ export async function exportAsPNG(canvas: HTMLCanvasElement | null, project?: Pr
       }
 
       // Draw walls
-      ctx.strokeStyle = '#333';
+      ctx.strokeStyle = WALL_FILL;
       ctx.lineCap = 'round';
       for (const wall of visibility.walls ? floor.walls : []) {
         ctx.lineWidth = wall.thickness;
@@ -754,7 +752,6 @@ function renderPDF(project: Project, preparedImages: ReadonlyMap<string,HTMLImag
   ctx.fillRect(0, 0, planW, planH);
 
   // Room fills
-  const ROOM_COLORS = ['#bfdbfe', '#fde68a', '#bbf7d0', '#fecaca', '#ddd6fe', '#a5f3fc', '#fed7aa'];
   const rooms = resolveRooms(floor);
   const polygons = rooms.map(room => getRoomPolygon(room, floor.walls));
   const holes = roomHoles(polygons);
@@ -762,11 +759,10 @@ function renderPDF(project: Project, preparedImages: ReadonlyMap<string,HTMLImag
     const room = rooms[ri];
     const poly = polygons[ri];
     if (poly.length < 3) continue;
-    ctx.fillStyle = ROOM_COLORS[ri % ROOM_COLORS.length];
-    ctx.globalAlpha = 0.4;
+    // The room's own colour, as the screen paints it.
+    ctx.fillStyle = getRoomFill(room, ri);
     traceRoomRings(ctx, poly, holes[ri], p => ({x:p.x-minX+pad,y:p.y-minY+pad}));
     if (!room.floorOpening) ctx.fill('evenodd');
-    ctx.globalAlpha = 1;
     if (!visibility.roomLabels) continue;
     const c = roomLabelPosition(room, poly, holes[ri]);
     ctx.fillStyle = '#444';
@@ -779,7 +775,7 @@ function renderPDF(project: Project, preparedImages: ReadonlyMap<string,HTMLImag
   }
 
   // Walls
-  ctx.strokeStyle = '#333';
+  ctx.strokeStyle = WALL_FILL;
   ctx.lineCap = 'round';
   for (const wall of visibility.walls ? floor.walls : []) {
     ctx.lineWidth = wall.thickness;
