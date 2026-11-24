@@ -625,8 +625,8 @@ exists in the Downloads folder.
 If the active floor is empty, the 2D PNG, SVG, DXF, DWG and PDF exports do
 nothing except show "Add walls, furniture, stairs, columns, entourage, notes or
 measurements to the active floor before exporting a PNG" (or "… an SVG", "… a
-DXF", "… a DWG", "… a PDF"). If everything on it is on a hidden layer, they
-say "Everything on the active floor is on a hidden layer. …" instead (see
+DXF", "… a DWG", "… a PDF"). If everything on it is hidden, they
+say "Everything on this floor is hidden. …" instead (see
 [What the 2D exports show](#what-the-2d-exports-show)).
 
 DXF and DWG files hold CAD linework only, so they leave out uploaded entourage
@@ -691,10 +691,10 @@ while a door, window or furniture item is selected, and the Floor Below ghost
 are never exported; **Extension Lines**, **Object Distance** and **Line Color**
 only change the screen. The PDF's Room Schedule and summary always cover the
 whole floor. If every item on the active floor is hidden, the export says
-"Everything on the active floor is on a hidden layer. Exports show only what
-the 2D plan shows: turn the layers back on under Layers and export again."
-instead of saving an empty file, and Print Preview says "Everything on this
-floor is on a hidden layer. Turn its layers back on under Layers to print it."
+"Everything on this floor is hidden. Exports show only what the 2D plan
+shows: turn it back on under "Show and hide" and export again." instead of
+saving an empty file, and Print Preview says "Everything on this floor is
+hidden. Turn it back on under "Show and hide" to print it."
 **Export 3D as PNG** shows the 3D view, which has no labels, notes or
 dimensions. JSON files, project packages and interchange files always contain
 everything.
@@ -1123,8 +1123,8 @@ Messages are quoted as the editor shows them.
 
 **Exporting**
 
-- "Everything on the active floor is on a hidden layer." — The exports draw
-  what the 2D plan shows; show the hidden groups again under **Layers**.
+- "Everything on this floor is hidden." — The exports draw
+  what the 2D plan shows; show the hidden groups again under **Show and hide**.
   Dimensions, notes or furniture missing from an export are hidden the same
   way (see "What the 2D exports show" in section 11).
 - "Couldn't export PDF" / "Couldn't export 2D PNG" with "Add walls, furniture,

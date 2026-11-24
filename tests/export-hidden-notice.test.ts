@@ -41,9 +41,9 @@ it.each(wrappers)('explains a %s export whose floor content is all on hidden lay
   expect(exporter).not.toHaveBeenCalled();
   const notice = get(exportNotice)!;
   expect(translate('en', notice.title)).toBe(title);
-  expect(translate('en', notice.message)).toBe('Everything on the active floor is on a hidden layer. Exports show only what the 2D plan shows: turn the layers back on under Layers and export again.');
+  expect(translate('en', notice.message)).toBe('Everything on this floor is hidden. Exports show only what the 2D plan shows: turn it back on under "Show and hide" and export again.');
   expect(translate('pt', notice.title)).toBe(portugueseTitle);
-  expect(translate('pt', notice.message)).toContain('Camadas');
+  expect(translate('pt', notice.message)).toContain('"Mostrar e ocultar"');
 });
 
 it.each(wrappers)('exports the %s as before once a layer with content is shown again', async (_format, run, exporter) => {
