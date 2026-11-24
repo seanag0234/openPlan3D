@@ -19,4 +19,5 @@ export const barsPt = {
   "bars.houseFixed": "🏠 Casa: fixa",
   "bars.houseMoves": "🏠 Casa: pode mover",
   "bars.houseHint": "Paredes, portas, janelas e ambientes ficam no lugar enquanto a casa está fixa",
+  "bars.sendPlan": "Enviar esta planta",
 } as const;
