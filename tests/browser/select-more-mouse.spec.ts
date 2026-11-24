@@ -121,3 +121,11 @@ test('without Select more, a click on Box A then on Box B picks Box B alone', as
   expect(moved(before, after, 'box-b').y).toBeGreaterThan(0);
   expect(item(after, 'box-a')).toEqual(item(before, 'box-a'));
 });
+
+test('with a mouse, the picking pill says Click and holds Done', async ({ page }) => {
+  await open(page);
+  await selectMore(page, 'Box A');
+  const pill = page.locator('[data-tool-hint]');
+  await expect(pill).toContainText('Click things to add them');
+  await expect(pill.getByRole('button', { name: 'Done', exact: true })).toBeVisible();
+});
