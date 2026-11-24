@@ -760,7 +760,7 @@
 
     ctx.globalAlpha = 1;
 
-    ctx.font = 'bold 11px system-ui, sans-serif';
+    ctx.font = 'bold 12px system-ui, sans-serif';
     const text = translate(get(locale), isDoor ? 'canvasHints.placeDoor' : 'canvasHints.placeWindow');
     const tm = ctx.measureText(text);
     const tx = s.x, ty = s.y - thickness / 2 - 24;
@@ -897,7 +897,7 @@
     const dimMx = (sd1.x + sd2.x) / 2;
     const dimMy = (sd1.y + sd2.y) / 2;
     ctx.fillStyle = '#6366f1';
-    const fontSize = Math.max(10, 11 * zoom);
+    const fontSize = Math.max(12, 11 * zoom);
     ctx.font = `${fontSize}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -1002,7 +1002,7 @@
   function drawRulers() {
     if (!ctx || !showRulers) return;
     const R = RULER_SIZE;
-    const fontSize = 9;
+    const fontSize = 12;
     const isImperial = dimSettings.units === 'imperial';
     ctx.save();
 
@@ -1056,7 +1056,7 @@
 
     ctx.fillStyle = '#6b7280';
     ctx.font = `${fontSize}px sans-serif`;
-    ctx.textAlign = 'center';
+    ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
 
     for (let wx = startTick; wx <= worldRight; wx += minorStep) {
@@ -1078,7 +1078,8 @@
       if (isMajor) {
         ctx.fillStyle = isOrigin ? '#ef4444' : '#6b7280';
         const label = isOrigin ? '0' : rulerLabel(wx, tickStep, isImperial);
-        ctx.fillText(label, sx, 2);
+        // Beside its mark rather than on it, so a 12 px number leaves the mark in view.
+        ctx.fillText(label, sx + 3, 2);
         ctx.fillStyle = '#6b7280';
       }
     }
@@ -1115,10 +1116,11 @@
       if (isMajor) {
         const label = isOrigin ? '0' : rulerLabel(wy, tickStep, isImperial);
         ctx.save();
-        ctx.translate(R - 3, sy);
+        // Runs upward from just above its mark, along the strip's outer edge.
+        ctx.translate(2, sy - 3);
         ctx.rotate(-Math.PI / 2);
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
         ctx.fillStyle = isOrigin ? '#ef4444' : '#6b7280';
         ctx.font = `${fontSize}px sans-serif`;
         ctx.fillText(label, 0, 0);
@@ -1387,7 +1389,7 @@
           }
           
           // --- Draw all dimension lines ---
-          const fontSize = Math.max(9, 10 * zoom);
+          const fontSize = Math.max(12, 10 * zoom);
           ctx.font = `${fontSize}px sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
@@ -1578,7 +1580,7 @@
       const angleText = shiftDown ? `${Math.round(displayAngle)}° ⇧` : `${Math.round(displayAngle)}°`;
 
       // Dimension pill (on the wall) — amber while an exact length is being typed
-      ctx.font = 'bold 11px system-ui, sans-serif';
+      ctx.font = 'bold 12px system-ui, sans-serif';
       const dimTW = ctx.measureText(dimText).width;
       const dimPW = dimTW + 12;
       const dimPH = 18;
@@ -1647,7 +1649,7 @@
           ctx.setLineDash([]);
         }
         // "Extend to wall" tooltip
-        ctx.font = 'bold 10px system-ui, sans-serif';
+        ctx.font = 'bold 12px system-ui, sans-serif';
         const extText = translate(get(locale), 'canvasHints.snapWall');
         const extTW = ctx.measureText(extText).width;
         ctx.fillStyle = '#ec4899';
