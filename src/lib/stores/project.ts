@@ -74,8 +74,8 @@ export const viewMode = writable<'2d' | '3d'>('2d');
 // Undo / Redo
 /** The canvas selection that went with a history state. It travels with the state so Undo leaves the
  *  elements selected that the user had before the step and Redo the ones they had after it. */
-interface SelectionSnapshot { id: string | null; ids: string[] }
-interface UndoEntry {
+export interface SelectionSnapshot { id: string | null; ids: string[] }
+export interface UndoEntry {
   state: string;
   description: string;
   timestamp: number;
