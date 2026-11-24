@@ -613,7 +613,7 @@ The **Export** button in the top bar opens:
 | **Download project package** | `openplan3d-project.zip` | "For iPhone and web. Includes retained original data and attachments, even when they are not shown here." See below |
 | **Share with Assistant…** | nothing downloaded | Uploads a copy for seven days and gives you a code and secret (section 14) |
 | **Other planners** → **Open in OpenLandscape3D**, **Open in OpenKitchen3D**, **Open in OpenCatio3D** | nothing downloaded; a new tab | Opens that planner with the whole plan in the link (see "Opening a plan in another planner" below) |
-| **Download interchange JSON** | `<Project-Name>-openplan3d.json` | "For OpenKitchen3D, OpenLandscape3D, OpenCatio3D and the iPhone app. Opening another planner puts the whole file in the link; nothing is uploaded. The file carries the plan's geometry only; the project package keeps the full plan." Walls, doors, windows, furniture and room labels in metres, plus anything one of those planners stored in the file |
+| **Download for other planners (JSON)** | `<Project-Name>-openplan3d.json` | "For OpenKitchen3D, OpenLandscape3D, OpenCatio3D and the iPhone app. Opening another planner puts the whole file in the link; nothing is uploaded. The file carries the plan's geometry only; the project package keeps the full plan." Walls, doors, windows, furniture and room labels in metres, plus anything one of those planners stored in the file |
 | **Import JSON** | — | Opens a `.json` or RoomPlan `.zip` as a new project (section 12) |
 | **Import project package** | — | Opens the same **Import project package** dialog as the library page (section 12); after **Import as copy** the editor switches to the imported copy |
 | **New Project** | — | Saves the current plan and opens an empty one |
@@ -742,7 +742,7 @@ file. Under the **Other planners** caption of the Export menu:
   or the host walls for a catio. The whole plan travels inside the link
   itself (the part after `#`), so nothing is uploaded and no account is
   needed. Allow pop-ups for app.openplan3d.com if the tab does not open.
-- **Download interchange JSON** saves the same plan as
+- **Download for other planners (JSON)** saves the same plan as
   `<Project-Name>-openplan3d.json` (spaces and punctuation in the name become
   `-`; an unnamed project saves as `plan-openplan3d.json`). Import that file
   in the other planner, or in the OpenPlan3D iPhone app, when a link is not
