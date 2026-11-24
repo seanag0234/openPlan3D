@@ -35,14 +35,14 @@
 <svelte:window onkeydown={(e) => { if (e.key === 'Escape' && $notesListOpen) notesListOpen.set(false); }} />
 
 <button
-  class="relative w-8 h-8 rounded-full shadow-lg transition-colors text-sm {$notesListOpen ? 'bg-blue-600 text-white' : 'bg-slate-700 text-gray-100 hover:bg-slate-600'}"
+  class="pointer-events-auto relative w-8 h-8 rounded-full shadow-lg transition-colors text-sm {$notesListOpen ? 'bg-blue-600 text-white' : 'bg-slate-700 text-gray-100 hover:bg-slate-600'}"
   aria-label={$t('panels.notes')} title={$t('panels.notes')} aria-expanded={$notesListOpen}
   data-note-marks={noted.length}
   onclick={() => notesListOpen.update(open => !open)}
 >📝{#if noted.length + (planNote ? 1 : 0)}<span class="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-amber-400 text-[10px] leading-4 font-bold text-amber-950">{noted.length + (planNote ? 1 : 0)}</span>{/if}</button>
 
 {#if $notesListOpen}
-  <div class="fixed bottom-16 {$coarsePointer ? 'left-14' : 'left-4'} z-50 w-80 max-w-[calc(100vw-5rem)] max-h-[60vh] overflow-y-auto bg-white rounded-xl shadow-2xl border border-gray-200 p-2">
+  <div class="pointer-events-auto fixed bottom-16 {$coarsePointer ? 'left-14' : 'left-4'} z-50 w-80 max-w-[calc(100vw-5rem)] max-h-[60vh] overflow-y-auto bg-white rounded-xl shadow-2xl border border-gray-200 p-2">
     <h2 class="px-2 pt-1 pb-2 text-sm font-semibold text-gray-800">{$t('panels.notes')}</h2>
     <ul aria-label={$t('panels.notes')} class="flex flex-col gap-1">
       <li>

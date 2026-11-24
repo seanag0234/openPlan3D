@@ -306,16 +306,16 @@
   {/if}
 
   <!-- Help, layers and history, side by side so they keep clear of each other; a column within the rail on a touch screen -->
-  <div class="max-md:hidden fixed bottom-4 z-50 flex {$coarsePointer ? 'flex-col left-0.5' : 'items-center left-4'} gap-2">
+  <div class="max-md:hidden pointer-events-none fixed bottom-4 z-50 flex {$coarsePointer ? 'flex-col left-0.5' : 'items-center left-4'} gap-2">
     <button
-      class="w-8 h-8 rounded-full bg-slate-700 text-white text-sm font-bold shadow-lg hover:bg-slate-600 transition-colors z-50"
+      class="pointer-events-auto w-8 h-8 rounded-full bg-slate-700 text-white text-sm font-bold shadow-lg hover:bg-slate-600 transition-colors z-50"
       onclick={() => showHelp = !showHelp}
       title={$coarsePointer ? $t('panels.help') : `${$t('shortcuts.title')} (?)`}
       aria-label={$coarsePointer ? $t('panels.help') : $t('shortcuts.title')}
     >?</button>
     {#if mode === '2d'}
       <button
-        class="w-8 h-8 rounded-full shadow-lg hover:bg-slate-600 transition-colors z-50 text-sm"
+        class="pointer-events-auto w-8 h-8 rounded-full shadow-lg hover:bg-slate-600 transition-colors z-50 text-sm"
         class:bg-blue-600={showLayers}
         class:text-white={showLayers}
         class:bg-slate-700={!showLayers}
@@ -325,9 +325,12 @@
         aria-label={$t('editorPanels.layers')}
         aria-expanded={showLayers}
       >🗂</button>
+    {:else if !$coarsePointer}
+      <!-- Keep History and Notes in their places, clear of the 3D view's Lighting button under the empty one -->
+      <span class="w-8 h-8" aria-hidden="true"></span>
     {/if}
     <button
-      class="w-8 h-8 rounded-full shadow-lg hover:bg-slate-600 transition-colors z-50 text-sm"
+      class="pointer-events-auto w-8 h-8 rounded-full shadow-lg hover:bg-slate-600 transition-colors z-50 text-sm"
       class:bg-blue-600={showUndoHistory}
       class:text-white={showUndoHistory}
       class:bg-slate-700={!showUndoHistory}
@@ -335,7 +338,7 @@
       onclick={(event) => toggleHistory(event.currentTarget)}
       title={$t('undoHistory.title')}
       aria-label={$t('editorPanels.history')}
-        aria-expanded={showUndoHistory}
+      aria-expanded={showUndoHistory}
     >⟲</button>
     <NotesList />
   </div>
