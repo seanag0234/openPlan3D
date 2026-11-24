@@ -27,6 +27,12 @@ async function measure(page: Page) {
 async function open(page: Page, fixed: boolean) {
   await recordLabels(page);
   await openPlan(page, await writePlan(fixed));
+  // A plan with a fixed house opens framed on its pieces; a second press of Fit shows the whole house these cases press.
+  if (fixed) {
+    const fit = page.getByTitle('Zoom to Fit (F)', { exact: true }).first();
+    await fit.click();
+    await fit.click();
+  }
   const opened = await savedPlan(page);
   await page.keyboard.press('Escape');
   return { opened, screen: await measure(page) };
