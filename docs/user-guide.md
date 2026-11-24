@@ -50,13 +50,13 @@ version history are saved in this browser." (See
   first and outlined, and the line above the list reads "Duplicated as “…
   (Copy)”." Rename it to tell your variations apart, since their previews look
   alike. The editor itself has no duplicate command.
-- Below the header: **Download library backup**, **Restore library backup**,
+- Below the header: **Download a backup of all plans**, **Restore library backup**,
   **Import project package** (see sections 10 and 12) and **User guide**,
   which opens this page in a new tab.
 - While the browser has not agreed to keep your projects (see "Persistent
   storage" in [section 10](#10-saving-and-the-project-library)), a note
   below those links reads "This browser may delete saved projects, for
-  example when it runs low on space. Use “Download library backup” regularly
+  example when it runs low on space. Use “Download a backup of all plans” regularly
   to keep a copy." Its ✕ hides the note in this browser.
 
 ### First visit
@@ -81,7 +81,7 @@ them as copies. **Restore a library backup** also takes a project from
   save status ("Saved ✓", "Saving…" or "Unsaved •") and **Save**.
 - **Left sidebar** with three tabs: **Build** (tools, stairs, columns, text,
   dimensions, measure, import, doors and windows), **Rooms** (room presets and
-  templates) and **Objects** (furniture catalog, your own 3D models, 2D
+  templates) and **Things** (furniture catalog, your own 3D models, 2D
   entourage symbols).
 - **Canvas** in the middle. An empty project shows "Start building your floor
   plan — Draw walls with W or drag items from the sidebar". The status bar
@@ -272,7 +272,7 @@ Bay 200×150cm).
 
 ### The catalog
 
-**Objects** tab. Use **Search furniture...**, the **All** / **♥ Favorites** /
+**Things** tab. Use **Search furniture...**, the **All** / **♥ Favorites** /
 category chips (Living Room, Bedroom, Kitchen, Bathroom, Office, Dining, Decor,
 Lighting, Outdoor Furniture, Landscaping, Fencing, Structures, Pool & Spa,
 Garage, Paths & Lawns, Outdoor Lighting, Garden Structures, Electrical,
@@ -321,7 +321,7 @@ Properties** has Shape, Diameter or Side Length, and colours.
 
 ### Entourage (2D symbols)
 
-At the bottom of the Objects tab, **Entourage** holds flat symbols for plans:
+At the bottom of the Things tab, **Entourage** holds flat symbols for plans:
 People, Vehicles, Planting and Outdoor. Click one, then click the canvas to
 place it ("Shift-click to stamp several"). **+ Upload symbol (PNG, JPEG,
 WebP)** adds your own image (up to 2 MB); it appears under **Custom**. Symbols
@@ -329,7 +329,7 @@ have Rotation, Opacity and a lock; they show in 2D and in 2D exports.
 
 ### My 3D models (your own GLB files)
 
-At the top of the Objects tab, **My 3D models → Import GLB model** ("Static
+At the top of the Things tab, **My 3D models → Import GLB model** ("Static
 GLB files up to 16 MiB. Files stay in this project."):
 
 1. Choose a `.glb` file. A preview shows its size as "Width … × depth … ×
@@ -545,7 +545,7 @@ Persistent storage only stops automatic cleanup. Clearing site data, a
 "delete on close" setting, a private window or another browser profile still
 removes or hides the library, so backups stay the copy you control. While the
 browser has not agreed to keep the library, the library page says so and
-recommends **Download library backup** (see
+recommends **Download a backup of all plans** (see
 [section 1](#the-project-library)).
 
 ### Version History
@@ -565,7 +565,7 @@ them by name ("Added wall", "Moved furniture", …).
 
 ### Library backups
 
-On the library page, **Download library backup** saves
+On the library page, **Download a backup of all plans** saves
 `openplan3d-library-backup.json` with every project, its version history,
 previews and any recovery data. **Restore library backup** ("Add restored
 copies to this browser. Your existing projects stay available.") reads such a
@@ -575,7 +575,7 @@ versions per project are restored; damaged entries are kept as recovery data
 and included in future backups.
 
 **Restore library backup** also takes a single project saved with **Download
-JSON** (or **Download JSON backup** in the red save bar), for example
+JSON** (or **Download a copy of this plan** in the red save bar), for example
 `Our house.json` or a second download named `Our house(1).json`. That is the
 quickest way back if browser storage was cleared: choose the file, check that
 the preview lists the project, and choose **Restore as copies**; it comes back
@@ -584,9 +584,9 @@ as "Our house (Restored copy)".
 ### Save problems
 
 If a save fails, a red bar reads "Changes are not saved." followed by the
-reason, with **Retry save** and **Download JSON backup**. When the project was
-changed in another tab ("This project changed or was deleted in another tab.
-Save your version as a copy or download a JSON backup to keep both versions.")
+reason, with **Retry save** and **Download a copy of this plan**. When the project was
+changed in another tab ("This plan changed or was deleted in another tab. Save
+your version as a copy, or download a copy of it, to keep both.")
 use **Save as copy**. See [Troubleshooting](#16-troubleshooting) for the
 storage messages.
 
@@ -613,7 +613,7 @@ The **Export** button in the top bar opens:
 | **Download project package** | `openplan3d-project.zip` | "For iPhone and web. Includes retained original data and attachments, even when they are not shown here." See below |
 | **Share with Assistant…** | nothing downloaded | Uploads a copy for seven days and gives you a code and secret (section 14) |
 | **Other planners** → **Open in OpenLandscape3D**, **Open in OpenKitchen3D**, **Open in OpenCatio3D** | nothing downloaded; a new tab | Opens that planner with the whole plan in the link (see "Opening a plan in another planner" below) |
-| **Download interchange JSON** | `<Project-Name>-openplan3d.json` | "For OpenKitchen3D, OpenLandscape3D, OpenCatio3D and the iPhone app. Opening another planner puts the whole file in the link; nothing is uploaded. The file carries the plan's geometry only; the project package keeps the full plan." Walls, doors, windows, furniture and room labels in metres, plus anything one of those planners stored in the file |
+| **Download for other planners (JSON)** | `<Project-Name>-openplan3d.json` | "For OpenKitchen3D, OpenLandscape3D, OpenCatio3D and the iPhone app. Opening another planner puts the whole file in the link; nothing is uploaded. The file carries the plan's geometry only; the project package keeps the full plan." Walls, doors, windows, furniture and room labels in metres, plus anything one of those planners stored in the file |
 | **Import JSON** | — | Opens a `.json` or RoomPlan `.zip` as a new project (section 12) |
 | **Import project package** | — | Opens the same **Import project package** dialog as the library page (section 12); after **Import as copy** the editor switches to the imported copy |
 | **New Project** | — | Saves the current plan and opens an empty one |
@@ -721,7 +721,7 @@ everything.
   project package** on the library page or in the editor's Export menu. The
   format is described in
   [project-package-v1.md](project-package-v1.md).
-- **Download library backup** — every project in this browser plus version
+- **Download a backup of all plans** — every project in this browser plus version
   history and previews, restored with **Restore library backup** (choosing it
   in **Import JSON** or **Import a Plan** opens the same dialog).
 
@@ -742,7 +742,7 @@ file. Under the **Other planners** caption of the Export menu:
   or the host walls for a catio. The whole plan travels inside the link
   itself (the part after `#`), so nothing is uploaded and no account is
   needed. Allow pop-ups for app.openplan3d.com if the tab does not open.
-- **Download interchange JSON** saves the same plan as
+- **Download for other planners (JSON)** saves the same plan as
   `<Project-Name>-openplan3d.json` (spaces and punctuation in the name become
   `-`; an unnamed project saves as `plan-openplan3d.json`). Import that file
   in the other planner, or in the OpenPlan3D iPhone app, when a link is not
@@ -1071,14 +1071,14 @@ Messages are quoted as the editor shows them.
   (Welcome screen) opens a project's JSON file.
 - "Could not save to browser storage. Download your project as JSON to keep a
   copy." — A general write failure; retry, and download JSON if it persists.
-- "This project changed or was deleted in another tab. Save your version as a
-  copy or download a JSON backup to keep both versions." — The same project
+- "This plan changed or was deleted in another tab. Save your version as a
+  copy, or download a copy of it, to keep both." — The same project
   is open twice. Use **Save as copy** here, or close the other tab.
 - "Close other OpenPlan3D tabs, then retry loading to update browser storage.
   Your saved projects have not been removed." — A storage upgrade is waiting
   for other tabs to close.
 - "The saved project library could not be read. Download a backup before
-  attempting recovery." — Click **Download library backup** first; the raw
+  attempting recovery." — Click **Download a backup of all plans** first; the raw
   data is preserved in that file and can be restored later.
 - "Version history could not be read. Download a backup before clearing
   damaged versions." — Use **Download version backup**, then **Clear all
@@ -1101,8 +1101,9 @@ Messages are quoted as the editor shows them.
   library backup** takes library backups and project files from **Download
   JSON**; scans and `…-openplan3d.json` interchange files open with **Import
   JSON**.
-- "This is a JSON file, not a project package. Open it with Restore library
-  backup on the Projects page or with Import JSON in the editor." — **Import
+- "This is a plan file, not a plan with its pictures. Open it with "Bring back
+  a backup of all plans" on the Projects page or with Import JSON in the
+  editor." — **Import
   project package** takes only the `.zip` from **Download project package**
   (its file picker hides other files unless you switch it to all files).
 - "The file must be a ZIP package under 64 MiB." / "Only regular, uncompressed
@@ -1166,7 +1167,7 @@ Messages are quoted as the editor shows them.
 **General**
 
 - "An app update is ready. Reload to use the latest version. Your project will
-  be saved first." — Choose **Save and reload**; keep "Download JSON backup"
+  be saved first." — Choose **Save and reload**; keep "Download a copy of this plan"
   as a fallback.
 - Keys do nothing — click the canvas first; shortcuts are off while a text
   field or dialog has focus.

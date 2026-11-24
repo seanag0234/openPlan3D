@@ -20,7 +20,7 @@ async function open(page: Page) {
 }
 
 async function pickSofa(page: Page, press: (button: ReturnType<Page['getByRole']>) => Promise<void>) {
-  await press(page.getByRole('button', { name: 'Objects', exact: true }));
+  await press(page.getByRole('button', { name: 'Things', exact: true }));
   await press(page.getByRole('button', { name: /^Sofa(?: Sofa)?(?: 200×90cm)?$/ }).first());
 }
 

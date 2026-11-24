@@ -22,7 +22,7 @@ test('the interchange download keeps the OpenKitchen3D block and every object id
   const fixture = await importFixture(page);
   await page.getByRole('button', { name: 'Export', exact: true }).click();
   const pending = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Download interchange JSON', exact: true }).click();
+  await page.getByRole('button', { name: 'Download for other planners (JSON)', exact: true }).click();
   const download = await pending;
   expect(download.suggestedFilename()).toMatch(/-openplan3d\.json$/);
   const file = JSON.parse(await readFile((await download.path())!, 'utf8'));

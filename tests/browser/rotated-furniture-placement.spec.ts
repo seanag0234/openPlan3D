@@ -24,7 +24,7 @@ for (const placement of [0, 30, 'wall'] as const) test(`furniture placement at $
     return project.floors;
   }
   const before = await exported();
-  await page.getByRole('button', { name: 'Objects', exact: true }).click();
+  await page.getByRole('button', { name: 'Things', exact: true }).click();
   await page.getByRole('button', { name: /^Sofa(?: Sofa)?(?: 200×90cm)?$/ }).first().click();
   const canvas = page.getByLabel('Floor plan editor canvas', { exact: true });
   if (placement === 'wall') await page.getByRole('button', { name: 'Zoom to 100%', exact: true }).click();

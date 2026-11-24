@@ -6,6 +6,7 @@
   import { currentProject, activeFloor, selectedElementId, selectedElementIds, selectedRoomId, detectedRoomsStore, layerVisibility } from '$lib/stores/project';
   import { getCatalogItem } from '$lib/utils/furnitureCatalog';
   import { getEntourageDef } from '$lib/utils/entourageCatalog';
+  import { customSymbolName } from '$lib/utils/symbolName';
   import type { Floor } from '$lib/models/types';
   import { projectSettings, formatLength } from '$lib/stores/settings';
 
@@ -82,7 +83,7 @@
     if (floor.entourage?.length) {
       cats.push({
         key: 'entourage', label: $t('layers.entourage'), icon: '🌳',
-        items: floor.entourage.map((en, i) => ({ id: en.id, label: entourageLabels[en.defId] ? $t(entourageLabels[en.defId]) : getEntourageDef(en.defId)?.name ?? $t('layers.custom', { number: i + 1 }), icon: '🌳' })),
+        items: floor.entourage.map((en, i) => ({ id: en.id, label: entourageLabels[en.defId] ? $t(entourageLabels[en.defId]) : getEntourageDef(en.defId)?.name ?? (customSymbolName(en.defId, $currentProject) || $t('layers.custom', { number: i + 1 })), icon: '🌳' })),
       });
     }
 
@@ -156,7 +157,7 @@
           class="w-full flex items-center gap-1.5 px-2 py-1.5 hover:bg-gray-50 text-left"
           onclick={() => toggle(cat.key)}
         >
-          <span class="text-[10px] text-gray-400 w-3">{collapsed[cat.key] ? '▸' : '▾'}</span>
+          <span class="text-xs text-gray-400 w-3">{collapsed[cat.key] ? '▸' : '▾'}</span>
           <span>{cat.icon}</span>
           <span class="font-medium text-gray-700 flex-1">{cat.label}</span>
           <span class="text-gray-400 mr-1">{cat.items.length}</span>
@@ -181,7 +182,7 @@
               class:opacity-40={!vis[cat.key]}
               onclick={() => select(item.id, cat.key)}
             >
-              <span class="text-[10px]">{item.icon}</span>
+              <span class="text-xs">{item.icon}</span>
               <span class="truncate flex-1">{item.label}</span>
             </button>
           {/each}
@@ -194,7 +195,7 @@
     {#if rooms.length}
       <div class="border-b border-gray-100">
         <button onclick={() => toggle('rooms')} class="flex w-full items-center gap-1.5 px-2 py-1.5 text-left hover:bg-gray-50">
-          <span class="w-3 text-[10px] text-gray-400">{collapsed.rooms ? '▸' : '▾'}</span>
+          <span class="w-3 text-xs text-gray-400">{collapsed.rooms ? '▸' : '▾'}</span>
           <span>🏠</span><span class="flex-1 font-medium text-gray-700">{$t('layers.rooms')}</span><span class="text-gray-400">{rooms.length}</span>
         </button>
         {#if !collapsed.rooms}

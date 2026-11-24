@@ -23,7 +23,7 @@ test('Properties width follows an edge-handle resize and typed sizes stay exact 
   const snapping = page.getByRole('button', { name: 'Move in steps', exact: true });
   await snapping.click();
   await expect(snapping).toHaveAttribute('aria-pressed', 'false');
-  await page.getByRole('button', { name: 'Objects', exact: true }).click();
+  await page.getByRole('button', { name: 'Things', exact: true }).click();
   await page.getByRole('button', { name: /^Sofa(?: Sofa)?(?: 200×90cm)?$/ }).first().click();
   await page.getByRole('button', { name: 'Zoom to 100%', exact: true }).click();
   const canvas = page.getByLabel('Floor plan editor canvas', { exact: true });

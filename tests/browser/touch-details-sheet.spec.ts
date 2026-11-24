@@ -61,7 +61,7 @@ test.describe('the list of things to add on an upright iPad', () => {
     await openPlan(page, FIXTURE);
     await page.keyboard.press('Escape');
     expect((await canvasBox(page)).width).toBeGreaterThanOrEqual(780);
-    const objects = page.getByRole('button', { name: 'Objects', exact: true });
+    const objects = page.getByRole('button', { name: 'Things', exact: true });
     await expect(objects).toBeHidden();
 
     const a = onPiece(await where(page, 'Box A'));

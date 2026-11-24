@@ -1221,7 +1221,7 @@ export function drawColumn(cs: CanvasState, col: Column, selected: boolean): voi
 
 // ── Guide lines ──────────────────────────────────────────────────────
 
-export function drawGuides(cs: CanvasState, floor: Floor, selectedGuideId: string | null, RULER_SIZE: number): void {
+export function drawGuides(cs: CanvasState, floor: Floor, selectedGuideId: string | null, RULER_SIZE: number, units: 'metric' | 'imperial' = 'metric'): void {
   if (!cs.ctx) return;
   const { ctx, width, height } = cs;
   const guides = floor.guides ?? [];
@@ -1242,8 +1242,8 @@ export function drawGuides(cs: CanvasState, floor: Floor, selectedGuideId: strin
     }
     ctx.stroke(); ctx.setLineDash([]);
 
-    ctx.font = '10px sans-serif'; ctx.fillStyle = color; ctx.globalAlpha = 1;
-    const label = formatLength(g.position, 'metric');
+    ctx.font = '12px sans-serif'; ctx.fillStyle = color; ctx.globalAlpha = 1;
+    const label = formatLength(g.position, units);
     if (g.orientation === 'horizontal') {
       const sy = wts(cs, 0, g.position).y;
       ctx.textAlign = 'left'; ctx.textBaseline = 'bottom'; ctx.fillText(label, R + 4, sy - 2);

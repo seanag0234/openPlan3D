@@ -2568,12 +2568,12 @@
         onpointerup={() => { previewDragStart = null; }}
       >
         <canvas use:attachCameraPreview aria-label={$t('viewerCamera.preview')} width="384" height="216" class="w-full pointer-events-none"></canvas>
-        <div class="absolute bottom-1 left-1 text-[10px] text-white/50 pointer-events-none">{$t('viewerCamera.look')}</div>
+        <div class="absolute bottom-1 left-1 text-xs text-white/50 pointer-events-none">{$t('viewerCamera.look')}</div>
       </div>
 
       <!-- Movement arrows -->
       <div class="flex items-center justify-center gap-1 py-1.5 border-b border-gray-800">
-        <span class="text-[10px] text-gray-500 mr-2">{$t('viewerCamera.move')}</span>
+        <span class="text-xs text-gray-500 mr-2">{$t('viewerCamera.move')}</span>
         <button class="w-7 h-7 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-xs flex items-center justify-center" onclick={() => moveCameraRelative(0, -10)} title={$t('viewerCamera.left')} aria-label={$t('viewerCamera.left')}>←</button>
         <div class="flex flex-col gap-0.5">
           <button class="w-7 h-7 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-xs flex items-center justify-center" onclick={() => moveCameraRelative(10, 0)} title={$t('viewerCamera.forward')} aria-label={$t('viewerCamera.forward')}>↑</button>
@@ -2638,7 +2638,7 @@
 
           {#if aiProvider === 'gemini'}
             <label class="block">
-              <span class="text-[10px] text-gray-400 block mb-1">{$t('viewerAI.model')}</span>
+              <span class="text-xs text-gray-400 block mb-1">{$t('viewerAI.model')}</span>
               <select bind:value={aiModel} disabled={aiRendering} class="w-full bg-gray-800 text-gray-200 text-xs rounded px-1.5 py-1.5 border border-gray-700">
                 {#each AI_MODELS as m}<option value={m.id}>{m.name} — {m.desc}</option>{/each}
               </select>
@@ -2653,19 +2653,19 @@
 
           <div class="grid grid-cols-3 gap-2">
             <label class="block">
-              <span class="text-[10px] text-gray-400 block mb-1">{$t('viewerAI.style')}</span>
+              <span class="text-xs text-gray-400 block mb-1">{$t('viewerAI.style')}</span>
               <select bind:value={aiRenderStyle} class="w-full bg-gray-800 text-gray-200 text-xs rounded px-1.5 py-1 border border-gray-700">
                 {#each STYLE_OPTIONS as opt}<option value={opt}>{aiRenderLabels[opt] ? $t(aiRenderLabels[opt]) : opt}</option>{/each}
               </select>
             </label>
             <label class="block">
-              <span class="text-[10px] text-gray-400 block mb-1">{$t('viewerAI.lighting')}</span>
+              <span class="text-xs text-gray-400 block mb-1">{$t('viewerAI.lighting')}</span>
               <select bind:value={aiRenderLighting} class="w-full bg-gray-800 text-gray-200 text-xs rounded px-1.5 py-1 border border-gray-700">
                 {#each LIGHTING_OPTIONS as opt}<option value={opt}>{aiRenderLabels[opt] ? $t(aiRenderLabels[opt]) : opt}</option>{/each}
               </select>
             </label>
             <label class="block">
-              <span class="text-[10px] text-gray-400 block mb-1">{$t('viewerAI.mood')}</span>
+              <span class="text-xs text-gray-400 block mb-1">{$t('viewerAI.mood')}</span>
               <select bind:value={aiRenderMood} class="w-full bg-gray-800 text-gray-200 text-xs rounded px-1.5 py-1 border border-gray-700">
                 {#each MOOD_OPTIONS as opt}<option value={opt}>{aiRenderLabels[opt] ? $t(aiRenderLabels[opt]) : opt}</option>{/each}
               </select>
@@ -2673,12 +2673,12 @@
           </div>
 
           <label class="block">
-            <span class="text-[10px] text-gray-400 block mb-1">{$t('viewerAI.extra')}</span>
+            <span class="text-xs text-gray-400 block mb-1">{$t('viewerAI.extra')}</span>
             <input type="text" bind:value={aiRenderExtra} placeholder={$t('viewerAI.placeholder')}
               class="w-full bg-gray-800 text-gray-200 text-xs rounded px-2 py-1.5 border border-gray-700 placeholder:text-gray-600" />
           </label>
 
-          <details class="text-[10px] text-gray-500">
+          <details class="text-xs text-gray-500">
             <summary class="cursor-pointer hover:text-gray-400">{$t('viewerAI.prompt')}</summary>
             <p class="mt-1 p-2 bg-gray-800 rounded text-gray-400 leading-relaxed">{buildAIPrompt()}</p>
           </details>
@@ -2702,9 +2702,9 @@
           {#if aiRenderError}
             <div class="bg-red-900/30 border border-red-700 rounded-lg p-3 space-y-2">
               <div class="text-xs font-medium text-red-400">{$t('viewerAI.failed')}</div>
-              <pre class="text-[10px] text-red-300 whitespace-pre-wrap break-all max-h-32 overflow-y-auto select-all cursor-text font-mono bg-red-950/40 rounded p-2">{aiRenderMessages[aiRenderError] ? $t(aiRenderMessages[aiRenderError]) : aiRenderError}</pre>
+              <pre class="text-xs text-red-300 whitespace-pre-wrap break-all max-h-32 overflow-y-auto select-all cursor-text font-mono bg-red-950/40 rounded p-2">{aiRenderMessages[aiRenderError] ? $t(aiRenderMessages[aiRenderError]) : aiRenderError}</pre>
               <button
-                class="text-[10px] text-red-400 hover:text-red-300 underline"
+                class="text-xs text-red-400 hover:text-red-300 underline"
                 onclick={() => { navigator.clipboard.writeText(aiRenderError ?? ''); }}
               >{$t('viewerAI.copy')}</button>
             </div>
@@ -2842,7 +2842,7 @@
             <button
               onclick={() => { furniturePickerCategory = cat; }}
               aria-pressed={furniturePickerCategory === cat}
-              class="px-2 py-0.5 rounded text-[10px] transition-colors {furniturePickerCategory === cat ? 'bg-green-600 text-white' : 'bg-white/10 hover:bg-white/20 text-white/70'}"
+              class="px-2 py-0.5 rounded text-xs transition-colors {furniturePickerCategory === cat ? 'bg-green-600 text-white' : 'bg-white/10 hover:bg-white/20 text-white/70'}"
             >{catalogCategoryLabels[cat] ? $t(catalogCategoryLabels[cat]) : cat}</button>
           {/each}
         </div>
@@ -2855,7 +2855,7 @@
             >
               <span class="text-base">{item.icon}</span>
               <span>{furnitureName(item.id, $locale)}</span>
-              <span class="ml-auto text-[10px] text-white/40">{item.width}×{item.depth}</span>
+              <span class="ml-auto text-xs text-white/40">{item.width}×{item.depth}</span>
             </button>
           {/each}
         </div>
@@ -2890,13 +2890,13 @@
 
       <!-- Time of Day Presets -->
       <div class="space-y-1">
-        <span class="text-white/60 text-[10px] uppercase tracking-wide">{$t('viewerLighting.time')}</span>
+        <span class="text-white/60 text-xs uppercase tracking-wide">{$t('viewerLighting.time')}</span>
         <div class="flex gap-1">
           {#each (['morning', 'noon', 'evening', 'night'] as const) as preset}
             <button
               onclick={() => applyTimePreset(preset)}
               aria-pressed={timeOfDay === preset}
-              class="flex-1 px-1.5 py-1 rounded text-[11px] transition-colors {timeOfDay === preset ? 'bg-amber-500 text-white' : 'bg-white/10 hover:bg-white/20 text-white/80'}"
+              class="flex-auto px-1.5 py-1 rounded text-xs transition-colors {timeOfDay === preset ? 'bg-amber-500 text-white' : 'bg-white/10 hover:bg-white/20 text-white/80'}"
             >
               {preset === 'morning' ? '🌅' : preset === 'noon' ? '☀️' : preset === 'evening' ? '🌇' : '🌙'}
               <span class="block capitalize">{$t(`viewerLighting.${preset}`)}</span>

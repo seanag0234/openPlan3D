@@ -3,8 +3,8 @@ import { readFile } from 'node:fs/promises';
 import { savedProjects } from './storage';
 
 const note = {
-  en: 'This browser may delete saved projects, for example when it runs low on space. Use “Download library backup” regularly to keep a copy.',
-  pt: 'Este navegador pode excluir projetos salvos, por exemplo quando estiver com pouco espaço. Use “Baixar backup da biblioteca” regularmente para manter uma cópia.',
+  en: 'This browser may delete saved projects, for example when it runs low on space. Use “Download a backup of all plans” regularly to keep a copy.',
+  pt: 'Este navegador pode excluir projetos salvos, por exemplo quando estiver com pouco espaço. Use “Baixar um backup de todas as plantas” regularmente para manter uma cópia.',
 };
 const unavailable = 'Browser storage is unavailable. Allow site storage or download your project as JSON.';
 
@@ -56,7 +56,7 @@ test('the library recommends a backup while storage is not persistent, and stays
   await expect(storageNote).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   // The note names the existing backup button rather than adding a second one.
-  await expect(page.getByRole('button', { name: 'Download library backup', exact: true })).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'Download a backup of all plans', exact: true })).toHaveCount(1);
   expect(await requests(page)).toBe(0); // Opening the library never asks.
   await storageNote.getByRole('button', { name: 'Dismiss storage note', exact: true }).click();
   await expect(storageNote).toHaveCount(0);

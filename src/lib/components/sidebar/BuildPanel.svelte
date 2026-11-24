@@ -631,7 +631,7 @@
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="{dc.icon}"/></svg>
                 </div>
                 <span class="text-xs font-medium text-gray-600">{dc.name}</span>
-                <span class="text-[10px] text-gray-400">{sizeText(dc.desc, $projectSettings.units)}</span>
+                <span class="text-xs text-gray-400">{sizeText(dc.desc, $projectSettings.units)}</span>
               </button>
             {/each}
           </div>
@@ -650,7 +650,7 @@
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0e7490" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
                 </div>
                 <span class="text-xs font-medium text-gray-600">{wc.name}</span>
-                <span class="text-[10px] text-gray-400">{sizeText(wc.desc, $projectSettings.units)}</span>
+                <span class="text-xs text-gray-400">{sizeText(wc.desc, $projectSettings.units)}</span>
               </button>
             {/each}
           </div>
@@ -703,7 +703,7 @@
                 {/if}
               </div>
               <span class="text-xs font-medium text-gray-600">{roomTemplateLabels[tmpl.name] ? $t(roomTemplateLabels[tmpl.name]) : tmpl.name}</span>
-              <span class="text-[10px] text-gray-400">{$t(tmpl.furniture.length === 1 ? 'roomChoices.item' : 'roomChoices.items', { count: tmpl.furniture.length })}</span>
+              <span class="text-xs text-gray-400">{$t(tmpl.furniture.length === 1 ? 'roomChoices.item' : 'roomChoices.items', { count: tmpl.furniture.length })}</span>
             </button>
           {/each}
         </div>
@@ -754,16 +754,16 @@
         <!-- Category filter -->
         <div class="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
           <button
-            class="px-2 py-0.5 rounded-full text-[10px] font-medium {selectedCategory === 'All' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
+            class="px-2 py-0.5 rounded-full text-xs font-medium {selectedCategory === 'All' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
             onclick={() => selectedCategory = 'All'}
           >{$t('objectControls.all')}</button>
           <button
-            class="px-2 py-0.5 rounded-full text-[10px] font-medium {selectedCategory === 'Favorites' ? 'bg-pink-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
+            class="px-2 py-0.5 rounded-full text-xs font-medium {selectedCategory === 'Favorites' ? 'bg-pink-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
             onclick={() => selectedCategory = 'Favorites'}
           >♥ {$t('objectControls.favorites')}{favoriteIds.length ? ` (${favoriteIds.length})` : ''}</button>
           {#each furnitureCategories as cat}
             <button
-              class="px-2 py-0.5 rounded-full text-[10px] font-medium {selectedCategory === cat ? 'text-white' : 'text-gray-600 hover:bg-gray-200'}"
+              class="px-2 py-0.5 rounded-full text-xs font-medium {selectedCategory === cat ? 'text-white' : 'text-gray-600 hover:bg-gray-200'}"
               style={selectedCategory === cat ? `background-color: ${categoryColors[cat] ?? '#6b7280'}` : 'background-color: #f3f4f6'}
               onclick={() => selectedCategory = cat}
             >{catalogCategoryLabels[cat] ? $t(catalogCategoryLabels[cat]) : cat}</button>
@@ -773,7 +773,7 @@
         <!-- Recent Items -->
         {#if !search && selectedCategory === 'All' && recentItems.length > 0}
           <div class="mt-1">
-            <h4 class="text-[10px] font-semibold text-gray-400 uppercase mb-1.5">{$t('objectControls.recent')}</h4>
+            <h4 class="text-xs font-semibold text-gray-400 uppercase mb-1.5">{$t('objectControls.recent')}</h4>
             <div class="grid grid-cols-2 gap-2">
               {#each recentItems as item}
                 <div class="relative">
@@ -787,7 +787,7 @@
                     onmouseleave={onItemMouseLeave}
                   >
                     <div class="w-10 h-10"><FurnitureThumbnail catalogId={item.id} name={furnitureName(item.id, $locale)} color={item.color} /></div>
-                    <span class="text-[10px] font-medium text-gray-600 leading-tight text-center">{furnitureName(item.id, $locale)}</span>
+                    <span class="max-w-full break-words text-xs font-medium text-gray-600 leading-tight text-center">{furnitureName(item.id, $locale)}</span>
                   </button>
                   <button
                     class="absolute top-1 right-1 text-[12px] leading-none cursor-pointer {favoriteIds.includes(item.id) ? 'text-pink-500' : 'text-gray-300 hover:text-pink-400'}"
@@ -824,7 +824,7 @@
                 {:else}
                   <span class="text-xs font-medium text-gray-600">{furnitureName(item.id, $locale)}</span>
                 {/if}
-                <span class="text-[10px] text-gray-400">{sizeText(`${item.width}×${item.depth}cm`, $projectSettings.units)}</span>
+                <span class="text-xs text-gray-400">{sizeText(`${item.width}×${item.depth}cm`, $projectSettings.units)}</span>
               </button>
               <button
                 class="absolute top-1 right-1 text-[12px] leading-none cursor-pointer {favoriteIds.includes(item.id) ? 'text-pink-500' : 'text-gray-300 hover:text-pink-400'}"
@@ -845,7 +845,7 @@
             {@const defs = symbolMatches.filter(d => d.category === cat.key)}
             {#if !searching || defs.length}
             <div class="mb-2">
-              <span class="text-[10px] font-medium text-gray-500">{cat.icon} {$t(`entourageLabels.${cat.key}`)}</span>
+              <span class="text-xs font-medium text-gray-500">{cat.icon} {$t(`entourageLabels.${cat.key}`)}</span>
               <div class="grid grid-cols-3 gap-1.5 mt-1">
                 {#each defs as def}
                   {@const name = entourageLabels[def.id] ? $t(entourageLabels[def.id]) : def.name}
@@ -857,7 +857,7 @@
                     <svg viewBox="0 0 100 {Math.round(100 * def.aspect)}" class="w-full h-8 text-gray-600" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
                       {#each def.paths as d}<path d={d} />{/each}
                     </svg>
-                    <span class="text-[9px] text-gray-500 leading-tight block truncate">{name}</span>
+                    <span class="text-xs text-gray-500 leading-tight block truncate">{name}</span>
                   </button>
                 {/each}
               </div>
@@ -866,7 +866,7 @@
           {/each}
           {#if customSymbolMatches.length}
             <div class="mb-2">
-              <span class="text-[10px] font-medium text-gray-500">🖼️ {$t('entourageLabels.custom')}</span>
+              <span class="text-xs font-medium text-gray-500">🖼️ {$t('entourageLabels.custom')}</span>
               <div class="grid grid-cols-3 gap-1.5 mt-1">
                 {#each customSymbolMatches as def}
                   <button
@@ -875,7 +875,7 @@
                     onclick={() => armEntourage(def.id)}
                   >
                     <img src={def.dataUrl} alt={def.name} class="w-full h-8 object-contain" />
-                    <span class="text-[9px] text-gray-500 leading-tight block truncate">{def.name}</span>
+                    <span class="text-xs text-gray-500 leading-tight block truncate">{def.name}</span>
                   </button>
                 {/each}
               </div>
@@ -914,7 +914,7 @@
         <div class="flex items-center gap-2">
           <span class="text-sm font-semibold text-gray-800">{furnitureName(item.id, $locale)}</span>
           <span
-            class="px-1.5 py-0.5 rounded-full text-[9px] font-semibold text-white"
+            class="px-1.5 py-0.5 rounded-full text-xs font-semibold text-white"
             style="background-color: {categoryColors[item.category] ?? '#6b7280'}"
           >{catalogCategoryLabels[item.category] ? $t(catalogCategoryLabels[item.category]) : item.category}</span>
         </div>

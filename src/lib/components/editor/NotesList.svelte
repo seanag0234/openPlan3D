@@ -40,7 +40,7 @@
   aria-label={$t('panels.notes')} title={$t('panels.notes')} aria-expanded={$notesListOpen}
   data-note-marks={noted.length}
   onclick={() => notesListOpen.update(open => !open)}
->{#if $coarsePointer}<span class="text-lg leading-none" aria-hidden="true">📝</span><span class="text-[11px] leading-tight tracking-tight">{$t('panels.notes')}</span>{:else}📝{/if}{#if noted.length + (planNote ? 1 : 0)}<span class="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-amber-400 text-[10px] leading-4 font-bold text-amber-950">{noted.length + (planNote ? 1 : 0)}</span>{/if}</button>
+>{#if $coarsePointer}<span class="text-lg leading-none" aria-hidden="true">📝</span><span class="text-xs leading-tight tracking-tight">{$t('panels.notes')}</span>{:else}📝{/if}{#if noted.length + (planNote ? 1 : 0)}<span class="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-amber-400 text-xs leading-5 font-bold text-amber-950">{noted.length + (planNote ? 1 : 0)}</span>{/if}</button>
 
 {#if $notesListOpen}
   <div class="pointer-events-auto fixed bottom-16 {$coarsePointer ? 'left-14' : 'left-4'} z-50 w-80 max-w-[calc(100vw-5rem)] max-h-[60vh] overflow-y-auto bg-white rounded-xl shadow-2xl border border-gray-200 p-2">

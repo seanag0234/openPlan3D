@@ -20,7 +20,7 @@ test('Portuguese editor recovery preserves legacy bytes and retries migration', 
   await expect(page.getByRole('alert')).toContainText('O armazenamento do navegador está cheio.');
   await expect(page.getByRole('link', { name: 'Voltar aos projetos', exact: true })).toBeVisible();
   const pending = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Baixar backup da biblioteca', exact: true }).click();
+  await page.getByRole('button', { name: 'Baixar um backup de todas as plantas', exact: true }).click();
   expect(await readFile((await (await pending).path())!, 'utf8')).toBe(legacy);
   await page.evaluate(() => { (window as any).failMigration = false; });
   await page.getByRole('button', { name: 'Tentar carregar novamente', exact: true }).click();

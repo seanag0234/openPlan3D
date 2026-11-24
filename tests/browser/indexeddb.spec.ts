@@ -23,7 +23,7 @@ test('legacy migration preserves images and history, then saves beyond the old q
   expect((await storedRecords(page, 'history'))[source.id]).toBe(history);
   expect((await storedRecords(page, 'thumbnails'))[source.id]).toContain('data:image/gif');
   const backupDownload = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Download library backup', exact: true }).click();
+  await page.getByRole('button', { name: 'Download a backup of all plans', exact: true }).click();
   const backup = JSON.parse(await readFile((await (await backupDownload).path())!, 'utf8'));
   expect(backup.legacy.original.floorplan_projects).toBe(legacy);
   expect(backup.history[source.id]).toBe(history);
@@ -70,7 +70,7 @@ test('interrupted migration leaves legacy bytes recoverable and retries without 
   await expect(page.getByRole('alert')).toContainText('Browser storage is full');
   expect(await storedRecords(page)).toEqual({});
   const pending = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Download library backup', exact: true }).click();
+  await page.getByRole('button', { name: 'Download a backup of all plans', exact: true }).click();
   expect(await readFile((await (await pending).path())!, 'utf8')).toBe(legacy);
   await page.evaluate(() => { (window as any).failMigration = false; });
   await page.getByRole('button', { name: 'Retry loading', exact: true }).click();

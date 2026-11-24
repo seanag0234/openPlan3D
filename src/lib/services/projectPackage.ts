@@ -68,6 +68,10 @@ export function projectPackageBytes(value: Project): Uint8Array {
     packageError('Legacy furniture identities could not be resolved. Download a JSON backup to preserve the retained data.');
   }
   validateLocalImages(project);
+  // The file is read back with every 3D model's file checked, so a plan that would be refused there is not written here.
+  for (const model of project.customModels ?? []) {
+    if (typeof state?.assets[`assets/${model.assetName}`] !== 'string') throw new Error(`The 3D model “${model.name}” has no file in this plan, so the plan cannot be saved with its pictures. Use “Send this plan” instead: it carries the whole plan.`);
+  }
   delete (project as any).projectPackage;
   const { plan, mapping } = webToNative(project, state?.native, state?.mapping);
   // Derived on every export; a retained block from an older package is replaced, never carried.
@@ -177,7 +181,7 @@ export async function prepareProjectPackage(file: File) {
   if (file.size > PACKAGE_LIMIT) packageError('The package exceeds 64 MiB.');
   const bytes = new Uint8Array(await file.arrayBuffer());
   // A JSON backup picked here (with the picker showing all files) opens elsewhere; a ZIP starts with "PK".
-  if (/^\s*[{[]/.test(new TextDecoder().decode(bytes.subarray(0, 64)))) packageError('This is a JSON file, not a project package. Open it with Restore library backup on the Projects page or with Import JSON in the editor.');
+  if (/^\s*[{[]/.test(new TextDecoder().decode(bytes.subarray(0, 64)))) packageError('This is a plan file, not a plan with its pictures. Open it with "Bring back a backup of all plans" on the Projects page or with Import JSON in the editor.');
   const preview = readProjectPackage(bytes);
   const restore = prepareLibraryRestore(JSON.stringify({ [preview.project.id]: JSON.stringify(preview.project) }), file.name, 'Imported copy');
   return { ...preview, restore: restore.restore, bytes };

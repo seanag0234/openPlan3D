@@ -49,7 +49,7 @@ function removeUnsaved(id: string) {
 
 export class ProjectConflictError extends Error {
   constructor() {
-    super('This project changed or was deleted in another tab. Save your version as a copy or download a JSON backup to keep both versions.');
+    super('This plan changed or was deleted in another tab. Save your version as a copy, or download a copy of it, to keep both.');
     this.name = 'ProjectConflictError';
   }
 }

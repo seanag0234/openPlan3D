@@ -136,3 +136,23 @@ test('the ruler numbers every major mark, with no whole foot left out', async ({
   }
   await expectUnbroken('at the smallest zoom');
 });
+
+test('a guide writes its distance at 12 px and in the plan\'s units', async ({ page }) => {
+  const plan = JSON.parse(await readFile(FIXTURE, 'utf8'));
+  plan.displaySettings = { units: 'imperial' };
+  plan.floors[0].guides = [{ id: 'g1', orientation: 'vertical', position: 304.8 }];
+  const file = test.info().outputPath('guide.openplan.json');
+  await writeFile(file, JSON.stringify(plan));
+  await recordTexts(page);
+  await openPlan(page, file);
+  await page.keyboard.press('Escape');
+
+  // Ten feet from the origin, written the way formatLength writes it: 10'.
+  let guide: Drawn[] = [];
+  await expect.poll(async () => {
+    guide = (await settled(page)).filter(t => t.text === `10'` && !t.ruler);
+    return guide.length;
+  }).toBeGreaterThan(0);
+  expect(guide.map(t => t.px)).toEqual(guide.map(() => 12));
+  expect((await settled(page)).filter(t => /\d(\.\d+)? m$|cm$/.test(t.text)).map(t => t.text)).toEqual([]);
+});

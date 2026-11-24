@@ -8,7 +8,7 @@ for (const locale of ['en', 'pt']) for (const recent of [false, true]) test(`${l
   }, recent);
   await page.addInitScript(locale => localStorage.setItem('o3d_locale', locale), locale);
   await page.goto('/editor');
-  await page.getByRole('button', { name: /^(?:Objects|Objetos)$/, exact: true }).click();
+  await page.getByRole('button', { name: /^(?:Things|Coisas)$/, exact: true }).click();
   const search = page.getByRole('textbox', { name: locale === 'pt' ? 'Pesquisar móveis...' : 'Search furniture...', exact: true });
   await search.fill('{number}');
   await expect(page.getByText(locale === 'pt' ? '0 resultados para "{number}"' : '0 results for "{number}"', { exact: true })).toBeVisible();

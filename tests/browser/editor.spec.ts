@@ -122,7 +122,7 @@ test('catalog and 3D use bounded, cacheable assets with zero startup model downl
   }));
   await importJSON(page, fixture);
   await expect(page.getByRole('combobox', { name: 'Current floor' }).locator('option')).toHaveCount(3);
-  await page.getByRole('button', { name: 'Objects', exact: true }).click();
+  await page.getByRole('button', { name: 'Things', exact: true }).click();
   await expect.poll(() => assets.filter(x => x.url.endsWith('.glb')).length).toBeGreaterThan(0);
   await page.waitForLoadState('networkidle');
   await Promise.all(pending);
@@ -313,6 +313,13 @@ for (const width of [1440, 390]) {
     await expect(page.getByRole('dialog', { name: 'You already have this plan' })).toHaveCount(0);
     expect(Object.keys(await savedProjects(page)).sort()).toEqual(listed);
     expect((await exportJSON(page)).id).toBe(saved.id);
+    // Under another identity the same file is a plan the editor does not have, so it comes in from the file.
+    const fromFile = crypto.randomUUID();
+    await importJSON(page, { name: 'elevations-elsewhere.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ ...saved, id: fromFile })) });
+    await expect.poll(async () => Object.keys(await savedProjects(page)).length).toBe(listed.length + 1);
+    const opened = await exportJSON(page);
+    expect(opened.id).toBe(fromFile);
+    expect(opened.floors.map((floor: { elevation: number }) => floor.elevation)).toEqual([-50.5, 425.5]);
     await selectFloor('Curved Upper');
     await page.getByRole('button', { name: '3D', exact: true }).click();
     await expect(page.getByRole('region', { name: '3D floor plan viewer' }).locator('canvas').first()).toBeVisible({ timeout: 60_000 });

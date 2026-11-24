@@ -41,6 +41,16 @@ it('does not add model fields to legacy projects and allows detached package def
   const detached = modelProject(); delete detached.projectPackage;
   expect(readProject(detached).customModels).toEqual([definition]);
 });
+it('refuses to save a plan with its pictures when a 3D model has no file, in words that say what to use instead', () => {
+  const detached = modelProject(); delete detached.projectPackage;
+  let message = '';
+  try { projectPackageBytes(detached); } catch (error) { message = (error as Error).message; }
+  expect(() => projectPackageBytes(detached)).toThrow('has no file in this plan');
+  expect(message).toBe('The 3D model “Fixture box” has no file in this plan, so the plan cannot be saved with its pictures. Use “Send this plan” instead: it carries the whole plan.');
+  expect(message.startsWith('Invalid project package')).toBe(false);
+  const withFile = modelProject();
+  expect(readProjectPackage(projectPackageBytes(withFile)).project.customModels).toEqual([definition]);
+});
 it('rejects malformed definitions, unsafe provenance URLs and unresolved references', () => {
   for (const change of [
     { id: '' }, { assetName: '../model.glb' }, { sha256: 'invalid' }, { name: [] },

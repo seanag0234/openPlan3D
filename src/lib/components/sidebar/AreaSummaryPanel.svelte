@@ -90,19 +90,19 @@
   <div class="grid grid-cols-2 gap-2">
     <div class="bg-blue-50 rounded-lg p-2 text-center">
       <div class="text-lg font-bold text-blue-700">{allRooms.length}</div>
-      <div class="text-[10px] text-blue-500">{$t('areaSummary.rooms')}</div>
+      <div class="text-xs text-blue-500">{$t('areaSummary.rooms')}</div>
     </div>
     <div class="bg-green-50 rounded-lg p-2 text-center">
       <div class="text-lg font-bold text-green-700">{formatArea(totalArea, settings.units)}</div>
-      <div class="text-[10px] text-green-500">{$t('areaSummary.totalArea')}</div>
+      <div class="text-xs text-green-500">{$t('areaSummary.totalArea')}</div>
     </div>
     <div class="bg-amber-50 rounded-lg p-2 text-center">
       <div class="text-sm font-bold text-amber-700">{$t('areaSummary.openingCounts', { doors: totalDoors, windows: totalWindows })}</div>
-      <div class="text-[10px] text-amber-500">{$t('areaSummary.doorsWindows')}</div>
+      <div class="text-xs text-amber-500">{$t('areaSummary.doorsWindows')}</div>
     </div>
     <div class="bg-purple-50 rounded-lg p-2 text-center">
       <div class="text-sm font-bold text-purple-700">{formatLength(totalWallLength, settings.units)}</div>
-      <div class="text-[10px] text-purple-500">{$t('areaSummary.wallLength')}</div>
+      <div class="text-xs text-purple-500">{$t('areaSummary.wallLength')}</div>
     </div>
   </div>
 
@@ -138,7 +138,7 @@
                 <div class="bg-blue-400 h-1 rounded-full" style="width: {Math.min(pct, 100)}%"></div>
               </div>
             </div>
-            <span class="text-[10px] text-gray-400 w-8 text-right shrink-0">{pct.toFixed(0)}%</span>
+            <span class="text-xs text-gray-400 w-8 text-right shrink-0">{pct.toFixed(0)}%</span>
           </div>
         {/each}
       </div>

@@ -6,7 +6,7 @@ const SYMBOLS = ['Person', 'Two People', 'Sedan', 'SUV', 'Pickup', 'Deciduous Tr
 test('the Objects search finds things by everyday words, symbols included', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('hasSeenWelcome', 'true'));
   await page.goto('/editor');
-  await page.getByRole('button', { name: 'Objects', exact: true }).click();
+  await page.getByRole('button', { name: 'Things', exact: true }).click();
   const search = page.getByRole('textbox', { name: 'Search furniture...', exact: true });
   const symbol = (name: string) => page.getByRole('button', { name, exact: true });
   await expect(symbol('Person')).toBeVisible();
@@ -36,7 +36,7 @@ test('the Objects search finds things by everyday words, symbols included', asyn
 test('an uploaded symbol the search finds counts as a result', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('hasSeenWelcome', 'true'));
   await page.goto('/editor');
-  await page.getByRole('button', { name: 'Objects', exact: true }).click();
+  await page.getByRole('button', { name: 'Things', exact: true }).click();
   const chooser = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: '+ Upload symbol (PNG, JPEG, WebP)', exact: true }).click();
   await (await chooser).setFiles({ name: 'Slide.png', mimeType: 'image/png', buffer: await readFile('tests/fixtures/item-photo.png') });

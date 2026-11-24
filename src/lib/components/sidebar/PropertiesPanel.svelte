@@ -21,6 +21,7 @@
   import { wallLength as calcWallLength, MIN_WALL_LENGTH, type WallEndpoint } from '$lib/utils/wallEditing';
   import { openingOnWall } from '$lib/utils/wallProfiles';
   import { getEntourageDef } from '$lib/utils/entourageCatalog';
+  import { customSymbolName } from '$lib/utils/symbolName';
   import { floorMaterials, wallColors } from '$lib/utils/materials';
   import { colorInputValue, doorFrameColor, DOOR_FRAME_PRESETS } from '$lib/utils/doorStyle';
   import { getCatalogItem, getFurnitureSize } from '$lib/utils/furnitureCatalog';
@@ -472,16 +473,17 @@
             <span class="text-xs text-gray-500">{$t('wallProperties.texture')}</span>
             <div class="grid grid-cols-3 gap-1.5">
               <button
-                class="p-1.5 rounded-md border-2 text-[10px] text-center h-14 {!sideTex ? 'border-blue-500 ring-1 ring-blue-200' : 'border-gray-200 hover:border-gray-300'}"
+                class="p-1.5 rounded-md border-2 text-xs text-center h-14 {!sideTex ? 'border-blue-500 ring-1 ring-blue-200' : 'border-gray-200 hover:border-gray-300'}"
                 onclick={() => { if (selectedWall) updateWall(selectedWall.id, { interiorTexture: 'none' }); }}
               >{$t('wallProperties.none')}</button>
               {#each wallColors.filter(wc => wc.texture) as wc}
                 {@const texPath = wallTexPaths[wc.id] ?? ''}
                 <button
-                  class="rounded-md border-2 text-[10px] text-center h-14 flex flex-col items-center justify-end overflow-hidden relative {sideTex === wc.id ? 'border-blue-500 ring-1 ring-blue-200' : 'border-gray-200 hover:border-gray-300'}"
+                  class="rounded-md border-2 text-xs text-center h-14 flex flex-col items-center justify-end overflow-hidden relative {sideTex === wc.id ? 'border-blue-500 ring-1 ring-blue-200' : 'border-gray-200 hover:border-gray-300'}"
                   style={texPath ? `background-image: url(${texPath}); background-size: cover; background-position: center;` : `background-color: ${wc.color}20`}
+                  title={$t(wallMaterialLabels[wc.id])}
                   onclick={() => { if (selectedWall) updateWall(selectedWall.id, { interiorTexture: wc.id, interiorColor: wc.color }); }}
-                ><span class="bg-white/80 backdrop-blur-sm rounded px-1 py-0.5 mb-0.5 text-gray-700">{$t(wallMaterialLabels[wc.id])}</span></button>
+                ><span class="max-w-full truncate bg-white/80 backdrop-blur-sm rounded px-1 py-0.5 mb-0.5 text-gray-700">{$t(wallMaterialLabels[wc.id])}</span></button>
               {/each}
             </div>
           </div>
@@ -507,16 +509,17 @@
             <span class="text-xs text-gray-500">{$t('wallProperties.texture')}</span>
             <div class="grid grid-cols-3 gap-1.5">
               <button
-                class="p-1.5 rounded-md border-2 text-[10px] text-center h-14 {!sideTex ? 'border-blue-500 ring-1 ring-blue-200' : 'border-gray-200 hover:border-gray-300'}"
+                class="p-1.5 rounded-md border-2 text-xs text-center h-14 {!sideTex ? 'border-blue-500 ring-1 ring-blue-200' : 'border-gray-200 hover:border-gray-300'}"
                 onclick={() => { if (selectedWall) updateWall(selectedWall.id, { exteriorTexture: 'none' }); }}
               >{$t('wallProperties.none')}</button>
               {#each wallColors.filter(wc => wc.texture) as wc}
                 {@const texPath = wallTexPaths[wc.id] ?? ''}
                 <button
-                  class="rounded-md border-2 text-[10px] text-center h-14 flex flex-col items-center justify-end overflow-hidden relative {sideTex === wc.id ? 'border-blue-500 ring-1 ring-blue-200' : 'border-gray-200 hover:border-gray-300'}"
+                  class="rounded-md border-2 text-xs text-center h-14 flex flex-col items-center justify-end overflow-hidden relative {sideTex === wc.id ? 'border-blue-500 ring-1 ring-blue-200' : 'border-gray-200 hover:border-gray-300'}"
                   style={texPath ? `background-image: url(${texPath}); background-size: cover; background-position: center;` : `background-color: ${wc.color}20`}
+                  title={$t(wallMaterialLabels[wc.id])}
                   onclick={() => { if (selectedWall) updateWall(selectedWall.id, { exteriorTexture: wc.id, exteriorColor: wc.color }); }}
-                ><span class="bg-white/80 backdrop-blur-sm rounded px-1 py-0.5 mb-0.5 text-gray-700">{$t(wallMaterialLabels[wc.id])}</span></button>
+                ><span class="max-w-full truncate bg-white/80 backdrop-blur-sm rounded px-1 py-0.5 mb-0.5 text-gray-700">{$t(wallMaterialLabels[wc.id])}</span></button>
               {/each}
             </div>
           </div>
@@ -862,7 +865,7 @@
                         class="w-full h-12 rounded-md mb-1 overflow-hidden"
                         style={texPath ? `background-image: url(${texPath}); background-size: cover; background-position: center;` : `background-color: ${mat.id === 'none' ? (selectedRoom.color ?? mat.color) : mat.color}`}
                       ></div>
-                      <div class="text-center leading-3 text-[10px] text-gray-600 truncate">{$t(floorMaterialLabels[mat.id])}</div>
+                      <div class="text-center leading-3 text-xs text-gray-600 truncate">{$t(floorMaterialLabels[mat.id])}</div>
                     </button>
                   {/if}
                 {/each}
@@ -881,7 +884,7 @@
     <div class="space-y-3">
       <div>
         <span class="text-xs text-gray-500">{$t('symbolProperties.symbol')}</span>
-        <p class="text-sm text-gray-700">{entourageLabels[selectedEntourage.defId] ? $t(entourageLabels[selectedEntourage.defId]) : getEntourageDef(selectedEntourage.defId)?.name ?? $t('symbolProperties.custom')}</p>
+        <p class="text-sm text-gray-700">{entourageLabels[selectedEntourage.defId] ? $t(entourageLabels[selectedEntourage.defId]) : getEntourageDef(selectedEntourage.defId)?.name ?? (customSymbolName(selectedEntourage.defId, $currentProject) || $t('symbolProperties.custom'))}</p>
       </div>
       <LengthInput label={$t('openingProperties.width')} valueCm={selectedEntourage.width} units={settings.units} minCm={1}
         oncommit={cm => updateEntourageItem(selectedEntourage!.id, { width: cm })} />

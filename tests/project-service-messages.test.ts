@@ -156,6 +156,16 @@ describe('project service diagnostics', () => {
     expect(projectServiceMessage(message, 'en')).toBe(message);
   });
 
+  it('translates a 3D model with no file and keeps its name', () => {
+    const name = 'Made-up {name} “sofa”';
+    const message = `The 3D model “${name}” has no file in this plan, so the plan cannot be saved with its pictures. Use “Send this plan” instead: it carries the whole plan.`;
+    expect(projectServiceMessage(message, 'en')).toBe(message);
+    const pt = projectServiceMessage(message, 'pt');
+    expect(pt).toContain(name);
+    expect(pt).toContain('Enviar esta planta');
+    expect(pt).toBe(translate('pt', 'projectService.packageModelFile', { name }));
+  });
+
   it('translates empty backup rejection before any database write', async () => {
     const error = await prepareLibraryRestore('{}').restore().catch(error => error as Error);
     expect(error).toBeInstanceOf(Error);
@@ -177,7 +187,7 @@ describe('project service diagnostics', () => {
     expect(projectServiceMessage(quota, 'pt')).toContain('O armazenamento do navegador está cheio.');
     expect(projectServiceMessage(storageErrorMessage({ name: 'SecurityError' }), 'pt')).toContain('está indisponível');
     expect(projectServiceMessage(storageErrorMessage(null), 'pt')).toContain('Não foi possível salvar');
-    expect(projectServiceMessage(new ProjectConflictError().message, 'pt')).toContain('alterado ou excluído em outra aba');
+    expect(projectServiceMessage(new ProjectConflictError().message, 'pt')).toContain('alterada ou excluída em outra aba');
   });
 
   it('translates the opening wrapper, nested cause and import outcome together', () => {

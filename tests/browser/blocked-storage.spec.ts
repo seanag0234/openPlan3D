@@ -27,7 +27,7 @@ test('the library explains blocked site storage instead of failing to load', asy
   const alert = page.getByRole('alert').filter({ hasText: unavailable });
   await expect(alert).toBeVisible();
   await expect(alert.getByRole('button', { name: 'Retry loading', exact: true })).toBeVisible();
-  await expect(alert.getByRole('button', { name: 'Download library backup', exact: true })).toBeVisible();
+  await expect(alert.getByRole('button', { name: 'Download a backup of all plans', exact: true })).toBeVisible();
   check();
 });
 
@@ -90,7 +90,7 @@ test('with site storage blocked the snap step, Settings, the Gemini key and cata
   await expect(page.getByTitle('Switch snap step: 6" grid or 1" (S)', { exact: true })).toHaveText('🧲 Steps of 6"');
 
   // Favorites and recent items last for the session.
-  await page.getByRole('button', { name: 'Objects', exact: true }).click();
+  await page.getByRole('button', { name: 'Things', exact: true }).click();
   await page.getByRole('button', { name: 'Add Sofa to favorites', exact: true }).first().click();
   await expect(page.getByRole('button', { name: 'Remove Sofa from favorites', exact: true }).first()).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: /^Sofa(?: Sofa)?(?: 6'7" × 2'11")?$/ }).first().click();

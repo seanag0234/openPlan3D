@@ -102,7 +102,9 @@ export function projectServiceMessage(message: string, language: Locale): string
   const detail = unsaved ? body.slice(prefix.length + 1) : body;
   const key = messages.get(detail);
   const repeatedKey = /^This backup repeats the key “([\s\S]*)”\. No projects were restored\.$/.exec(detail);
+  const modelFile = /^The 3D model “([\s\S]*)” has no file in this plan, so the plan cannot be saved with its pictures\. Use “Send this plan” instead: it carries the whole plan\.$/.exec(detail);
   const localized = key ? translate(language, key) : repeatedKey
-    ? translate(language, 'projectService.backupRepeatedKey', { key: repeatedKey[1] }) : countedMessage(detail, language);
+    ? translate(language, 'projectService.backupRepeatedKey', { key: repeatedKey[1] })
+    : modelFile ? translate(language, 'projectService.packageModelFile', { name: modelFile[1] }) : countedMessage(detail, language);
   return `${unsaved ? `${translate(language, 'projectService.openUnsaved')} ` : ''}${localized}${suffix ? ` ${translate(language, suffix.key)}` : ''}`;
 }

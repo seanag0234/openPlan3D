@@ -12,7 +12,7 @@
 
 {#snippet picture(symbol: string, word: string)}
   {#if $coarsePointer}
-    <span class="leading-none" aria-hidden="true">{symbol}</span><span class="text-[11px] leading-tight font-normal whitespace-nowrap">{word}</span>
+    <span class="leading-none" aria-hidden="true">{symbol}</span><span class="text-xs leading-tight font-normal whitespace-nowrap">{word}</span>
   {:else}{symbol}{/if}
 {/snippet}
 
