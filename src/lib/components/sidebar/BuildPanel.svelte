@@ -21,7 +21,7 @@
   import FurnitureThumbnail from './FurnitureThumbnail.svelte';
   import CustomModelPanel from './CustomModelPanel.svelte';
   import { createProjectFromRoomPlan, extractRoomJsonFromZip, importRoomPlanFloors, interchangeStateFromRoomPlan, roomPlanImportOptions, roomPlanStoryIndices, validateRoomPlan, ORTHO_VERSION } from '$lib/utils/roomplanImport';
-  import { addRoomPlanFloorToFloor, addRoomPlanFloorsToProject, currentProject, selectImportedElements, addFurniture, updateFurniture, beginUndoGroup, endUndoGroup, selectedElementId, selectedElementIds } from '$lib/stores/project';
+  import { addRoomPlanFloorToFloor, addRoomPlanFloorsToProject, currentProject, selectImportedElements, houseFixed, addFurniture, updateFurniture, beginUndoGroup, endUndoGroup, selectedElementId, selectedElementIds } from '$lib/stores/project';
   import { orderedFloors } from '$lib/utils/floors';
   import { selectableContentIds, type AddedContent } from '$lib/utils/roomplanMerge';
   import { interchangeProjectName } from '$lib/utils/interchange';
@@ -452,6 +452,9 @@
   <div class="flex-1 overflow-y-auto p-3">
     {#if activeTab === 'draw'}
       <div class="space-y-1">
+        {#if $houseFixed}
+          <p role="note" data-house-fixed-note class="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">{$t('adding.houseFixed')}</p>
+        {/if}
         <h3 class="text-xs font-semibold text-gray-400 uppercase mb-2">{$t('buildTools.tools')}</h3>
         <button
           class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors {currentTool === 'select' ? 'bg-blue-50 text-slate-800 ring-1 ring-blue-200' : 'hover:bg-gray-50 text-gray-700'}"
@@ -466,7 +469,8 @@
           </div>
         </button>
         <button
-          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors {currentTool === 'wall' ? 'bg-blue-50 text-slate-800 ring-1 ring-blue-200' : 'hover:bg-gray-50 text-gray-700'}"
+          disabled={$houseFixed}
+          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed {currentTool === 'wall' ? 'bg-blue-50 text-slate-800 ring-1 ring-blue-200' : 'hover:bg-gray-50 text-gray-700'}"
           onclick={() => setTool('wall')}
         >
           <div class="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center {currentTool === 'wall' ? 'bg-blue-100' : ''}">
@@ -609,9 +613,10 @@
           <div class="grid grid-cols-2 gap-2 mb-3">
             {#each doorCatalog as dc}
               <button
-                class="flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition-colors cursor-grab active:cursor-grabbing {currentTool === 'door' && selectedDoorType === dc.type ? 'border-blue-400 bg-blue-50' : 'border-gray-100 hover:border-gray-200'}"
+                class="flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition-colors cursor-grab active:cursor-grabbing disabled:opacity-40 disabled:cursor-not-allowed {currentTool === 'door' && selectedDoorType === dc.type ? 'border-blue-400 bg-blue-50' : 'border-gray-100 hover:border-gray-200'}"
                 onclick={() => setDoorType(dc.type)}
-                draggable="true"
+                disabled={$houseFixed}
+                draggable={!$houseFixed}
                 ondragstart={(e) => { e.dataTransfer?.setData('application/o3d-type', 'door'); e.dataTransfer?.setData('application/o3d-id', dc.type); }}
               >
                 <div class="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center">
@@ -627,9 +632,10 @@
           <div class="grid grid-cols-2 gap-2">
             {#each windowCatalog as wc}
               <button
-                class="flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition-colors cursor-grab active:cursor-grabbing {currentTool === 'window' && selectedWindowType === wc.type ? 'border-blue-400 bg-blue-50' : 'border-gray-100 hover:border-gray-200'}"
+                class="flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition-colors cursor-grab active:cursor-grabbing disabled:opacity-40 disabled:cursor-not-allowed {currentTool === 'window' && selectedWindowType === wc.type ? 'border-blue-400 bg-blue-50' : 'border-gray-100 hover:border-gray-200'}"
                 onclick={() => setWindowType(wc.type)}
-                draggable="true"
+                disabled={$houseFixed}
+                draggable={!$houseFixed}
                 ondragstart={(e) => { e.dataTransfer?.setData('application/o3d-type', 'window'); e.dataTransfer?.setData('application/o3d-id', wc.type); }}
               >
                 <div class="w-9 h-9 rounded-lg bg-cyan-50 flex items-center justify-center">
