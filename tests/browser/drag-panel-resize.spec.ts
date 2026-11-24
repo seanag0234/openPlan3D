@@ -37,8 +37,8 @@ async function openPlan(page: Page, viewport: { width: number; height: number })
   await expect(page.getByRole('button', { name: plan.name, exact: true })).toBeVisible();
   // Below 1280 px the Snap to Grid switch lives in the More menu.
   if (viewport.width < 1280) await page.getByRole('button', { name: 'More actions', exact: true }).click();
-  await page.getByRole('button', { name: /Snap to Grid/ }).click();
-  await expect(page.locator('button[aria-label="Snap to Grid"]')).toHaveAttribute('aria-pressed', 'false');
+  await page.getByRole('button', { name: /Move in steps/ }).click();
+  await expect(page.locator('button[aria-label="Move in steps"]')).toHaveAttribute('aria-pressed', 'false');
   if (viewport.width < 1280) await page.getByRole('button', { name: 'More actions', exact: true }).click();
   await expect(page.locator('[data-plan-properties]')).toBeHidden();
   await settle(page);

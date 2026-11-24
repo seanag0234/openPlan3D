@@ -5,7 +5,7 @@ const PLAN = 'tests/fixtures/room-with-boxes.openplan.json';
 const KEYS_AND_MOUSE = /\bEsc\b|\bM to\b|\bclick|dbl-|scroll|\bR to\b/i;
 
 const hint = (page: Page) => page.locator('[data-tool-hint]');
-// The sidebar's tool buttons, named by title and description ("Select Click to select elements"), not the top bar's "Select mode".
+// The sidebar's tool buttons, named by title and description ("Select Pick things on the plan"), not the top bar's "Select mode".
 const tool = (page: Page, name: RegExp) => page.getByRole('button', { name }).first();
 
 async function pickMeasure(page: Page) {
@@ -46,7 +46,7 @@ test.describe('moving the view', () => {
     await openPlan(page, PLAN);
     const more = page.getByRole('button', { name: 'More actions', exact: true });
     await more.click();
-    await page.getByRole('button', { name: 'Pan Mode', exact: true }).click();
+    await page.getByRole('button', { name: 'Move the view', exact: true }).click();
     // The menu stays open for its other toggles; a second press of More closes it.
     await more.click();
     const moving = hint(page).filter({ hasText: 'Moving the view' });
@@ -54,7 +54,7 @@ test.describe('moving the view', () => {
     await moving.getByRole('button', { name: 'Done', exact: true }).click();
     await expect(moving).toHaveCount(0);
     await more.click();
-    await expect(page.getByRole('button', { name: 'Pan Mode', exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: '✓ Pan Mode', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Move the view', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: '✓ Move the view', exact: true })).toHaveCount(0);
   });
 });

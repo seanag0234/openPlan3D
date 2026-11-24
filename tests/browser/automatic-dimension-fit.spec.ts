@@ -45,9 +45,9 @@ for (const width of [1440, 390]) {
     await testInfo.attach(`automatic-dimension-fit-${width}`, { body: await page.screenshot(), contentType: 'image/png' });
     const zoomButton = page.getByRole('button', { name: 'Zoom to 100%', exact: true });
     const bothZoom = await zoomButton.textContent();
-    await page.getByTitle('Layer Visibility', { exact: true }).press('Enter');
+    await page.getByTitle('Show and hide', { exact: true }).press('Enter');
     await page.getByRole('checkbox', { name: 'Automatic dimensions', exact: true }).uncheck();
-    await page.getByTitle('Layer Visibility', { exact: true }).press('Enter');
+    await page.getByTitle('Show and hide', { exact: true }).press('Enter');
     await page.getByTitle('Zoom to Fit (F)', { exact: true }).first().press('Enter');
     await expect(zoomButton).not.toHaveText(bothZoom!);
     await page.getByRole('button', { name: 'Export', exact: true }).click();

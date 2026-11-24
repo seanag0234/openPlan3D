@@ -57,7 +57,7 @@ test('Open a plan with its pictures says where a JSON file opens when the picker
   await expect(page.getByText('No projects yet', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Open a plan with its pictures', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Open a plan with its pictures', exact: true });
-  await choose(page, () => dialog.getByRole('button', { name: 'Choose project package', exact: true }).click(),
+  await choose(page, () => dialog.getByRole('button', { name: 'Choose the file', exact: true }).click(),
     { name: 'Our house - shell.json', mimeType: 'application/json', buffer: await projectFile() }, '.zip,application/zip');
   await expect(dialog.getByRole('alert')).toHaveText('Invalid project package: This is a JSON file, not a project package. Open it with Restore library backup on the Projects page or with Import JSON in the editor.');
   expect(await savedProjects(page)).toEqual({});
@@ -71,7 +71,7 @@ for (const kind of kinds) {
     await page.goto('/');
     await page.getByRole('button', { name: 'Bring back a backup of all plans', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'Bring back a backup of all plans', exact: true });
-    await expect(dialog).toContainText('A library backup, or one project saved with Download JSON');
+    await expect(dialog).toContainText('A backup of all plans, or one plan saved with Download JSON');
     await choose(page, () => dialog.getByRole('button', { name: 'Choose backup file', exact: true }).click(),
       { ...kind, buffer: await projectFile() }, '.json,application/json');
     await restoreAll(page, 1);

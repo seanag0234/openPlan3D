@@ -69,7 +69,7 @@ for (const width of [1440, 390]) {
     const saveAlert = page.getByRole('alert');
     await expect(saveAlert).toContainText('O armazenamento do navegador está cheio.');
     const pending = page.waitForEvent('download');
-    await saveAlert.getByRole('button', { name: 'Baixar backup JSON', exact: true }).click();
+    await saveAlert.getByRole('button', { name: 'Baixar uma cópia desta planta', exact: true }).click();
     const backup = JSON.parse(await readFile((await (await pending).path())!, 'utf8'));
     expect(backup.id).toBe(source.id);
     expect(backup.name).toBe('Planta {count} preservada');

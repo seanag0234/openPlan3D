@@ -28,7 +28,7 @@ test('downloaded capture survives initial save failure and retries without reimp
   expect(downloads).toBe(1);
   expect(await savedProjects(page)).toEqual({});
   const pending = page.waitForEvent('download');
-  await alert.getByRole('button', { name: 'Baixar backup JSON', exact: true }).click();
+  await alert.getByRole('button', { name: 'Baixar uma cópia desta planta', exact: true }).click();
   const backup = JSON.parse(await readFile((await (await pending).path())!, 'utf8'));
   expect(backup.floors.map((floor: any) => [floor.level, floor.name])).toEqual([[0, 'Entry'], [2, 'Loft'], [3, 'Future Floor']]);
   expect(backup.floors.flatMap((floor: any) => floor.walls.map((wall: any) => wall.id)).sort()).toEqual(JSON.parse(capture).walls.map((wall: any) => wall.identifier).sort());

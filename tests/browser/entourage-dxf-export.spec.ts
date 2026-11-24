@@ -8,7 +8,7 @@ test('built-in entourage-only plans export editable DXF linework',async({page},t
  await page.getByRole('button',{name:'Export',exact:true}).click();const chooser=page.waitForEvent('filechooser');await page.getByRole('button',{name:'Import JSON',exact:true}).click();await(await chooser).setFiles({name:'entourage.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(project))});await expect(page.getByRole('button',{name:project.name,exact:true})).toBeVisible();
  async function download(name:string){await page.getByRole('button',{name:'Export',exact:true}).click();const pending=page.waitForEvent('download');await page.getByRole('button',{name,exact:true}).click();return readFile((await(await pending).path())!,'utf8');}
  const before=JSON.parse(await download('Download JSON'));
- const dxf=await download('Export as DXF');expect(dxf).toContain('ENTOURAGE');expect(dxf).toContain('SPLINE');expect(dxf).not.toMatch(/NaN|Infinity/);for(const alpha of [64,128,191])expect(dxf).toContain(`\n440\n${0x02000000|alpha}\n`);
+ const dxf=await download('Export for CAD programs (DXF)');expect(dxf).toContain('ENTOURAGE');expect(dxf).toContain('SPLINE');expect(dxf).not.toMatch(/NaN|Infinity/);for(const alpha of [64,128,191])expect(dxf).toContain(`\n440\n${0x02000000|alpha}\n`);
  const cadPreview=await page.evaluate(dxf=>{
   const lines=dxf.trim().split(/\r?\n/),entities:{type:string;tags:[string,string][]}[]=[];
   for(let i=0;i<lines.length;i+=2){const code=lines[i].trim(),value=lines[i+1].trim();if(code==='0')entities.push({type:value,tags:[]});else entities.at(-1)?.tags.push([code,value]);}

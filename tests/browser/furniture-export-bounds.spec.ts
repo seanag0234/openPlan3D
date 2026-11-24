@@ -9,7 +9,7 @@ for (const scaled of [false, true]) test(`exports ${scaled ? 'scaled' : 'unscale
  await(await chooser).setFiles({name:'large-furniture.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(project))});
  await page.waitForLoadState('networkidle');
  async function download(name:string){await page.getByRole('button',{name:'Export',exact:true}).click();const pending=page.waitForEvent('download');await page.getByRole('button',{name,exact:true}).click();return readFile((await(await pending).path())!);}
- const svg=(await download('Export as SVG')).toString();
+ const svg=(await download('Export as a drawing that scales (SVG)')).toString();
  expect(svg).toContain('Unknown furniture');
  const size=await page.evaluate(({svg,scaled})=>{
   const doc=new DOMParser().parseFromString(svg,'image/svg+xml');
@@ -21,7 +21,7 @@ for (const scaled of [false, true]) test(`exports ${scaled ? 'scaled' : 'unscale
   return {width:view[2],height:view[3],points};
  },{svg,scaled});
  for(const p of size.points){expect(p.x).toBeGreaterThan(49);expect(p.y).toBeGreaterThan(49);expect(p.x).toBeLessThan(size.width-49);expect(p.y).toBeLessThan(size.height-49);}
- const png=await download('Export 2D as PNG');
+ const png=await download('Save the plan as a picture (PNG)');
  const scale=Math.min(2,4096/Math.max(size.width+60,size.height+60));
  expect(png.readUInt32BE(16)).toBe(Math.floor((size.width+60)*scale));expect(png.readUInt32BE(20)).toBe(Math.floor((size.height+60)*scale));
  const pdf=await download('Export as PDF');expect(pdf.subarray(0,5).toString()).toBe('%PDF-');

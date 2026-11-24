@@ -7,7 +7,7 @@ import { savedProjects, storedRecords } from './storage';
 const fixture = resolve('tests/fixtures/native-project-package.zip');
 async function choose(page: Page, path = fixture) {
   const pending = page.waitForEvent('filechooser');
-  await page.getByRole('button', { name: 'Choose project package', exact: true }).click();
+  await page.getByRole('button', { name: 'Choose the file', exact: true }).click();
   await (await pending).setFiles(path);
 }
 function observe(page: Page) {
@@ -30,7 +30,7 @@ for (const width of [1440, 390]) test(`furniture category previews and original 
   const check = observe(page), models: string[] = [];
   page.on('request', request => { if (/\.glb$/.test(request.url())) models.push(request.url()); });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Import a project package', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Welcome', exact: true }).getByRole('button', { name: 'Open a plan with its pictures', exact: true }).click();
   await choose(page, resolve('tests/fixtures/native-categories-package.zip'));
   await page.getByRole('button', { name: 'Import as copy', exact: true }).click();
   await expect(page.getByRole('dialog').getByRole('status')).toContainText('Project imported.');
@@ -67,7 +67,7 @@ for (const width of [1440, 390]) test(`furniture category previews and original 
 test('actual native category return keeps web catalog IDs and mirrored footprints in the browser', async ({ page }) => {
   const check = observe(page);
   await page.goto('/');
-  await page.getByRole('button', { name: 'Import a project package', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Welcome', exact: true }).getByRole('button', { name: 'Open a plan with its pictures', exact: true }).click();
   await choose(page, resolve('tests/fixtures/swift-web-categories-return.zip'));
   await page.getByRole('button', { name: 'Import as copy', exact: true }).click();
   await expect(page.getByRole('dialog').getByRole('status')).toContainText('Project imported.');
@@ -80,7 +80,7 @@ for (const width of [1440, 390]) test(`native package preview/import/edit/reload
   await page.setViewportSize({ width, height: 900 });
   const check = observe(page);
   await page.goto('/');
-  await page.getByRole('button', { name: 'Import a project package', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Welcome', exact: true }).getByRole('button', { name: 'Open a plan with its pictures', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Open a plan with its pictures', exact: true });
   const before = await storedRecords(page);
   await choose(page);
@@ -116,7 +116,7 @@ for (const width of [1440, 390]) test(`native package preview/import/edit/reload
 });
 test('actual Swift return package restores web-only details and Swift edits', async ({ page }) => {
   const check = observe(page);
-  await page.goto('/'); await page.getByRole('button', { name: 'Import a project package', exact: true }).click();
+  await page.goto('/'); await page.getByRole('dialog', { name: 'Welcome', exact: true }).getByRole('button', { name: 'Open a plan with its pictures', exact: true }).click();
   await choose(page, resolve('tests/fixtures/swift-return-project-package.zip'));
   await page.getByRole('button', { name: 'Import as copy', exact: true }).click();
   await expect(page.getByRole('dialog').getByRole('status')).toContainText('Project imported.');
@@ -188,7 +188,7 @@ test('the editor imports a project package from the Export menu and opens the co
 test('slab thickness edits reach the native package in metres', async ({ page }) => {
   const check = observe(page);
   await page.goto('/');
-  await page.getByRole('button', { name: 'Import a project package', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Welcome', exact: true }).getByRole('button', { name: 'Open a plan with its pictures', exact: true }).click();
   await choose(page);
   await page.getByRole('button', { name: 'Import as copy', exact: true }).click();
   await expect(page.getByRole('dialog').getByRole('status')).toContainText('Project imported.');
@@ -234,7 +234,7 @@ for (const owned of [false, true]) test(`actual native ${owned ? 'floor-owned' :
     };
   });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Import a project package', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Welcome', exact: true }).getByRole('button', { name: 'Open a plan with its pictures', exact: true }).click();
   await choose(page, resolve(`tests/fixtures/native-return-${owned ? 'floor-owned' : 'rotated'}-underlay.zip`));
   await page.getByRole('button', { name: 'Import as copy', exact: true }).click();
   await expect(page.getByRole('dialog').getByRole('status')).toContainText('Project imported.');

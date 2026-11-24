@@ -12,7 +12,7 @@ async function exportedFurniture(page: Page) {
 async function selectTelevision(page: Page) {
   await page.getByRole('button', { name: 'Save', exact: true }).press('l');
   await page.getByRole('button', { name: '📺 Television', exact: true }).click();
-  await expect(page.getByRole('heading', { name: /Television Properties/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Television: details/ })).toBeVisible();
 }
 
 test('furniture height above floor edits with Undo/Redo, saves and survives reload', async ({ page }) => {

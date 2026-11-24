@@ -59,28 +59,28 @@ describe('the status-bar Snap button', () => {
 
   it('names the step S picked while Snap to Grid is on, pressed on the grid step', () => {
     const hint = 'Switch snap step: 25 cm grid or 10 cm (S)';
-    expect(snapStatus(tFor('en'), on, 'metric')).toEqual({ label: 'Snap 25 cm', title: hint, pressed: true });
-    expect(snapStatus(tFor('en'), { ...on, snapToGrid: false }, 'metric')).toEqual({ label: 'Snap 10 cm', title: hint, pressed: false });
+    expect(snapStatus(tFor('en'), on, 'metric')).toEqual({ label: 'Steps of 25 cm', title: hint, pressed: true });
+    expect(snapStatus(tFor('en'), { ...on, snapToGrid: false }, 'metric')).toEqual({ label: 'Steps of 10 cm', title: hint, pressed: false });
   });
 
   it('reads Snap off, not pressed, while the top-bar Snap to Grid is off, and its title keeps the step S picked', () => {
     expect(snapStatus(tFor('en'), off, 'metric')).toEqual({
-      label: 'Snap off',
-      title: 'Snap to Grid is off in the top bar. S still picks the step used when it is on: 25 cm grid or 10 cm (now 25 cm)',
+      label: 'Steps off',
+      title: 'Move in steps is off in the top bar. S still picks the step used when it is on: 25 cm grid or 10 cm (now 25 cm)',
       pressed: false,
     });
     expect(snapStatus(tFor('en'), { ...off, snapToGrid: false }, 'imperial')).toEqual({
-      label: 'Snap off',
-      title: 'Snap to Grid is off in the top bar. S still picks the step used when it is on: 6" grid or 1" (now 1")',
+      label: 'Steps off',
+      title: 'Move in steps is off in the top bar. S still picks the step used when it is on: 6" grid or 1" (now 1")',
       pressed: false,
     });
   });
 
   it('says the same in Portuguese', () => {
-    expect(snapStatus(tFor('pt'), on, 'metric')).toEqual({ label: 'Ajuste 25 cm', title: 'Alternar passo do ajuste: grade de 25 cm ou 10 cm (S)', pressed: true });
+    expect(snapStatus(tFor('pt'), on, 'metric')).toEqual({ label: 'Passos de 25 cm', title: 'Alternar passo do ajuste: grade de 25 cm ou 10 cm (S)', pressed: true });
     expect(snapStatus(tFor('pt'), { ...off, snapToGrid: false }, 'metric')).toEqual({
-      label: 'Ajuste desativado',
-      title: 'O botão Ajustar à grade da barra superior está desativado. S ainda escolhe o passo usado quando ele estiver ativado: grade de 25 cm ou 10 cm (agora 10 cm)',
+      label: 'Passos desativados',
+      title: 'O botão Mover em passos da barra superior está desativado. S ainda escolhe o passo usado quando ele estiver ativado: grade de 25 cm ou 10 cm (agora 10 cm)',
       pressed: false,
     });
   });

@@ -85,7 +85,7 @@ test('Portuguese tool hints guide walls, openings, furniture, measuring, text an
   await expect(page.getByText('Clique no primeiro ponto · N para sair · Esc para cancelar', { exact: true })).toBeVisible();
   const area = (await canvas.boundingBox())!;
   await canvas.click({ position: { x: area.width * .5, y: area.height * .25 } });
-  const secondPoint = page.getByText('Clique no segundo ponto para criar a anotação · N para sair · Esc para cancelar', { exact: true });
+  const secondPoint = page.getByText('Clique no segundo ponto para criar a linha de medida · N para sair · Esc para cancelar', { exact: true });
   await expect(secondPoint).toBeVisible();
   await canvas.press('Escape');
   await expect(secondPoint).toHaveCount(0);

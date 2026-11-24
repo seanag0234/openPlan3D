@@ -98,7 +98,7 @@ test('quota recovery keeps old saved bytes and exports a refreshed draft', async
   await expect(page.getByRole('alert')).toContainText('Browser storage is full');
   expect((await storedRecords(page))[id]).toBe(raw);
   expect((await storedRecords(page, 'history'))[id]).toBe(history);
-  const draft = JSON.parse((await download(page, 'Download JSON backup')).toString());
+  const draft = JSON.parse((await download(page, 'Download a copy of this plan')).toString());
   expect(draft.floors[0].furniture[2]).toMatchObject({ catalogId: 'bed_queen', details: { note: 'Keep this refreshed draft', photos: ['legacy-photo.png'] } });
   expect(draft.projectPackage.assets).toEqual(JSON.parse(raw).projectPackage.assets);
   await page.evaluate(() => { (window as any).failProjectWrites = false; });

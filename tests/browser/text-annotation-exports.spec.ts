@@ -9,7 +9,7 @@ test('rotated multiline notes are visible and framed in plan exports',async({pag
  await(await chooser).setFiles({name:'notes.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(project))});
  await page.waitForLoadState('networkidle');
  async function download(name:string){await page.getByRole('button',{name:'Export',exact:true}).click();const pending=page.waitForEvent('download');await page.getByRole('button',{name,exact:true}).click();return readFile((await(await pending).path())!);}
- const svg=(await download('Export as SVG')).toString();
+ const svg=(await download('Export as a drawing that scales (SVG)')).toString();
  const layout=await page.evaluate(svg=>{
   const holder=document.createElement('div');holder.style.position='absolute';holder.style.left='-10000px';holder.innerHTML=svg;document.body.append(holder);
   const root=holder.querySelector('svg')!, spans=[...root.querySelectorAll('tspan')];
@@ -20,13 +20,13 @@ test('rotated multiline notes are visible and framed in plan exports',async({pag
   const result={count:spans.length,points,width:root.viewBox.baseVal.width,height:root.viewBox.baseVal.height};holder.remove();return result;
  },svg);
  expect(layout.count).toBe(3);for(const p of layout.points){expect(p.x).toBeGreaterThan(0);expect(p.y).toBeGreaterThan(0);expect(p.x).toBeLessThan(layout.width);expect(p.y).toBeLessThan(layout.height);}
- const png=await download('Export 2D as PNG');
+ const png=await download('Save the plan as a picture (PNG)');
  const red=await page.evaluate(async data=>{
   const image=new Image();image.src=data;await image.decode();const canvas=document.createElement('canvas');canvas.width=800;canvas.height=800;
   const ctx=canvas.getContext('2d')!;ctx.drawImage(image,0,0,800,800);const pixels=ctx.getImageData(0,0,800,800).data;let red=0;
   for(let i=0;i<pixels.length;i+=4)if(pixels[i]>120&&pixels[i+1]<100&&pixels[i+2]<100)red++;return red;
  },`data:image/png;base64,${png.toString('base64')}`);expect(red).toBeGreaterThan(100);
- const dxf=(await download('Export as DXF')).toString();for(const line of ['Saved note','Second line','Final line'])expect(dxf).toContain(line);expect(dxf).toContain('TEXT_C00000');
+ const dxf=(await download('Export for CAD programs (DXF)')).toString();for(const line of ['Saved note','Second line','Final line'])expect(dxf).toContain(line);expect(dxf).toContain('TEXT_C00000');
  const pdf=await download('Export as PDF');expect(pdf.subarray(0,5).toString()).toBe('%PDF-');
  await testInfo.attach('text-notes.png',{body:png,contentType:'image/png'});
 });

@@ -37,13 +37,13 @@ test('a piece takes a name that shows as its caption, Layers row, heading and in
   await page.getByRole('button', { name: /Sofa$/ }).click();
   const field = page.getByLabel('Name', { exact: true });
   await field.fill(name);
-  await expect(page.getByRole('heading', { name: new RegExp(`${name} Properties`) })).toBeVisible();
+  await expect(page.getByRole('heading', { name: new RegExp(`${name}: details`) })).toBeVisible();
   await expect(page.getByRole('button', { name: new RegExp(`${name}$`) })).toBeVisible();
   await expect.poll(() => page.evaluate(n => ((window as any).__captions ?? []).includes(n), name)).toBe(true);
 
   const json = JSON.parse(await download(page, 'Download JSON'));
   expect(json.floors[0].furniture[0].name).toBe(name);
-  expect(await download(page, 'Export as SVG')).toContain(name);
+  expect(await download(page, 'Export as a drawing that scales (SVG)')).toContain(name);
 
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   const undone = JSON.parse(await download(page, 'Download JSON'));

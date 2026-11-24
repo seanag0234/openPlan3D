@@ -24,7 +24,7 @@ for (const kind of ['furniture', 'text', 'measurement', 'dimension', 'column-rou
       await page.getByRole('button', { name, exact: true }).click();
       return readFile((await (await pending).path())!);
     }
-    const svg = (await download('Export as SVG')).toString();
+    const svg = (await download('Export as a drawing that scales (SVG)')).toString();
     expect(svg).not.toMatch(/NaN|Infinity/);
     if (kind === 'text') expect(svg).toContain('Standalone note');
     if (kind === 'dimension') expect(svg).toContain('Standalone dimension');
@@ -40,7 +40,7 @@ for (const kind of ['furniture', 'text', 'measurement', 'dimension', 'column-rou
       expect(geometry.rect).toBe(kind === 'column-square');
       expect(geometry.transform).toContain(kind === 'column-round' ? 'rotate(0)' : 'rotate(35)');
     }
-    const png = await download('Export 2D as PNG');
+    const png = await download('Save the plan as a picture (PNG)');
     const pixels = await page.evaluate(async data => {
       const img = new Image(); img.src = data; await img.decode();
       const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
@@ -53,7 +53,7 @@ for (const kind of ['furniture', 'text', 'measurement', 'dimension', 'column-rou
     expect(pixels.colored).toBeGreaterThan(50);
     expect(pixels.width).toBeLessThanOrEqual(4096); expect(pixels.height).toBeLessThanOrEqual(4096);
     await testInfo.attach(`${kind}-only.png`, { body: png, contentType: 'image/png' });
-    const dxf = (await download('Export as DXF')).toString();
+    const dxf = (await download('Export for CAD programs (DXF)')).toString();
     expect(dxf).not.toMatch(/NaN|Infinity/);
     expect(dxf).toContain(kind === 'text' ? 'Standalone note' : kind === 'dimension' ? 'Standalone dimension' : 'ENTITIES');
     if (kind.startsWith('column-')) {

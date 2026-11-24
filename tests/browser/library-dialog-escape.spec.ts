@@ -81,7 +81,7 @@ test('a busy package import survives repeated Escape and its dialog opens again 
   const dialog = page.getByRole('dialog', { name: 'Open a plan with its pictures', exact: true });
   await opener.click();
   const chooser = page.waitForEvent('filechooser');
-  await dialog.getByRole('button', { name: 'Choose project package', exact: true }).click();
+  await dialog.getByRole('button', { name: 'Choose the file', exact: true }).click();
   await (await chooser).setFiles(projectPackage);
   const confirm = dialog.getByRole('button', { name: 'Import as copy', exact: true });
   await expect(confirm).toBeEnabled();

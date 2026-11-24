@@ -10,7 +10,7 @@ test('entourage-only SVG embeds custom images and frames rotated vector symbols'
  await page.getByRole('button',{name:'Export',exact:true}).click();const chooser=page.waitForEvent('filechooser');await page.getByRole('button',{name:'Import JSON',exact:true}).click();await(await chooser).setFiles({name:'entourage.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(project))});await expect(page.getByRole('button',{name:project.name,exact:true})).toBeVisible();
  async function download(name:string){await page.getByRole('button',{name:'Export',exact:true}).click();const pending=page.waitForEvent('download');await page.getByRole('button',{name,exact:true}).click();return readFile((await(await pending).path())!,'utf8');}
  const before=JSON.parse(await download('Download JSON'));
- const svg=await download('Export as SVG');expect(svg).toContain(dataUrl);expect(svg).toContain('opacity="0.5"');
+ const svg=await download('Export as a drawing that scales (SVG)');expect(svg).toContain(dataUrl);expect(svg).toContain('opacity="0.5"');
  const result=await page.evaluate(async svg=>{
   const parsed=new DOMParser().parseFromString(svg,'image/svg+xml');if(parsed.querySelector('parsererror'))throw new Error('Invalid SVG');
   const root=document.importNode(parsed.documentElement,true) as unknown as SVGSVGElement;document.body.appendChild(root);

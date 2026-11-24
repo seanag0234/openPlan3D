@@ -21,7 +21,7 @@ test('Portuguese room properties retain names, geometry and material IDs', async
   await page.getByRole('button', { name: 'Salvar', exact: true }).press('l');
   await page.getByRole('button', { name: /Original \{name\}/ }).click();
   const panel = page.locator('[data-plan-properties]');
-  await expect(panel.getByRole('heading', { name: /Propriedades do ambiente/ })).toBeVisible();
+  await expect(panel.getByRole('heading', { name: /Detalhes do ambiente/ })).toBeVisible();
   const name = panel.getByRole('textbox', { name: 'Nome do ambiente', exact: true });
   await expect(name).toHaveValue('Original {name}');
   await panel.getByRole('combobox', { name: 'Tipo de ambiente', exact: true }).selectOption('bedroom');

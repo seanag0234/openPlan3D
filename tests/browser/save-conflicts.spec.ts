@@ -58,7 +58,7 @@ for (const width of [1440, 390]) {
     expect((await saved(page))[source.id]).toEqual(newer);
     expect((await exported(other)).name).toBe('My local alternative');
     const backup = other.waitForEvent('download');
-    await other.getByRole('button', { name: 'Download JSON backup', exact: true }).click();
+    await other.getByRole('button', { name: 'Download a copy of this plan', exact: true }).click();
     const backedUp = JSON.parse(await readFile((await (await backup).path())!, 'utf8'));
     expect(backedUp.id).toBe(source.id); expect(backedUp.name).toBe('My local alternative');
 

@@ -44,7 +44,7 @@ test('with site storage blocked a new plan still opens, downloads as JSON and ta
 
   // The plan exists only in memory; the JSON backup keeps it.
   const pending = page.waitForEvent('download');
-  await saveAlert.getByRole('button', { name: 'Download JSON backup', exact: true }).click();
+  await saveAlert.getByRole('button', { name: 'Download a copy of this plan', exact: true }).click();
   const backup = JSON.parse(await readFile((await (await pending).path())!, 'utf8'));
   expect(backup.id).toBe(new URL(page.url()).searchParams.get('id'));
 
@@ -68,11 +68,11 @@ test('with site storage blocked the snap step, Settings, the Gemini key and cata
 
   // S and the status-bar Snap button switch the step although storage cannot keep it.
   const step = page.getByTitle('Switch snap step: 25 cm grid or 10 cm (S)', { exact: true });
-  await expect(step).toHaveText('🧲 Snap 25 cm');
+  await expect(step).toHaveText('🧲 Steps of 25 cm');
   await page.getByRole('button', { name: 'Save', exact: true }).press('s');
-  await expect(step).toHaveText('🧲 Snap 10 cm');
+  await expect(step).toHaveText('🧲 Steps of 10 cm');
   await step.click();
-  await expect(step).toHaveText('🧲 Snap 25 cm');
+  await expect(step).toHaveText('🧲 Steps of 25 cm');
 
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
@@ -87,7 +87,7 @@ test('with site storage blocked the snap step, Settings, the Gemini key and cata
   await settings.getByRole('button', { name: 'Remove', exact: true }).click();
   await expect(settings.getByRole('alert')).toHaveText('Browser storage is unavailable. The key could not be removed.');
   await settings.getByRole('button', { name: 'Close settings', exact: true }).click();
-  await expect(page.getByTitle('Switch snap step: 6" grid or 1" (S)', { exact: true })).toHaveText('🧲 Snap 6"');
+  await expect(page.getByTitle('Switch snap step: 6" grid or 1" (S)', { exact: true })).toHaveText('🧲 Steps of 6"');
 
   // Favorites and recent items last for the session.
   await page.getByRole('button', { name: 'Objects', exact: true }).click();
