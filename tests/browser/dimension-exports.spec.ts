@@ -26,7 +26,7 @@ test('saved dimensions export with signed and zero offsets',async({page},testInf
  },`data:image/png;base64,${png.toString('base64')}`);expect(purple).toBeGreaterThan(50);
  const dxf=(await download('Export as DXF')).toString();expect(dxf).toContain('Saved dimension');expect(dxf).toContain('Zero offset');
  // DWG has no writer: the DXF downloads and a notice says so instead of a blocking alert.
- const dwg=(await download('Export as DWG')).toString();expect(dwg).toContain('Saved dimension');
+ const dwg=(await download('Export for AutoCAD (DWG)')).toString();expect(dwg).toContain('Saved dimension');
  await expect(page.getByRole('alert')).toContainText('DWG saved as DXF');await expect(page.getByRole('alert')).toContainText('AutoCAD, SketchUp and FreeCAD open DXF directly.');
  await page.getByRole('button',{name:'Dismiss export notice',exact:true}).click();await expect(page.getByRole('alert')).toHaveCount(0);
  const pdf=await download('Export as PDF');expect(pdf.subarray(0,5).toString()).toBe('%PDF-');

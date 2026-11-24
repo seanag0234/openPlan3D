@@ -417,7 +417,7 @@ export const en = {
   "exportMenu.png3d": "Export 3D as PNG",
   "exportMenu.svg": "Export as SVG",
   "exportMenu.dxf": "Export as DXF",
-  "exportMenu.dwg": "Export as DWG",
+  "exportMenu.dwg": "Export for AutoCAD (DWG)",
   "exportMenu.pdf": "Export as PDF",
   "exportMenu.planHelp": "Print Layout and the 2D exports show what the plan shows: hide dimensions, notes, furniture or other layers under Layers to leave them out.",
   "exportMenu.json": "Download JSON",

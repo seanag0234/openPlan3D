@@ -417,7 +417,7 @@ export const pt = {
   "exportMenu.png3d": "Exportar 3D como PNG",
   "exportMenu.svg": "Exportar como SVG",
   "exportMenu.dxf": "Exportar como DXF",
-  "exportMenu.dwg": "Exportar como DWG",
+  "exportMenu.dwg": "Exportar para o AutoCAD (DWG)",
   "exportMenu.pdf": "Exportar como PDF",
   "exportMenu.planHelp": "O layout de impressão e as exportações 2D mostram o que a planta mostra: oculte dimensões, notas, móveis ou outras camadas em Camadas para deixá-los de fora.",
   "exportMenu.json": "Baixar JSON",
