@@ -988,7 +988,7 @@
 
   function drawGuides() {
     if (!currentFloor) return;
-    _drawGuides(getCS(), currentFloor, selectedGuideId, RULER_SIZE);
+    _drawGuides(getCS(), currentFloor, selectedGuideId, RULER_SIZE, dimSettings.units);
   }
 
   function drawStair(stair: Stair, selected: boolean) {
