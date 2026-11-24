@@ -11,4 +11,6 @@ export const wordsEn = {
   "words.look.night.help": "Dark page, light lines. Pictures on the plan are darkened too.",
   "words.lessMotion": "Less motion",
   "words.lessMotionHelp": "Stops fades and slides. Off by default; this device only.",
+  /** The heading of the list of everything on the plan; the bottom bar keeps "Layers" for hiding kinds of things. */
+  "words.listTitle": "Everything on the plan",
 } as const;

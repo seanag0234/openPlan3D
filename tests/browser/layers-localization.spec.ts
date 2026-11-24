@@ -71,7 +71,7 @@ for (const width of [1440, 390]) test(`Portuguese layers preserve visibility, se
     await layers.click();
     await expect(layers).toHaveAttribute('aria-expanded', 'true');
   }
-  await expect(page.locator('div').filter({ hasText: /^🗂 Camadas$/ })).toBeVisible();
+  await expect(page.locator('div').filter({ hasText: /^🗂 Tudo na planta$/ })).toBeVisible();
   const hide = page.getByTitle('Ocultar Paredes', { exact: true });
   await hide.focus();
   await page.keyboard.press('Space');

@@ -11,4 +11,6 @@ export const wordsPt = {
   "words.look.night.help": "Página escura, linhas claras. As imagens na planta também ficam mais escuras.",
   "words.lessMotion": "Menos movimento",
   "words.lessMotionHelp": "Desliga esmaecimentos e deslizamentos. Desligado por padrão; só neste dispositivo.",
+  /** The heading of the list of everything on the plan; the bottom bar keeps "Layers" for hiding kinds of things. */
+  "words.listTitle": "Tudo na planta",
 } as const;
