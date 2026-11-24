@@ -16,4 +16,7 @@ export const barsEn = {
   "bars.hintDimensionEnd": "Tap where it ends.",
   "bars.moving": "Moving the view",
   "bars.pickingSeveral": "Tap things to add them",
+  "bars.houseFixed": "🏠 House: fixed",
+  "bars.houseMoves": "🏠 House: can move",
+  "bars.houseHint": "Walls, doors, windows and rooms stay put while the house is fixed",
 } as const;

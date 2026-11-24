@@ -16,4 +16,7 @@ export const barsPt = {
   "bars.hintDimensionEnd": "Toque onde ela termina.",
   "bars.moving": "Movendo a vista",
   "bars.pickingSeveral": "Toque nas coisas para adicioná-las",
+  "bars.houseFixed": "🏠 Casa: fixa",
+  "bars.houseMoves": "🏠 Casa: pode mover",
+  "bars.houseHint": "Paredes, portas, janelas e ambientes ficam no lugar enquanto a casa está fixa",
 } as const;

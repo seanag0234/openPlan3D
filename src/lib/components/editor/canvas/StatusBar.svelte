@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { formatArea, projectSettings } from '$lib/stores/settings';
-  import { layerVisibility } from '$lib/stores/project';
+  import { houseFixed, layerVisibility, setHouseFixed } from '$lib/stores/project';
   import { coarsePointer } from '$lib/stores/pointer';
   import type { Floor, Room } from '$lib/models/types';
   import type { SnapStatus } from '$lib/utils/snapStep';
@@ -26,6 +26,10 @@
 
 <!-- Keep controls above classic horizontal scrollbars, which consume height on Linux. -->
 <div data-bar="bottom" style:--visible-bottom={`${bottomInset}px`} class={$coarsePointer ? touchBarClass : mouseBarClass}>
+  <!-- Whether walls, doors, windows and rooms ignore presses; another lane's message quotes "House: fixed". -->
+  <button class="font-medium {$houseFixed ? 'text-emerald-700' : 'hover:text-gray-700'}" aria-pressed={$houseFixed} title={$t('bars.houseHint')} onclick={() => setHouseFixed(!$houseFixed)}>
+    {$houseFixed ? $t('bars.houseFixed') : $t('bars.houseMoves')}
+  </button>
   {#if !$coarsePointer}
   {#if rooms.length > 0}
     <span>{$t(rooms.length === 1 ? 'canvasStatus.roomsOne' : 'canvasStatus.roomsMany', { count: rooms.length })}</span>

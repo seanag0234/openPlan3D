@@ -8,8 +8,9 @@
 </script>
 
 <!-- Zoom Controls (bottom-left) -->
-<!-- On a touch screen the bottom bar spans the width, so the zoom buttons sit above it. -->
-<div data-bar="zoom" style:bottom={`${bottom + ($coarsePointer ? 52 : 0)}px`} class="absolute left-3 max-md:left-20 z-20 flex items-center gap-1 bg-white rounded-lg shadow-lg border border-gray-200 px-1 py-0.5">
+<!-- On a touch screen the bottom bar spans the width, so the zoom buttons sit above it. With a mouse from 768 px the
+     bar's left end can reach under them when the plan is narrow, so they sit just above it there too. -->
+<div data-bar="zoom" style:bottom={`${bottom + ($coarsePointer ? 52 : 0)}px`} class="absolute left-3 max-md:left-20 z-20 {$coarsePointer ? '' : 'md:translate-y-[-1.75rem]'} flex items-center gap-1 bg-white rounded-lg shadow-lg border border-gray-200 px-1 py-0.5">
   <button
     class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-600 hover:text-gray-800 font-bold text-lg"
     title={$t('canvasZoom.outHint')}
