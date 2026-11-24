@@ -538,7 +538,7 @@
       >›</button>
       <span class="text-xs text-gray-400 ml-1">{formatLength(wallLen, units)} × {startH === endH ? formatLength(startH, units) : `${formatLength(startH, units)} → ${formatLength(endH, units)}`}</span>
       <div class="flex-1"></div>
-      <span class="text-[11px] text-gray-400 max-lg:hidden">{$t('elevationView.help')}</span>
+      <span class="text-xs text-gray-400 max-lg:hidden">{$t('elevationView.help')}</span>
     </div>
 
     <!-- Elevation canvas: focused only by pressing it (not a Tab stop), so it draws no focus ring -->

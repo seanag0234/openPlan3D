@@ -58,7 +58,7 @@
         <span class="text-xs font-semibold text-slate-700">{$t('undoHistory.title')}</span>
       </div>
       <div class="flex items-center gap-2">
-        <span class="text-[10px] text-gray-600">
+        <span class="text-xs text-gray-600">
           {$t('undoHistory.step', { current: history.currentIndex, total: history.entries.length })}
         </span>
         <button
@@ -86,9 +86,9 @@
               onclick={() => handleClick(i)}
               onkeydown={handleKeydown}
             >
-              <span class="w-5 text-[10px] text-gray-600 text-right shrink-0">{i + 1}</span>
+              <span class="w-5 text-xs text-gray-600 text-right shrink-0">{i + 1}</span>
               <span class="truncate flex-1">{undoMessage(entry.description, $locale)}</span>
-              <time datetime={new Date(entry.timestamp).toISOString()} class="text-[10px] text-gray-600 shrink-0">{formatTime(entry.timestamp, $locale)}</time>
+              <time datetime={new Date(entry.timestamp).toISOString()} class="text-xs text-gray-600 shrink-0">{formatTime(entry.timestamp, $locale)}</time>
             </button>
           {/each}
           <!-- Current state indicator -->
@@ -99,7 +99,7 @@
             class:text-blue-700={history.currentIndex === history.entries.length}
             class:text-gray-700={history.currentIndex !== history.entries.length}
           >
-            <span class="w-5 text-[10px] text-gray-600 text-right shrink-0">●</span>
+            <span class="w-5 text-xs text-gray-600 text-right shrink-0">●</span>
             <span class="truncate flex-1 font-medium">{$t('undoHistory.currentState')}</span>
           </div>
         </div>

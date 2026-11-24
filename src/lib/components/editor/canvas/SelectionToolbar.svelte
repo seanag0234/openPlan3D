@@ -86,7 +86,7 @@
   <svg width={coarse ? 18 : 14} height={coarse ? 18 : 14} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">{@html path}</svg>
 {/snippet}
 {#snippet word(text: string)}
-  {#if coarse}<span class="text-[11px] leading-tight whitespace-nowrap">{text}</span>{/if}
+  {#if coarse}<span class="text-xs leading-tight whitespace-nowrap">{text}</span>{/if}
 {/snippet}
 
 {#if anchor}

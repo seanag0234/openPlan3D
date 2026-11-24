@@ -255,7 +255,7 @@
         {#if $coarsePointer && $buildPanelFolded}
           <div class="max-md:hidden h-full w-12 shrink-0 bg-white border-r border-gray-200 flex flex-col items-center pt-2">
             <button class="w-11 min-h-[44px] flex flex-col items-center justify-center rounded-lg text-gray-700 active:bg-gray-100" onclick={() => buildPanelFolded.set(false)}>
-              <span class="text-lg leading-none" aria-hidden="true">＋</span><span class="text-[11px] leading-tight">{$t('panels.add')}</span>
+              <span class="text-lg leading-none" aria-hidden="true">＋</span><span class="text-xs leading-tight">{$t('panels.add')}</span>
             </button>
           </div>
         {/if}
@@ -267,7 +267,7 @@
               class="max-md:hidden absolute right-0 top-1/2 -translate-y-1/2 z-10 w-7 h-11 flex flex-col items-center justify-center rounded-l-lg bg-white border border-r-0 border-gray-200 shadow text-xl leading-none text-gray-600 active:bg-gray-100"
               aria-label={$t('panels.hideList')} title={$t('panels.hideList')}
               onclick={() => buildPanelFolded.set(true)}
-            ><span aria-hidden="true">‹</span><span class="text-[11px] leading-tight">{$t('panels.hide')}</span></button>
+            ><span aria-hidden="true">‹</span><span class="text-xs leading-tight">{$t('panels.hide')}</span></button>
           {/if}
         </div>
       {/if}
@@ -309,7 +309,7 @@
 
   <!-- On a touch screen a tooltip is never seen: each picture has its word under it, as Add does. -->
   {#snippet cornerPicture(picture: string, word: string)}
-    <span class="text-lg leading-none" aria-hidden="true">{picture}</span><span class="text-[11px] leading-tight tracking-tight font-normal">{word}</span>
+    <span class="text-lg leading-none" aria-hidden="true">{picture}</span><span class="text-xs leading-tight tracking-tight font-normal">{word}</span>
   {/snippet}
   <!-- Help, layers and history, side by side so they keep clear of each other; a column within the rail on a touch screen -->
   <!-- Below 768 px the buttons hide but the group stays, so the list of notes it holds can still open from the menu. -->

@@ -148,7 +148,7 @@
           aria-autocomplete="list"
           aria-activedescendant={results[selectedIndex] ? `command-result-${results[selectedIndex].id}` : undefined}
         />
-        <kbd class="text-[10px] px-1.5 py-0.5 bg-gray-100 rounded border border-gray-200 text-gray-400">ESC</kbd>
+        <kbd class="text-xs px-1.5 py-0.5 bg-gray-100 rounded border border-gray-200 text-gray-400">ESC</kbd>
       </div>
 
       <!-- Results -->
@@ -178,7 +178,7 @@
       </div>
 
       <!-- Footer hint -->
-      <div class="px-4 py-2 border-t border-gray-100 flex items-center gap-3 text-[10px] text-gray-400">
+      <div class="px-4 py-2 border-t border-gray-100 flex items-center gap-3 text-xs text-gray-400">
         <span><kbd class="px-1 py-0.5 bg-gray-100 rounded border border-gray-200">↑↓</kbd> {$t('commandPalette.navigate')}</span>
         <span><kbd class="px-1 py-0.5 bg-gray-100 rounded border border-gray-200">↵</kbd> {$t('commandPalette.select')}</span>
         <span><kbd class="px-1 py-0.5 bg-gray-100 rounded border border-gray-200">esc</kbd> {$t('commandPalette.close')}</span>
