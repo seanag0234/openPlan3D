@@ -119,7 +119,7 @@ export const pt = {
   "welcome.quickTourDesc": "Aprenda o básico em 30 segundos",
   "welcome.unrecognizedFormat": "Formato de arquivo não reconhecido",
   "welcome.failedToParse": "Falha ao processar o arquivo",
-  "welcome.restore": "Restaurar backup da biblioteca",
+  "welcome.restore": "Recuperar um backup de todas as plantas",
   "welcome.package": "Importar um pacote de projeto",
   "welcome.openFailed": "Não foi possível abrir a planta",
   "welcome.projectFailed": "Não foi possível abrir um projeto.",

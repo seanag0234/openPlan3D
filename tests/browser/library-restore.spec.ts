@@ -167,7 +167,7 @@ test('welcome restoration accepts a large legacy backup with embedded images ent
   const check = observe(page), project = await sourceProject();
   project.extensions.image = 'data:image/png;base64,' + 'A'.repeat(6 * 1024 * 1024);
   project.floors[0].backgroundImage = { dataUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', position: { x: 0, y: 0 }, scale: 1, opacity: 0.5, rotation: 0, locked: true };
-  await page.goto('/'); await page.getByRole('button', { name: 'Restore a library backup', exact: true }).click();
+  await page.goto('/'); await page.getByRole('button', { name: 'Bring back a backup of all plans', exact: true }).click();
   const pending = page.waitForEvent('filechooser'); await page.getByRole('button', { name: 'Choose backup file', exact: true }).click();
   await (await pending).setFiles({ name: 'large-legacy.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ [project.id]: JSON.stringify(project) })) });
   await expect(page.getByRole('dialog')).toContainText('1 project ready to restore');
@@ -184,7 +184,7 @@ test('welcome restoration accepts a large legacy backup with embedded images ent
 
 test('recovery-only data stays downloadable from an otherwise empty library', async ({ page }) => {
   const check = observe(page);
-  await page.goto('/'); await page.getByRole('button', { name: 'Restore a library backup', exact: true }).click();
+  await page.goto('/'); await page.getByRole('button', { name: 'Bring back a backup of all plans', exact: true }).click();
   const pending = page.waitForEvent('filechooser'); await page.getByRole('button', { name: 'Choose backup file', exact: true }).click();
   await (await pending).setFiles({ name: 'damaged-projects.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ damaged: '{original damaged project bytes' })) });
   await expect(page.getByRole('dialog')).toContainText('0 projects ready to restore');

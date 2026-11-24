@@ -119,7 +119,7 @@ export const en = {
   "welcome.quickTourDesc": "Learn the basics in 30 seconds",
   "welcome.unrecognizedFormat": "Unrecognized file format",
   "welcome.failedToParse": "Failed to parse file",
-  "welcome.restore": "Restore a library backup",
+  "welcome.restore": "Bring back a backup of all plans",
   "welcome.package": "Import a project package",
   "welcome.openFailed": "Couldn’t open plan",
   "welcome.projectFailed": "Could not open a project.",
