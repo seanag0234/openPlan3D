@@ -165,9 +165,16 @@
       onclick={() => detailsOpen.set(true)}
     >{@render icon('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>')}{@render word($t('panels.details'))}</button>
   {/if}
-  <button class={coarse ? `${fingerButton} text-red-700` : 'w-7 h-7 flex items-center justify-center rounded hover:bg-red-50 text-gray-400 hover:text-red-600'}
-    title={coarse ? undefined : $t('contextMenu.delete')} aria-label={coarse ? undefined : $t('contextMenu.delete')}
-    onclick={() => { if (extra) ondeleteextra(extra.kind, extra.id); }}
-  >{@render icon('<path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14"/>')}{@render word($t('contextMenu.delete'))}</button>
+  <!-- A locked label cannot be deleted; a measuring line or a dimension is never locked. -->
+  {#if !locked}
+    <button class={coarse ? `${fingerButton} text-red-700` : 'w-7 h-7 flex items-center justify-center rounded hover:bg-red-50 text-gray-400 hover:text-red-600'}
+      title={coarse ? undefined : $t('contextMenu.delete')} aria-label={coarse ? undefined : $t('contextMenu.delete')}
+      onclick={() => { if (extra) ondeleteextra(extra.kind, extra.id); }}
+    >{@render icon('<path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14"/>')}{@render word($t('contextMenu.delete'))}</button>
+  {:else if coarse}
+    <button class="{fingerButton} text-amber-800" onclick={() => { if (extra) toggleSelectionLock(new Set([extra.id])); }}>
+      {@render icon('<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 017.5-2"/>')}{@render word($t('panels.unlock'))}
+    </button>
+  {/if}
 </div>
 {/if}
