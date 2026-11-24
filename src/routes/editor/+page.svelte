@@ -22,6 +22,8 @@
   import LayersPanel from '$lib/components/sidebar/LayersPanel.svelte';
 
   let showLayers = $state(false);
+  /** The bottom-left buttons on a touch screen: a picture with its word under it. */
+  const cornerFinger = 'w-11 min-h-[44px] rounded-lg flex flex-col items-center justify-center';
   import FloorPlanCanvas from '$lib/components/editor/FloorPlanCanvas.svelte';
   import AlignmentToolbar from '$lib/components/editor/AlignmentToolbar.svelte';
   import UndoHistoryPanel from '$lib/components/editor/UndoHistoryPanel.svelte';
@@ -262,10 +264,10 @@
           <BuildPanel />
           {#if $coarsePointer}
             <button
-              class="max-md:hidden absolute right-0 top-1/2 -translate-y-1/2 z-10 w-7 h-11 rounded-l-lg bg-white border border-r-0 border-gray-200 shadow text-xl leading-none text-gray-600 active:bg-gray-100"
+              class="max-md:hidden absolute right-0 top-1/2 -translate-y-1/2 z-10 w-7 h-11 flex flex-col items-center justify-center rounded-l-lg bg-white border border-r-0 border-gray-200 shadow text-xl leading-none text-gray-600 active:bg-gray-100"
               aria-label={$t('panels.hideList')} title={$t('panels.hideList')}
               onclick={() => buildPanelFolded.set(true)}
-            >‹</button>
+            ><span aria-hidden="true">‹</span><span class="text-[11px] leading-tight">{$t('panels.hide')}</span></button>
           {/if}
         </div>
       {/if}
@@ -305,17 +307,21 @@
     </button>
   {/if}
 
+  <!-- On a touch screen a tooltip is never seen: each picture has its word under it, as Add does. -->
+  {#snippet cornerPicture(picture: string, word: string)}
+    <span class="text-lg leading-none" aria-hidden="true">{picture}</span><span class="text-[11px] leading-tight tracking-tight font-normal">{word}</span>
+  {/snippet}
   <!-- Help, layers and history, side by side so they keep clear of each other; a column within the rail on a touch screen -->
   <div class="max-md:hidden pointer-events-none fixed bottom-4 z-50 flex {$coarsePointer ? 'flex-col left-0.5' : 'items-center left-4'} gap-2">
     <button
-      class="pointer-events-auto w-8 h-8 rounded-full bg-slate-700 text-white text-sm font-bold shadow-lg hover:bg-slate-600 transition-colors z-50"
+      class="pointer-events-auto {$coarsePointer ? cornerFinger : 'w-8 h-8 rounded-full text-sm font-bold'} bg-slate-700 text-white shadow-lg hover:bg-slate-600 transition-colors z-50"
       onclick={() => showHelp = !showHelp}
       title={$coarsePointer ? $t('panels.help') : `${$t('shortcuts.title')} (?)`}
       aria-label={$coarsePointer ? $t('panels.help') : $t('shortcuts.title')}
-    >?</button>
+    >{#if $coarsePointer}{@render cornerPicture('?', $t('panels.help'))}{:else}?{/if}</button>
     {#if mode === '2d'}
       <button
-        class="pointer-events-auto w-8 h-8 rounded-full shadow-lg hover:bg-slate-600 transition-colors z-50 text-sm"
+        class="pointer-events-auto {$coarsePointer ? cornerFinger : 'w-8 h-8 rounded-full text-sm'} shadow-lg hover:bg-slate-600 transition-colors z-50"
         class:bg-blue-600={showLayers}
         class:text-white={showLayers}
         class:bg-slate-700={!showLayers}
@@ -324,13 +330,13 @@
         title={$t('editorPanels.layersTitle')}
         aria-label={$t('editorPanels.layers')}
         aria-expanded={showLayers}
-      >🗂</button>
+      >{#if $coarsePointer}{@render cornerPicture('🗂', $t('panels.list'))}{:else}🗂{/if}</button>
     {:else if !$coarsePointer}
       <!-- Keep History and Notes in their places, clear of the 3D view's Lighting button under the empty one -->
       <span class="w-8 h-8" aria-hidden="true"></span>
     {/if}
     <button
-      class="pointer-events-auto w-8 h-8 rounded-full shadow-lg hover:bg-slate-600 transition-colors z-50 text-sm"
+      class="pointer-events-auto {$coarsePointer ? cornerFinger : 'w-8 h-8 rounded-full text-sm'} shadow-lg hover:bg-slate-600 transition-colors z-50"
       class:bg-blue-600={showUndoHistory}
       class:text-white={showUndoHistory}
       class:bg-slate-700={!showUndoHistory}
@@ -339,7 +345,7 @@
       title={$t('undoHistory.title')}
       aria-label={$t('editorPanels.history')}
       aria-expanded={showUndoHistory}
-    >⟲</button>
+    >{#if $coarsePointer}{@render cornerPicture('⟲', $t('panels.history'))}{:else}⟲{/if}</button>
     <NotesList />
   </div>
 
