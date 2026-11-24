@@ -159,3 +159,36 @@ it('copying one piece gives the same piece as copying a selection of one', async
   expect(singleSteps).toEqual(get(undoHistoryStore).entries.map(entry => entry.description));
   expect(duplicateFurniture('missing')).toBeNull();
 });
+
+it('Duplicate puts a copy of pieces beside them, right by their width and a gap', () => {
+  const piece = (id: string, x: number, rotation = 0, width = 120, depth = 90) =>
+    ({ id, catalogId: 'imported_object', position: { x, y: 200 }, rotation, scale: { x: 1, y: 1, z: 1 }, width, depth });
+  const floor = (...furniture: any[]) => ({ walls: [], doors: [], windows: [], furniture } as unknown as Floor);
+  let counter = 0; const uid = () => `copy-${++counter}`;
+
+  const one = floor(piece('a', 150));
+  duplicatePlanSelection(one, new Set(['a']), uid);
+  expect(one.furniture[1].position).toEqual({ x: 280, y: 200 });
+
+  const turned = floor(piece('a', 150, 90));
+  duplicatePlanSelection(turned, new Set(['a']), uid);
+  expect(turned.furniture[1].position.x).toBeCloseTo(250);
+  expect(turned.furniture[1].position.y).toBe(200);
+
+  const two = floor(piece('a', 100, 0, 100), piece('b', 400, 0, 100));
+  duplicatePlanSelection(two, new Set(['a', 'b']), uid);
+  expect(two.furniture.slice(2).map(item => item.position)).toEqual([{ x: 510, y: 200 }, { x: 810, y: 200 }]);
+
+  const withWall = floor(piece('a', 150));
+  withWall.walls.push({ id: 'w', start: { x: 0, y: 0 }, end: { x: 200, y: 0 } } as Wall);
+  duplicatePlanSelection(withWall, new Set(['a', 'w']), uid);
+  expect(withWall.furniture[1].position).toEqual({ x: 180, y: 230 });
+});
+
+it('Paste still steps 30 cm each way without a shift', () => {
+  const source = { walls: [], doors: [], windows: [],
+    furniture: [{ id: 'a', catalogId: 'imported_object', position: { x: 150, y: 200 }, rotation: 0, scale: { x: 1, y: 1, z: 1 }, width: 120, depth: 90 }] } as unknown as Floor;
+  const target = { walls: [], doors: [], windows: [], furniture: [] } as unknown as Floor;
+  pastePlanSelection(source, target, new Set(['a']), () => 'p', 2);
+  expect(target.furniture[0].position).toEqual({ x: 210, y: 260 });
+});
