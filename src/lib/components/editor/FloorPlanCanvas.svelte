@@ -54,6 +54,7 @@
   import { translatedWallGeometry, wallGeometryOf, type WallGeometry } from '$lib/utils/wallTranslation';
   import { marqueeSelectionIds } from '$lib/utils/marqueeSelection';
   import { isTracingImageType } from '$lib/utils/tracingImage';
+  import { rulerLabel } from '$lib/utils/rulerLabel';
   import { findRoomLabelAt as _findRoomLabelAt, positionOnWall, findWallAt as _findWallAt, findHandleAt as _findHandleAt, findFurnitureAt as _findFurnitureAt, findColumnAt as _findColumnAt, findStairAt as _findStairAt, findDoorAt as _findDoorAt, findWindowAt as _findWindowAt, findRoomAt as _findRoomAt, hitTestMeasurement as _hitTestMeasurement, hitTestAnnotation as _hitTestAnnotation, hitTestTextAnnotation as _hitTestTextAnnotation, findEntourageAt } from '$lib/utils/hitTesting';
 
   let canvas: HTMLCanvasElement;
@@ -759,7 +760,7 @@
 
     ctx.globalAlpha = 1;
 
-    ctx.font = 'bold 11px system-ui, sans-serif';
+    ctx.font = 'bold 12px system-ui, sans-serif';
     const text = translate(get(locale), isDoor ? 'canvasHints.placeDoor' : 'canvasHints.placeWindow');
     const tm = ctx.measureText(text);
     const tx = s.x, ty = s.y - thickness / 2 - 24;
@@ -896,7 +897,7 @@
     const dimMx = (sd1.x + sd2.x) / 2;
     const dimMy = (sd1.y + sd2.y) / 2;
     ctx.fillStyle = '#6366f1';
-    const fontSize = Math.max(10, 11 * zoom);
+    const fontSize = Math.max(12, 11 * zoom);
     ctx.font = `${fontSize}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -998,28 +999,10 @@
     _drawColumn(getCS(), col, selected);
   }
 
-  function rulerLabel(worldCm: number, tickStep: number, isImperial: boolean): string {
-    if (isImperial) {
-      const inches = worldCm / 2.54;
-      const ft = inches / 12;
-      if (tickStep / 2.54 >= 12) {
-        // Show feet
-        return `${ft % 1 === 0 ? ft.toFixed(0) : ft.toFixed(1)}'`;
-      }
-      return `${Math.round(inches)}"`;
-    }
-    // Metric
-    if (tickStep >= 100) {
-      const m = worldCm / 100;
-      return `${worldCm % 100 === 0 ? m.toFixed(0) : m.toFixed(1)}m`;
-    }
-    return `${Math.round(worldCm)}`;
-  }
-
   function drawRulers() {
     if (!ctx || !showRulers) return;
     const R = RULER_SIZE;
-    const fontSize = 9;
+    const fontSize = 12;
     const isImperial = dimSettings.units === 'imperial';
     ctx.save();
 
@@ -1059,6 +1042,9 @@
       minorStep = tickStep / minorDiv;
     }
 
+    // The marks are reached by adding minorStep, so one can land a hair either side of a multiple.
+    const onStep = (w: number, step: number) => Math.abs(w - Math.round(w / step) * step) < 0.01;
+
     // --- Horizontal ruler (top) ---
     ctx.fillStyle = '#f1f3f5';
     ctx.fillRect(R, 0, width - R, R);
@@ -1073,14 +1059,14 @@
 
     ctx.fillStyle = '#6b7280';
     ctx.font = `${fontSize}px sans-serif`;
-    ctx.textAlign = 'center';
+    ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
 
     for (let wx = startTick; wx <= worldRight; wx += minorStep) {
       const sx = worldToScreen(wx, 0).x;
       if (sx < R) continue;
-      const isMajor = Math.abs(wx % tickStep) < 0.01;
-      const isMid = !isMajor && Math.abs(wx % (tickStep / 2)) < 0.01 && minorDiv >= 4;
+      const isMajor = onStep(wx, tickStep);
+      const isMid = !isMajor && onStep(wx, tickStep / 2) && minorDiv >= 4;
       const tickH = isMajor ? R * 0.7 : isMid ? R * 0.45 : R * 0.25;
 
       // Highlight origin tick
@@ -1095,7 +1081,8 @@
       if (isMajor) {
         ctx.fillStyle = isOrigin ? '#ef4444' : '#6b7280';
         const label = isOrigin ? '0' : rulerLabel(wx, tickStep, isImperial);
-        ctx.fillText(label, sx, 2);
+        // Beside its mark rather than on it, so a 12 px number leaves the mark in view.
+        ctx.fillText(label, sx + 3, 2);
         ctx.fillStyle = '#6b7280';
       }
     }
@@ -1117,8 +1104,8 @@
     for (let wy = startTickY; wy <= worldBottom; wy += minorStep) {
       const sy = worldToScreen(0, wy).y;
       if (sy < R) continue;
-      const isMajor = Math.abs(wy % tickStep) < 0.01;
-      const isMid = !isMajor && Math.abs(wy % (tickStep / 2)) < 0.01 && minorDiv >= 4;
+      const isMajor = onStep(wy, tickStep);
+      const isMid = !isMajor && onStep(wy, tickStep / 2) && minorDiv >= 4;
       const tickH = isMajor ? R * 0.7 : isMid ? R * 0.45 : R * 0.25;
 
       const isOrigin = Math.abs(wy) < 0.01;
@@ -1132,10 +1119,11 @@
       if (isMajor) {
         const label = isOrigin ? '0' : rulerLabel(wy, tickStep, isImperial);
         ctx.save();
-        ctx.translate(R - 3, sy);
+        // Runs upward from just above its mark, along the strip's outer edge.
+        ctx.translate(2, sy - 3);
         ctx.rotate(-Math.PI / 2);
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
         ctx.fillStyle = isOrigin ? '#ef4444' : '#6b7280';
         ctx.font = `${fontSize}px sans-serif`;
         ctx.fillText(label, 0, 0);
@@ -1404,7 +1392,7 @@
           }
           
           // --- Draw all dimension lines ---
-          const fontSize = Math.max(9, 10 * zoom);
+          const fontSize = Math.max(12, 10 * zoom);
           ctx.font = `${fontSize}px sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
@@ -1595,7 +1583,7 @@
       const angleText = shiftDown ? `${Math.round(displayAngle)}° ⇧` : `${Math.round(displayAngle)}°`;
 
       // Dimension pill (on the wall) — amber while an exact length is being typed
-      ctx.font = 'bold 11px system-ui, sans-serif';
+      ctx.font = 'bold 12px system-ui, sans-serif';
       const dimTW = ctx.measureText(dimText).width;
       const dimPW = dimTW + 12;
       const dimPH = 18;
@@ -1664,7 +1652,7 @@
           ctx.setLineDash([]);
         }
         // "Extend to wall" tooltip
-        ctx.font = 'bold 10px system-ui, sans-serif';
+        ctx.font = 'bold 12px system-ui, sans-serif';
         const extText = translate(get(locale), 'canvasHints.snapWall');
         const extTW = ctx.measureText(extText).width;
         ctx.fillStyle = '#ec4899';
@@ -2336,6 +2324,8 @@
   let furnitureGestureStarted = false;
   let geometryGestureStarted = false;
   let selectionPress: { floorId: string; x: number; y: number; world: Point } | null = null;
+  /** A mouse press on a locked label or piece with nothing else under it: picked on release if the pointer has not moved. */
+  let lockedPress: (() => void) | null = null;
 
   function sameSelectionPress(e: MouseEvent) {
     return currentTool === 'select' && selectionPress !== null && selectionPress.floorId === currentFloor?.id &&
@@ -2376,6 +2366,7 @@
     // the now-shifted pixel before the dblclick handler runs.
     if (e.button === 0 && e.detail >= 2 && sameSelectionPress(e)) return;
     selectionPress = null;
+    lockedPress = null;
     canvasGestureActive = true;
     canvasPressPosition = { x: e.clientX, y: e.clientY };
     if (e.button === 0 && e.shiftKey && currentTool === 'select' && currentFloor && !spaceDown && !$panMode) {
@@ -2802,13 +2793,15 @@
       if (wall) {
         if (selectElement(wall.id, e.shiftKey)) return;
       } else {
-        // A tap reaches a locked label or piece when nothing else is under the finger; a drag
-        // still passes through it. Everything found here is locked: the rest was found above.
-        if (touchPress === 'tap' && currentFloor) {
+        // A tap or a click reaches a locked label or piece when nothing else is under it; a drag still passes through it.
+        // Everything found here is locked: the rest was found above. A mouse press cannot tell a click from a drag yet,
+        // so it carries on as before and the release picks the locked thing if the pointer has not moved.
+        if (touchPress !== 'drag' && currentFloor && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
           const label = hitTestTextAnnotation(wp, currentFloor);
-          if (label) { selectAuxiliary('text', label); return; }
-          const piece = _findFurnitureAt(wp, currentFloor.furniture) ?? findEntourageAt(wp, currentFloor.entourage, d => entourageAspect(d, customEntourageDefs));
-          if (piece) { selectElement(piece.id, false); return; }
+          const piece = label ? null : _findFurnitureAt(wp, currentFloor.furniture) ?? findEntourageAt(wp, currentFloor.entourage, d => entourageAspect(d, customEntourageDefs));
+          const pick = label ? () => selectAuxiliary('text', label) : piece ? () => { selectElement(piece.id, false); } : null;
+          if (pick && touchPress === 'tap') { pick(); return; }
+          lockedPress = pick;
         }
         // Check if clicking on a room label (for dragging)
         const labelRoom = fixed ? null : findRoomLabelAt(wp);
@@ -3295,6 +3288,12 @@
       }
       marqueeStart = null;
       marqueeEnd = null;
+    }
+
+    // A click that began on a locked label or piece, with nothing else under it, picks it.
+    if (lockedPress) {
+      const pick = lockedPress; lockedPress = null;
+      if (canvasPressPosition && Math.hypot(e.clientX - canvasPressPosition.x, e.clientY - canvasPressPosition.y) <= 4) { selectedRoomId.set(null); pick(); }
     }
 
     if (furnitureGestureStarted) {

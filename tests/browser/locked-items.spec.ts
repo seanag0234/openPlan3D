@@ -81,6 +81,16 @@ test('locked pieces, symbols and text labels survive Delete and dragging, and un
   await page.mouse.up();
   floor = await exported(page);
   expect(floor.textAnnotations[0]).toMatchObject({ x: 300, y: 300, locked: true });
+  // A press-and-drag on the label passes through it: the selection box it draws, clear of the label's point, selects nothing.
+  await save.press('ControlOrMeta+d');
+  await expect(page.locator('[data-plan-properties]')).toBeHidden();
+  await page.mouse.move(label.x + 20, label.y);
+  await page.mouse.down();
+  await page.mouse.move(label.x + 100, label.y + 60, { steps: 6 });
+  await page.mouse.up();
+  await expect(page.locator('[data-plan-properties]')).toBeHidden();
+  floor = await exported(page);
+  expect(floor.textAnnotations[0]).toMatchObject({ x: 300, y: 300, locked: true });
 
   // Locking everything hides every Delete button; the lock shortcut again unlocks all of them.
   await save.press('ControlOrMeta+a');
@@ -98,7 +108,7 @@ test('locked pieces, symbols and text labels survive Delete and dragging, and un
   expect([...floor.furniture, ...floor.entourage, ...floor.textAnnotations].every((item: any) => item.locked === true)).toBe(true);
 });
 
-test('a plain click passes through locked items to what lies under them', async ({ page }) => {
+test('a plain click reaches what is unlocked under a locked item, and the locked item when nothing else is there', async ({ page }) => {
   test.setTimeout(90_000);
   await openLockedPlan(page, true);
   const save = page.getByRole('button', { name: 'Save', exact: true });
@@ -111,10 +121,43 @@ test('a plain click passes through locked items to what lies under them', async 
   expect(ids(floor.furniture)).toEqual(['piece']);
   expect(ids(floor.entourage)).toEqual(['symbol']);
   expect(ids(floor.textAnnotations)).toEqual(['label']);
-  // With only locked items under the pointer, a click selects nothing.
+  // With only locked items under the pointer, a click selects the topmost of them, the label; Delete still removes nothing.
   const again = await labelPoint(page);
   await page.mouse.click(again.x, again.y);
-  await expect(page.locator('[data-plan-properties]')).toBeHidden();
+  const panel = page.locator('[data-plan-properties]');
+  await expect(panel).toBeVisible();
+  await expect(panel.getByRole('heading', { name: 'Text label' })).toBeVisible();
+  await save.press('Delete');
   floor = await exported(page);
+  expect(ids(floor.textAnnotations)).toEqual(['label']);
   expect(ids(floor.entourage)).toEqual(['symbol']);
+  expect(ids(floor.furniture)).toEqual(['piece']);
+});
+
+test('a click on a locked piece alone selects it, and a drag from it moves nothing', async ({ page }) => {
+  test.setTimeout(90_000);
+  await openLockedPlan(page);
+  const opened = await exported(page);
+  await page.keyboard.press('Escape');
+  // The label is painted at plan (300, 300) and the locked piece stands at (0, 0); zoom is screen px per plan cm.
+  const label = await labelPoint(page);
+  const percent = Number.parseFloat((await page.getByRole('button', { name: 'Zoom to 100%', exact: true }).textContent()) ?? '');
+  const zoom = percent / 100;
+  const piece = { x: label.x - 300 * zoom, y: label.y - 300 * zoom };
+  const panel = page.locator('[data-plan-properties]');
+
+  await page.mouse.click(piece.x, piece.y);
+  await expect(panel).toBeVisible();
+  await expect(panel.getByRole('heading', { name: /sofa/i })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Save', exact: true }).press('ControlOrMeta+d');
+  await expect(panel).toBeHidden();
+  await page.mouse.move(piece.x, piece.y);
+  await page.mouse.down();
+  await page.mouse.move(piece.x + 80, piece.y, { steps: 6 });
+  await page.mouse.up();
+  const after = await exported(page);
+  expect(after.furniture).toEqual(opened.furniture);
+  expect(after.entourage).toEqual(opened.entourage);
+  expect(after.textAnnotations).toEqual(opened.textAnnotations);
 });

@@ -19,7 +19,7 @@ test('an imported plan sets units and wall lengths for a fresh browser and expor
     // Collect the canvas text of each frame: 9 px ruler ticks and every other label.
     const fill = CanvasRenderingContext2D.prototype.fillText;
     CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
-      if (this.canvas.getAttribute('aria-label') === 'Floor plan editor canvas') ((window as any).__texts ??= []).push({ text: String(text), ruler: this.font.startsWith('9px') });
+      if (this.canvas.getAttribute('aria-label') === 'Floor plan editor canvas') ((window as any).__texts ??= []).push({ text: String(text), ruler: this.font.startsWith('12px') && this.textBaseline === 'top' });
       if (maxWidth === undefined) return fill.call(this, text, x, y);
       return fill.call(this, text, x, y, maxWidth);
     };
