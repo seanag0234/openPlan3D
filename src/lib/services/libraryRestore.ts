@@ -46,7 +46,7 @@ export function isLibraryBackup(data: unknown): boolean {
 /** Thrown by a plan-file reader handed a library backup, so its caller can open Restore library backup with that file. */
 export class LibraryBackupFileError extends Error {
   constructor() {
-    super('This file is a library backup. Use Restore library backup on the Projects page to add its projects.');
+    super('This file is a backup of all plans. Use "Bring back a backup of all plans" on the Projects page to add its plans.');
     this.name = 'LibraryBackupFileError';
   }
 }

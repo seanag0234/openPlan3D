@@ -1101,8 +1101,9 @@ Messages are quoted as the editor shows them.
   library backup** takes library backups and project files from **Download
   JSON**; scans and `…-openplan3d.json` interchange files open with **Import
   JSON**.
-- "This is a JSON file, not a project package. Open it with Restore library
-  backup on the Projects page or with Import JSON in the editor." — **Import
+- "This is a plan file, not a plan with its pictures. Open it with "Bring back
+  a backup of all plans" on the Projects page or with Import JSON in the
+  editor." — **Import
   project package** takes only the `.zip` from **Download project package**
   (its file picker hides other files unless you switch it to all files).
 - "The file must be a ZIP package under 64 MiB." / "Only regular, uncompressed
