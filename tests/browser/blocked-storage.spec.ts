@@ -77,6 +77,7 @@ test('with site storage blocked the snap step, Settings, the Gemini key and cata
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
   await settings.getByRole('button', { name: 'Dimensions', exact: true }).click();
+  await expect(settings.getByText('Line up with walls', { exact: true })).toBeVisible();
   await settings.getByRole('button', { name: 'ft, inch', exact: true }).click();
   // A key that cannot be stored is reported instead of shown as saved.
   await settings.getByRole('button', { name: 'AI', exact: true }).click();

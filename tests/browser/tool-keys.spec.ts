@@ -18,6 +18,8 @@ function toolButton(page: Page, name: string) {
 
 test('with a mouse, each tool shows its key after its name', async ({ page }) => {
   await openPlan(page, PLAN);
+  // The heading over the text and dimension tools says what they add.
+  await expect(page.getByRole('heading', { name: 'Words and sizes', exact: true })).toBeVisible();
   for (const [name, key] of TOOLS) {
     const kbd = toolButton(page, name).locator('kbd');
     await expect(kbd).toHaveCount(1);

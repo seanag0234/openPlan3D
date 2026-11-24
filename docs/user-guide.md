@@ -282,7 +282,7 @@ Plumbing, Imported) and the **Recent** row. Hovering an item shows its size
 ### Placing and editing
 
 - Click an item, then click on the canvas, or drag the item onto the canvas.
-  While placing, **R** turns the preview in 15° steps. With **Wall snapping**
+  While placing, **R** turns the preview in 15° steps. With **Line up with walls**
   on (Settings → Dimensions), "Furniture automatically aligns its back edge
   with nearby walls".
 - Select an item (V) and drag to move. Drag the corner handles to resize; hold
@@ -470,7 +470,7 @@ menu) has four tabs:
 - **Project**: **Project Name**, **Description** (printed in the PDF title
   block) and **Floor elevations** (see section 5). These are saved with the
   project.
-- **Dimensions**: **Wall snapping**; **Metrics unit** — **m, cm** or
+- **Dimensions**: **Line up with walls**; **Metrics unit** — **m, cm** or
   **ft, inch**; **Measure walls** — **Centerline** or **Edge to edge**; the
   **Dimensions**, **External Dimensions**, **Internal Dimensions**, **Extension
   Lines** and **Object Distance** switches; **Line Color**. These settings are
