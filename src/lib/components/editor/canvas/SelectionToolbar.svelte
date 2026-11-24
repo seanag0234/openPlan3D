@@ -23,8 +23,13 @@
   let g = $derived(handleGeometry($coarsePointer));
   let singlePiece = $derived(anchor?.type === 'furniture' && selectedIds.size <= 1);
   let place = $derived.by(() => {
-    if (!anchor) return null;
     const parent = barEl?.parentElement;
+    if (!anchor) {
+      // A selected measuring line, dimension or text label: above the point the plan gives.
+      if (!extra || !barWidth || !parent) return null;
+      return toolbarPosition({ left: extra.x, top: extra.y, right: extra.x, bottom: extra.y }, { width: barWidth, height: barHeight },
+        { width: parent.clientWidth, height: parent.clientHeight }, { above: 12, below: 12 });
+    }
     if (!box || !barWidth || !parent) return null;
     const clearance = singlePiece ? { above: 18 + 3 * g.outset + g.radius, below: g.outset + g.radius } : { above: 4, below: 4 };
     return toolbarPosition(box, { width: barWidth, height: barHeight }, { width: parent.clientWidth, height: parent.clientHeight }, clearance);
@@ -145,5 +150,21 @@
       {@render icon('<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 017.5-2"/>')}{@render word($t('panels.unlock'))}
     </button>
   {/if}
+</div>
+{:else if extra}
+<div data-selection-bar data-extra-kind={extra.kind} bind:this={barEl} bind:clientWidth={barWidth} bind:clientHeight={barHeight}
+  class="absolute z-40 flex items-center bg-white rounded-lg shadow-lg border border-gray-200 {coarse ? 'gap-1 px-1.5 py-1' : 'gap-0.5 px-1 py-0.5'}"
+  style={place ? `left: ${place.left}px; top: ${place.top}px;` : `left: ${extra.x}px; top: ${extra.y - 44}px; transform: translateX(-50%);`}
+>
+  {#if extra.kind === 'text'}
+    <button class={coarse ? fingerButton : mouseButton}
+      title={coarse ? undefined : $t('panels.details')} aria-label={coarse ? undefined : $t('panels.details')}
+      onclick={() => detailsOpen.set(true)}
+    >{@render icon('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>')}{@render word($t('panels.details'))}</button>
+  {/if}
+  <button class={coarse ? `${fingerButton} text-red-700` : 'w-7 h-7 flex items-center justify-center rounded hover:bg-red-50 text-gray-400 hover:text-red-600'}
+    title={coarse ? undefined : $t('contextMenu.delete')} aria-label={coarse ? undefined : $t('contextMenu.delete')}
+    onclick={() => { if (extra) ondeleteextra(extra.kind, extra.id); }}
+  >{@render icon('<path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14"/>')}{@render word($t('contextMenu.delete'))}</button>
 </div>
 {/if}

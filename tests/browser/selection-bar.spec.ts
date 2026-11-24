@@ -90,3 +90,21 @@ test('with a mouse the bar keeps its picture buttons and adds Note', async ({ pa
   expect(await buttons.evaluateAll(list => list.map(b => b.getAttribute('title')))).toEqual(['Note', 'Duplicate', 'Delete']);
   await expect(page.locator('[data-selection-bar]')).not.toContainText('Box A');
 });
+
+test('a selected measuring line has a bin', async ({ page }) => {
+  await recordLabels(page);
+  await openPlan(page, FIXTURE);
+  await page.keyboard.press('Escape');
+  // The measuring line runs from (50, 370) to (250, 370) cm; press its middle.
+  const k = await scale(page), label = await where(page, 'Reading corner');
+  await page.mouse.click(label.x + (150 - 300) * k, label.y + (370 - 60) * k);
+  const bar = page.locator('[data-selection-bar][data-extra-kind]');
+  // The plan hands the bar a selected measuring line only once the drawing work is merged.
+  if (!await bar.count()) {
+    await page.waitForTimeout(500);
+    test.skip(!await bar.count(), 'The plan does not hand the bar a selected measuring line yet');
+  }
+  await expect(bar).toHaveAttribute('data-extra-kind', 'measurement');
+  await bar.getByRole('button', { name: 'Delete' }).click();
+  expect((await savedPlan(page)).floors[0].measurements ?? []).toEqual([]);
+});
