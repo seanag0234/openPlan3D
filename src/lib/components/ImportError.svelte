@@ -1,9 +1,10 @@
 <script lang="ts">
   import { t, locale } from '$lib/i18n';
   import { projectServiceMessage } from '$lib/i18n/projectServiceMessages';
+  import { isNotAPlanMessage } from '$lib/utils/notAPlan';
   let { message, onDismiss, title }: { message: string; onDismiss: () => void; title?: string } = $props();
   /** A file that is not a plan at all: said plainly, with the technical words kept under Details. */
-  const notAPlan = $derived(/Invalid project:|not valid JSON|Unexpected token|Unexpected end|JSON\.parse/i.test(message));
+  const notAPlan = $derived(isNotAPlanMessage(message));
 </script>
 
 <div role="alert" class="fixed top-16 left-1/2 -translate-x-1/2 z-[60] w-[min(28rem,calc(100vw-2rem))] rounded-xl border border-red-200 bg-white p-4 shadow-xl">

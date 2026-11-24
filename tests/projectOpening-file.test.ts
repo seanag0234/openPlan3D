@@ -134,3 +134,7 @@ it('reads a chosen file, and refuses a backup of every plan', async () => {
   const backup = { format: 'openplan3d-library', projects: {} };
   await expect(readPlanFile(new File([JSON.stringify(backup)], 'all.json'))).rejects.toBeInstanceOf(LibraryBackupFileError);
 });
+
+it('a plan file cut short is said to be no plan, whatever the browser calls it', async () => {
+  await expect(readPlanFile(new File(['{"id":"a","name":"Ro'], 'half.json'))).rejects.toThrow(/^Invalid project:/);
+});
