@@ -530,7 +530,7 @@ export const en = {
   "layers.stair": "Stair {number} ({direction})",
   "layers.column": "{shape} column {number}",
   "layers.guide": "{orientation} guide {number}",
-  "layers.measurement": "Measurement {number} ({distance} cm)",
+  "layers.measurement": "Measurement {number} ({distance})",
   "layers.annotation": "Dimension line {number} ({label})",
   "layers.note": "Label {number} ({text})",
   "layers.value.single": "single",

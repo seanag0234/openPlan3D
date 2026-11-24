@@ -7,6 +7,7 @@
   import { getCatalogItem } from '$lib/utils/furnitureCatalog';
   import { getEntourageDef } from '$lib/utils/entourageCatalog';
   import type { Floor } from '$lib/models/types';
+  import { projectSettings, formatLength } from '$lib/stores/settings';
 
   let floor: Floor | null = $state(null);
   onDestroy(activeFloor.subscribe(f => { floor = f; }));
@@ -16,6 +17,9 @@
 
   let vis = $state({ walls: true, doors: true, windows: true, furniture: true, stairs: true, columns: true, guides: true, measurements: true, annotations: true, textAnnotations: true, entourage: true, floorBelow: true });
   onDestroy(layerVisibility.subscribe(v => { vis = v; }));
+
+  /** A length for the list: whole centimetres as before, or feet and inches. */
+  const sized = (cm: number) => $projectSettings.units === 'imperial' ? formatLength(cm, 'imperial') : `${cm} cm`;
 
   // Collapsed state per category
   let collapsed: Record<string, boolean> = $state({});
@@ -108,7 +112,7 @@
         key: 'measurements', label: $t('layers.measurements'), icon: '📐',
         items: floor.measurements.map((m, i) => {
           const dist = Math.round(Math.hypot(m.x2 - m.x1, m.y2 - m.y1));
-          return { id: m.id, label: $t('layers.measurement', { number: i + 1, distance: dist }), icon: '📐' };
+          return { id: m.id, label: $t('layers.measurement', { number: i + 1, distance: sized(dist) }), icon: '📐' };
         }),
       });
     }
@@ -118,7 +122,7 @@
         key: 'annotations', label: $t('layers.annotations'), icon: '📏',
         items: floor.annotations.map((a, i) => {
           const dist = Math.round(Math.hypot(a.x2 - a.x1, a.y2 - a.y1));
-          const label = a.label || `${dist} cm`;
+          const label = a.label || sized(dist);
           return { id: a.id, label: $t('layers.annotation', { number: i + 1, label }), icon: '📏' };
         }),
       });

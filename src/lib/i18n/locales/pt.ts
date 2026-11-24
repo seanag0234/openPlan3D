@@ -530,7 +530,7 @@ export const pt = {
   "layers.stair": "Escada {number} ({direction})",
   "layers.column": "Coluna {shape} {number}",
   "layers.guide": "Guia {orientation} {number}",
-  "layers.measurement": "Medição {number} ({distance} cm)",
+  "layers.measurement": "Medição {number} ({distance})",
   "layers.annotation": "Linha de cota {number} ({label})",
   "layers.note": "Rótulo {number} ({text})",
   "layers.value.single": "simples",
