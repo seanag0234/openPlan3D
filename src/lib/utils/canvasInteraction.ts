@@ -120,7 +120,7 @@ export interface FurnitureResizeInput {
   pointer: Point;
   preserveAspectRatio: boolean;
   minSize?: number;
-  /** Step the new size rounds to, in cm; not used yet. */
+  /** Step the new size rounds to, in cm, keeping the opposite edge or corner where it is; undefined leaves it free. */
   sizeStep?: number;
 }
 
@@ -163,6 +163,14 @@ export function resizeFurnitureFromHandle(input: FurnitureResizeInput): Furnitur
     const originalRatio = originalWidth / originalDepth;
     if (newWidth / newDepth > originalRatio) newDepth = newWidth / originalRatio;
     else newWidth = newDepth * originalRatio;
+  }
+
+  const step = input.sizeStep;
+  if (step) {
+    const round = (v: number) => Math.max(step, minSize, Math.round(v / step) * step);
+    if (horizontal) newWidth = round(newWidth);
+    if (input.preserveAspectRatio && horizontal && vertical) newDepth = newWidth / (originalWidth / originalDepth);
+    else if (vertical) newDepth = round(newDepth);
   }
 
   const edgeX = horizontal ? anchorX + handleSignX * newWidth : 0;

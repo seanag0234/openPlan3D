@@ -195,6 +195,9 @@ function drawOpeningsOnCanvas(
  * Renders all walls/rooms/doors/furniture onto an offscreen canvas
  * so the export isn't limited to the current viewport.
  */
+/** Saves the plan as the screen shows it now: the same names, sizes and colours. */
+export async function exportScreenPNG(canvas: HTMLCanvasElement, name = 'floorplan'): Promise<boolean> { download(await canvasPNG(canvas), `${name}.png`); return true; }
+
 export async function exportAsPNG(canvas: HTMLCanvasElement | null, project?: Project, visibility: PlanExportVisibility = currentPlanExportVisibility()) {
   const name = project?.name || 'floorplan';
 

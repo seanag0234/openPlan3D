@@ -6,12 +6,13 @@ test('Properties width follows an edge-handle resize and typed sizes stay exact 
   await page.addInitScript(() => {
     localStorage.setItem('hasSeenWelcome', 'true');
     localStorage.setItem('o3d_tips_seen', JSON.stringify(['first-wall', 'first-furniture', 'first-3d', 'first-export', 'first-door']));
-    // Record where the sofa caption is painted: its x is the sofa's center, whatever the panels do to the canvas.
+    // Record where the sofa's name line and size line are painted: their x is the sofa's center,
+    // and halfway between them is its center height, whatever the panels do to the canvas.
     const fill = CanvasRenderingContext2D.prototype.fillText;
     CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
-      if (text === 'Sofa' && this.canvas.getAttribute('aria-label') === 'Floor plan editor canvas') {
+      if ((text === 'Sofa' || text === '2 m × 90 cm') && this.canvas.getAttribute('aria-label') === 'Floor plan editor canvas') {
         const p = new DOMPoint(x, y).matrixTransform(this.getTransform()), b = this.canvas.getBoundingClientRect();
-        (window as any).__sofa = { x: b.x + p.x * b.width / this.canvas.width, y: b.y + p.y * b.height / this.canvas.height };
+        ((window as any).__sofa ??= {})[text === 'Sofa' ? 'name' : 'size'] = { x: b.x + p.x * b.width / this.canvas.width, y: b.y + p.y * b.height / this.canvas.height };
       }
       if (maxWidth === undefined) return fill.call(this, text, x, y);
       return fill.call(this, text, x, y, maxWidth);
@@ -41,9 +42,9 @@ test('Properties width follows an edge-handle resize and typed sizes stay exact 
   const zoom = Number((await page.getByText(/^Zoom: \d+%$/).innerText()).match(/\d+/)![0]) / 100;
   // Let the opened panel finish resizing the canvas before reading the painted position.
   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
-  const caption = await page.evaluate(() => (window as any).__sofa as { x: number; y: number });
-  // The caption is painted 48 cm below the sofa's center (45 cm half-depth plus its margin).
-  const grab = { x: caption.x + 100 * zoom, y: caption.y - 48 * zoom };
+  const lines = await page.evaluate(() => (window as any).__sofa as { name: { x: number; y: number }; size: { x: number; y: number } });
+  // The name line is painted above the sofa's center and the size line below it, so the center is halfway between them.
+  const grab = { x: lines.name.x + 100 * zoom, y: (lines.name.y + lines.size.y) / 2 };
   await page.mouse.move(grab.x, grab.y);
   await page.mouse.down();
   await page.mouse.move(grab.x + 60 * zoom, grab.y, { steps: 6 });
