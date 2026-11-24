@@ -82,3 +82,50 @@ test('a long-press on bare paper offers Select more first and a note about the p
   await expect(items.first()).toHaveText(/Select more/);
   await expect(items.last()).toHaveText(/Note about the plan/);
 });
+
+test('Select more, then taps, pick several pieces that one drag moves together; a second tap drops one', async ({ page }) => {
+  const { hand, before, a, b, scale } = await open(page);
+  await hand.longPress(a.x, a.y);
+  const more = (await page.getByRole('menu').getByRole('menuitem', { name: /Select more/ }).boundingBox())!;
+  await hand.tap(more.x + more.width / 2, more.y + more.height / 2);
+  await expect(page.getByRole('menu')).toBeHidden();
+  await hand.tap(b.x, b.y);
+  await hand.drag([a.x, a.y], [a.x + 80, a.y]);
+  // Both captions slide right by the same amount.
+  await expect.poll(async () => (await where(page, 'Box B')).x).toBeGreaterThan(b.x + 40);
+  const a2 = await where(page, 'Box A');
+  const b2 = await where(page, 'Box B');
+  expect(Math.abs((a2.x - a.x) - (b2.x - b.x))).toBeLessThan(1);
+
+  // A second tap on Box B takes it out: the next drag moves Box A alone.
+  await hand.tap(b2.x, b2.y);
+  await hand.drag([a2.x, a2.y], [a2.x, a2.y + 80]);
+  const after = await savedPlan(page);
+  const moved = (id: string) => ({ x: item(after, id).position.x - item(before, id).position.x, y: item(after, id).position.y - item(before, id).position.y });
+  expect(moved('box-a').x).toBeGreaterThan(40 / scale);
+  expect(moved('box-b').x).toBe(moved('box-a').x);
+  expect(moved('box-a').y).toBeGreaterThan(40 / scale);
+  expect(moved('box-b').y).toBe(0);
+});
+
+test('while picking several, a drag that starts outside the picked pieces slides the view and keeps them picked', async ({ page }) => {
+  const { hand, before, a, b, scale } = await open(page);
+  await hand.longPress(a.x, a.y);
+  const more = (await page.getByRole('menu').getByRole('menuitem', { name: /Select more/ }).boundingBox())!;
+  await hand.tap(more.x + more.width / 2, more.y + more.height / 2);
+  await hand.tap(b.x, b.y);
+  // Bare floor inside the room, 80 cm above Box A.
+  await hand.drag([a.x, a.y - 80 * scale], [a.x + 100, a.y - 80 * scale]);
+  const a2 = await where(page, 'Box A');
+  expect(Math.abs(a2.x - (a.x + 100))).toBeLessThanOrEqual(3);
+  // Both are still picked: a drag of Box A carries Box B.
+  const b2 = await where(page, 'Box B');
+  await hand.drag([a2.x, a2.y], [a2.x, a2.y + 60]);
+  await expect.poll(async () => (await where(page, 'Box B')).y).toBeGreaterThan(b2.y + 30);
+  const after = await savedPlan(page);
+  const moved = (id: string) => item(after, id).position.y - item(before, id).position.y;
+  expect(moved('box-a')).toBeGreaterThan(0);
+  expect(moved('box-b')).toBe(moved('box-a'));
+  expect(item(after, 'box-a').position.x).toBe(item(before, 'box-a').position.x);
+  expect(after.floors[0].walls).toEqual(before.floors[0].walls);
+});

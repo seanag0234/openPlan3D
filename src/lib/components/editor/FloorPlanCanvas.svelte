@@ -153,6 +153,8 @@
   let draggingGuideId: string | null = $state(null);
 
   let currentTool: string = $state('select');
+  // Picking several belongs to the select tool; another tool ends it.
+  $effect(() => { if (currentTool !== 'select') multiSelectMode.set(false); });
 
   // Measurement tool
   let measureStart: Point | null = $state(null);
@@ -2332,6 +2334,7 @@
 
   function onMouseDown(e: MouseEvent) {
     markDirty();
+    const touchPan = touchPanNext; touchPanNext = false;
     if (e.button !== 0 && e.button !== 1) return;
     finishCanvasGesture();
     // Native double-clicks belong to the original press even if selection opened
@@ -2360,7 +2363,7 @@
         return;
       }
     }
-    if (e.button === 1 || (e.button === 0 && (spaceDown || $panMode || (e.shiftKey && currentTool === 'select')))) {
+    if (e.button === 1 || (e.button === 0 && (touchPan || spaceDown || $panMode || (e.shiftKey && currentTool === 'select')))) {
       isPanning = true;
       panStartX = e.clientX;
       panStartY = e.clientY;
@@ -3312,6 +3315,8 @@
   // must preventDefault to stop scrolling and the browser's compatibility mouse events (which
   // would double-fire the handlers).
   let touchPress: 'tap' | 'drag' | null = null;   // set only while a touch's mousedown is being handled
+  /** The next press slides the view: a drag outside the pieces being picked several at a time. */
+  let touchPanNext = false;
 
   function samples(list: ArrayLike<{ identifier?: number; clientX: number; clientY: number }>): TouchSample[] {
     return Array.from(list, (t, i) => ({ id: t.identifier ?? i, x: t.clientX, y: t.clientY }));
@@ -3351,7 +3356,8 @@
     switch (event.type) {
       case 'tap':
         touchPress = 'tap';
-        dispatchMouse('mousedown', event.x, event.y);
+        // While picking several, a tap adds or removes what is under the finger, as a Shift-click does.
+        dispatchMouse('mousedown', event.x, event.y, { shiftKey: get(multiSelectMode) });
         touchPress = null;
         dispatchMouse('mouseup', event.x, event.y);
         // Synthesize click so document-level click-outside handlers (menus) fire
@@ -3359,7 +3365,16 @@
         // Double-tap → dblclick (finish wall chains, rename rooms, …)
         if (event.count === 2) dispatchMouse('dblclick', event.x, event.y);
         break;
-      case 'dragStart': touchPress = 'drag'; dispatchMouse('mousedown', event.x, event.y); touchPress = null; break;
+      case 'dragStart':
+        // While picking several, a drag inside the picked pieces moves them; any other drag slides the view.
+        if (get(multiSelectMode) && currentSelectedIds.size >= 2) {
+          const rect = canvas.getBoundingClientRect();
+          const wp = screenToWorld(event.x - rect.left, event.y - rect.top);
+          const box = getMultiSelectBBox();
+          touchPanNext = !box || wp.x < box.minX || wp.x > box.maxX || wp.y < box.minY || wp.y > box.maxY;
+        }
+        touchPress = 'drag'; dispatchMouse('mousedown', event.x, event.y); touchPress = null; touchPanNext = false;
+        break;
       case 'dragMove': dispatchMouse('mousemove', event.x, event.y); break;
       case 'dragEnd': dispatchMouse('mouseup', event.x, event.y); break;
       case 'pinchMove': pinchBy(event); break;
