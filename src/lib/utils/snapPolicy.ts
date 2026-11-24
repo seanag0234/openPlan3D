@@ -18,6 +18,14 @@ export function gridLineStepCm(s: SnapContext, fallback: number): number {
 /** Spacing of the heavier grid lines, in cm: every metre, or every 3 ft. */
 export function gridMajorStepCm(s: SnapContext): number { return s.units === 'imperial' ? 3 * ONE_FOOT : 100; }
 
+/** Which grid lines to draw at this zoom, as their spacing in screen px; null means none of that kind. */
+export function gridLinesPx(s: SnapContext, zoom: number, fallback: number): { minor: number | null; major: number | null } {
+  const minor = gridLineStepCm(s, fallback) * zoom, major = gridMajorStepCm(s) * zoom;
+  // Metres keep today's rule exactly: nothing under 4 px, heavier lines from 20 px.
+  if (s.units !== 'imperial') return minor < 4 ? { minor: null, major: null } : { minor, major: major >= 20 ? major : null };
+  return { minor: minor >= 24 ? minor : null, major: major >= 20 ? major : null };
+}
+
 /** Step a dragged piece moves by, in cm: 6 in on the grid step and 1 in off it in feet and inches; the grid size or 10 cm in metres. */
 export function pieceStepCm(s: SnapContext): number {
   if (s.units === 'imperial') return s.snapToGrid ? SIX_INCHES : ONE_INCH;
@@ -73,7 +81,10 @@ function advance(from: Point, to: Point, hits: (p: Point) => boolean): Point {
   return at(lo);
 }
 
-/** Where the piece ends up going from `previous` towards `wanted`: it stops at a wall's face and slides along it. A piece already in a wall is let out. */
+/**
+ * Where the piece ends up going from `previous` towards `wanted`: it stops at a wall's face and slides along it. A piece already in a wall is let out.
+ * When the way is free it returns the very object `wanted`, never a copy: callers test `=== wanted` to tell a free way from a stop.
+ */
 export function slideAlongWalls(wanted: Point, previous: Point, piece: FurnitureItem, walls: readonly Wall[]): Point {
   const { hx, hy } = halfBox(piece), hits = (p: Point) => walls.some(w => overlapsWall(p, hx, hy, w));
   if (hits(previous)) return wanted;
@@ -84,7 +95,7 @@ export function slideAlongWalls(wanted: Point, previous: Point, piece: Furniture
   return gain(alongX) >= gain(alongY) ? alongX : alongY;
 }
 
-/** The nearest place to `wanted` the piece may stand, coming from `previous`: walls stop it only while the house is fixed. */
+/** The nearest place to `wanted` the piece may stand, coming from `previous`: walls stop it only while the house is fixed. Returns `wanted` itself when the way is free. */
 export function stopAtWalls(wanted: Point, previous: Point, piece: FurnitureItem, walls: readonly Wall[]): Point {
   return get(houseFixed) ? slideAlongWalls(wanted, previous, piece, walls) : wanted;
 }

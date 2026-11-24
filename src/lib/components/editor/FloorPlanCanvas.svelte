@@ -37,7 +37,7 @@
   import { projectSettings, formatLength, formatArea, DEFAULT_SETTINGS } from '$lib/stores/settings';
   import type { ProjectSettings } from '$lib/stores/settings';
   import { snapStatus } from '$lib/utils/snapStep';
-  import { angleSnapWithin, cameraAfterResize, resizeFurnitureFromHandle, type CanvasState } from '$lib/utils/canvasInteraction';
+  import { angleSnapWithin, cameraAfterResize, resizeFurnitureFromHandle, resizeHandlePoint, type CanvasState } from '$lib/utils/canvasInteraction';
   import { beginCaptions, drawCaptions } from '$lib/utils/captionPlan';
   import { fitIds } from '$lib/utils/fitBounds';
   import { drawNoteMarks, noteMarkAt } from '$lib/utils/noteMarks';
@@ -45,7 +45,7 @@
   import { shiftToReveal } from '$lib/utils/viewShift';
   import { coarsePointer } from '$lib/stores/pointer';
   import { handleGeometry } from '$lib/utils/handleGeometry';
-  import { gridLineStepCm, resizeStep, snapPieceMove, snapValue, stopAtWalls, type SnapContext } from '$lib/utils/snapPolicy';
+  import { gridLinesPx, resizeStep, snapPieceMove, snapValue, stopAtWalls, type SnapContext } from '$lib/utils/snapPolicy';
   import { furnitureSizeLabel } from '$lib/utils/furnitureCaption';
   import { createTouchGestures, type TouchSample } from '$lib/utils/touchGestures';
   import { drawWall as _drawWall, drawDoorOnWall as _drawDoorOnWall, drawWindowOnWall as _drawWindowOnWall, drawDoorDistanceDimensions as _drawDoorDistanceDimensions, drawWindowDistanceDimensions as _drawWindowDistanceDimensions, drawFurnitureItem, drawStair as _drawStair, drawColumn as _drawColumn, drawGuides as _drawGuides, drawPersistedMeasurements as _drawPersistedMeasurements, drawTextAnnotations as _drawTextAnnotations, drawAnnotation as _drawAnnotation, drawAnnotations as _drawAnnotations, drawRooms as _drawRooms, drawWallJoints as _drawWallJoints, drawSnapPoints as _drawSnapPoints, drawMinimap as _drawMinimap, drawEntourageItems as _drawEntourageItems, drawEntourageGhost as _drawEntourageGhost, drawFloorBelowGhost as _drawFloorBelowGhost, entourageAspect } from '$lib/utils/canvasRenderer';
@@ -286,6 +286,7 @@
   let handleOrigScale: { x: number; y: number } = { x: 1, y: 1 };
   let handleOrigRotation: number = 0;
   let handleOrigPosition: Point = { x: 0, y: 0 };
+  let handleGrabOffset: Point = { x: 0, y: 0 };
   let handleOrigBaseSize: { width: number; depth: number } = { width: 50, depth: 50 };
 
   // Wall parallel drag state (drag midpoint to move wall parallel)
@@ -498,24 +499,24 @@
 
   function drawGrid() {
     if (!ctx || !showGrid) return;
-    const step = gridLineStepCm(snapContext(), GRID) * zoom;
-    if (step < 4) return;
+    const { minor: step, major: majorStep } = gridLinesPx(snapContext(), zoom, GRID);
 
     // Minor grid
-    ctx.strokeStyle = '#e8eaed';
-    ctx.lineWidth = 0.5;
-    const offX = (width / 2 - camX * zoom) % step;
-    const offY = (height / 2 - camY * zoom) % step;
-    for (let x = offX; x < width; x += step) {
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
-    }
-    for (let y = offY; y < height; y += step) {
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+    if (step !== null) {
+      ctx.strokeStyle = '#e8eaed';
+      ctx.lineWidth = 0.5;
+      const offX = (width / 2 - camX * zoom) % step;
+      const offY = (height / 2 - camY * zoom) % step;
+      for (let x = offX; x < width; x += step) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
+      }
+      for (let y = offY; y < height; y += step) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+      }
     }
 
-    // Major grid (every 100cm / 1m)
-    const majorStep = 100 * zoom;
-    if (majorStep >= 20) {
+    // Major grid (every metre, or every 3 ft in feet and inches)
+    if (majorStep !== null) {
       ctx.strokeStyle = '#d1d5db';
       ctx.lineWidth = 0.8;
       const mOffX = (width / 2 - camX * zoom) % majorStep;
@@ -2698,6 +2699,9 @@
           const scaleY = Math.abs(handleOrigScale.y) || 1;
           const size = getFurnitureSize(fi);
           handleOrigBaseSize = { width: size.width / scaleX, depth: size.depth / scaleY };
+          // Under a finger the handle answers well outside the corner: keep how far off the press was, so the corner does not jump to it.
+          const grabbed = handle !== 'rotate' && currentCoarse ? resizeHandlePoint(fi.position, fi.rotation, size.width, size.depth, handle) : null;
+          handleGrabOffset = grabbed ? { x: wp.x - grabbed.x, y: wp.y - grabbed.y } : { x: 0, y: 0 };
           return;
         }
       }
@@ -3127,7 +3131,7 @@
             depth: handleOrigBaseSize.depth,
             scale: handleOrigScale,
             handle: draggingHandle,
-            pointer: mousePos,
+            pointer: { x: mousePos.x - handleGrabOffset.x, y: mousePos.y - handleGrabOffset.y },
             preserveAspectRatio: shiftDown,
             sizeStep: resizeStep(snapContext()),
           });
@@ -3174,7 +3178,10 @@
       const basePos = { x: mousePos.x - dragOffset.x, y: mousePos.y - dragOffset.y };
       const fi = currentFloor?.furniture.find(f => f.id === draggingFurnitureId);
       if (fi) {
-        const wallSnap = snapFurnitureToWall(basePos, fi);
+        const walls = currentFloor?.walls ?? [];
+        const pulled = snapFurnitureToWall(basePos, fi);
+        // A pull toward a wall counts only where the piece can get to: a fixed house's walls stop it first.
+        const wallSnap = pulled && stopAtWalls(pulled.position, fi.position, { ...fi, rotation: pulled.rotation }, walls) === pulled.position ? pulled : null;
         if (wallSnap) {
           transformFurnitureDuringDrag(draggingFurnitureId, { position: wallSnap.position, rotation: wallSnap.rotation });
           dragWasWallSnapped = true;
@@ -3193,10 +3200,12 @@
               }
             }
           }
-          transformFurnitureDuringDrag(draggingFurnitureId, {
-            position: stopAtWalls(snapped, fi.position, fi, currentFloor?.walls ?? []),
-            ...(dragWasWallSnapped ? { rotation: dragStartRotation } : {}),
-          });
+          // Leaving a pull turns the piece back as it was: check the way with that turn, from where the drag began,
+          // since turned back where it stands the piece may already reach into the wall it was pulled against.
+          transformFurnitureDuringDrag(draggingFurnitureId, dragWasWallSnapped ? {
+            position: stopAtWalls(snapped, dragStartPosition, { ...fi, rotation: dragStartRotation }, walls),
+            rotation: dragStartRotation,
+          } : { position: stopAtWalls(snapped, fi.position, fi, walls) });
           dragWasWallSnapped = false;
           wallSnapInfo = null;
         }
