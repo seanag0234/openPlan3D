@@ -6,6 +6,8 @@
   import { currentProject, commitItemDetails, canvasCamX, canvasCamY, selectedElementId, selectedElementIds, selectedTool } from '$lib/stores/project';
   import { getSnapshots } from '$lib/stores/versionHistory';
   import { modalDialog } from '$lib/utils/modalDialog';
+  import { projectSettings } from '$lib/stores/settings';
+  import { sizeText } from '$lib/utils/sizeText';
   import type { PreparedCustomModel } from '$lib/services/customModelImport';
   import { placeCustomModel, removeCustomModel } from '$lib/services/customModels';
   import type CustomModelPreview from './CustomModelPreview.svelte';
@@ -16,6 +18,11 @@
   let prepared = $state.raw<PreparedCustomModel | null>(null);
   let name = $state(''), attribution = $state(''), license = $state(''), sourceUrl = $state('');
   let removal = $state<string | null>(null);
+  /** A model Remove was pressed for while it is still on the plan, and how many times it is there. */
+  let inUse = $state<{ id: string; uses: number } | null>(null);
+  function usesOf(id: string) {
+    return (get(currentProject)?.floors ?? []).reduce((n, floor) => n + floor.furniture.filter(item => item.customModelId === id).length, 0);
+  }
   let controller: AbortController | undefined;
   let generation = 0, projectId: string | undefined;
   function close() {
@@ -23,6 +30,7 @@
     prepared?.dispose(); prepared = null; open = false; busy = false; saving = false; error = '';
   }
   onDestroy(currentProject.subscribe(project => {
+    inUse = null;
     if (project?.id !== projectId) { close(); removal = null; status = ''; projectId = project?.id; }
   }));
   onDestroy(close);
@@ -91,14 +99,17 @@
   {#each $currentProject?.customModels ?? [] as model (model.id)}
     <div class="rounded border border-gray-200 p-2 text-xs">
       <strong class="break-words">{model.name}</strong>
-      <p>{model.width.toFixed(1)} × {model.depth.toFixed(1)} × {model.height.toFixed(1)} cm</p>
+      <p>{sizeText(`${model.width.toFixed(1)} × ${model.depth.toFixed(1)} × ${model.height.toFixed(1)} cm`, $projectSettings.units)}</p>
       {#if model.attribution}<p class="break-words">{model.attribution}</p>{/if}
       {#if model.license}<p class="break-words">{model.license}</p>{/if}
       {#if model.sourceUrl}<a class="text-blue-700 underline" href={model.sourceUrl} target="_blank" rel="noopener noreferrer">{$t('customModel.source')}</a>{/if}
       <div class="mt-1 flex flex-wrap gap-2">
         <button class="text-blue-700 underline" onclick={() => place(model.id)}>{$t('customModel.place')}</button>
-        <button class="text-red-700 underline" onclick={() => { error = ''; removal = model.id; }}>{$t('customModel.remove')}</button>
+        <button class="text-red-700 underline" onclick={() => { error = ''; status = ''; const uses = usesOf(model.id); if (uses) inUse = { id: model.id, uses }; else { inUse = null; removal = model.id; } }}>{$t('customModel.remove')}</button>
       </div>
+      {#if inUse?.id === model.id}
+        <p role="status" class="mt-1 text-xs text-amber-800">{inUse.uses === 1 ? $t('adding.modelInUse') : $t('adding.modelInUseMany', { count: inUse.uses })}</p>
+      {/if}
     </div>
   {/each}
   {#if !open && error}<p role="alert" class="text-xs text-red-700">{customModelError(error, $locale)}</p>{/if}

@@ -1,5 +1,9 @@
 import type { Floor, Point, Wall } from '$lib/models/types';
 import { wallPathProfile } from './wallProfiles';
+import { getFurnitureSize } from './furnitureCatalog';
+
+/** Space Duplicate leaves between the copied things and their copy, in cm. */
+export const COPY_GAP = 10;
 
 /** Where a copy kept on the same wall lands: a tenth of the wall further along
  * per step, with its centre held half its width from either end so the whole
@@ -17,15 +21,42 @@ export function shiftedOpeningPosition(wall: Wall, opening: { position: number; 
   return (index + (target - span.from) / span.length) / path.spans.length;
 }
 
-/** Copy selected plan objects and openings carried by copied walls. Mutates floor only. */
-export function duplicatePlanSelection(floor: Floor, selected: ReadonlySet<string>, uid: () => string): string[] {
-  return pastePlanSelection(floor, floor, selected, uid);
+/** Half the width a w by d footprint turned by `degrees` covers along x. */
+function halfSpanX(width: number, depth: number, degrees: number): number {
+  const r = (degrees || 0) * Math.PI / 180;
+  return (Math.abs(width * Math.cos(r)) + Math.abs(depth * Math.sin(r))) / 2;
 }
 
-/** Paste saved geometry into a destination floor without consulting live source objects. */
-export function pastePlanSelection(source: Floor, floor: Floor, selected: ReadonlySet<string>, uid: () => string, step = 1): string[] {
+/** How far Duplicate moves a copy: right by the selection's width plus a gap, or the old 30/30 when a wall is copied or nothing copied has a size. */
+export function copyShift(floor: Floor, selected: ReadonlySet<string>): Point {
+  const fallback = { x: 30, y: 30 };
+  if (floor.walls.some(wall => selected.has(wall.id))) return fallback;
+  let left = Infinity, right = -Infinity;
+  const take = (x: number, half: number) => {
+    if (!Number.isFinite(x) || !Number.isFinite(half)) return;
+    left = Math.min(left, x - half); right = Math.max(right, x + half);
+  };
+  for (const item of floor.furniture ?? []) {
+    if (!selected.has(item.id)) continue;
+    const size = getFurnitureSize(item);
+    take(item.position.x, halfSpanX(size.width, size.depth, item.rotation));
+  }
+  for (const stair of floor.stairs ?? []) if (selected.has(stair.id)) take(stair.position.x, halfSpanX(stair.width, stair.depth, stair.rotation));
+  for (const column of floor.columns ?? []) if (selected.has(column.id)) take(column.position.x, column.diameter / 2);
+  for (const symbol of floor.entourage ?? []) if (selected.has(symbol.id)) take(symbol.position.x, symbol.width / 2);
+  if (!(right >= left)) return fallback;
+  return { x: (right - left) + COPY_GAP, y: 0 };
+}
+
+/** Copy selected plan objects and openings carried by copied walls, beside the originals. Mutates floor only. */
+export function duplicatePlanSelection(floor: Floor, selected: ReadonlySet<string>, uid: () => string): string[] {
+  return pastePlanSelection(floor, floor, selected, uid, 1, copyShift(floor, selected));
+}
+
+/** Paste saved geometry into a destination floor without consulting live source objects; each step moves it by `shift`. */
+export function pastePlanSelection(source: Floor, floor: Floor, selected: ReadonlySet<string>, uid: () => string, step = 1, shift: Point = { x: 30, y: 30 }): string[] {
   const mapping = new Map<string, string>();
-  const offset = (p: Point): Point => ({ x: p.x + 30 * step, y: p.y + 30 * step });
+  const offset = (p: Point): Point => ({ x: p.x + shift.x * step, y: p.y + shift.y * step });
   for (const wall of [...source.walls]) {
     if (!selected.has(wall.id)) continue;
     const copy = structuredClone(wall);
@@ -62,8 +93,8 @@ export function pastePlanSelection(source: Floor, floor: Floor, selected: Readon
       if (!selected.has(item.id)) continue;
       const copy = structuredClone(item);
       copy.id = uid(); mapping.set(item.id,copy.id);
-      if ('x' in copy) { copy.x += 30*step; copy.y += 30*step; }
-      else { copy.x1 += 30*step; copy.y1 += 30*step; copy.x2 += 30*step; copy.y2 += 30*step; }
+      if ('x' in copy) { copy.x += shift.x * step; copy.y += shift.y * step; }
+      else { copy.x1 += shift.x * step; copy.y1 += shift.y * step; copy.x2 += shift.x * step; copy.y2 += shift.y * step; }
       const items = floor[key] ?? (floor[key] = []);
       (items as typeof copy[]).push(copy);
     }

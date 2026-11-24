@@ -21,10 +21,15 @@
   import FurnitureThumbnail from './FurnitureThumbnail.svelte';
   import CustomModelPanel from './CustomModelPanel.svelte';
   import { createProjectFromRoomPlan, extractRoomJsonFromZip, importRoomPlanFloors, interchangeStateFromRoomPlan, roomPlanImportOptions, roomPlanStoryIndices, validateRoomPlan, ORTHO_VERSION } from '$lib/utils/roomplanImport';
-  import { addRoomPlanFloorToFloor, addRoomPlanFloorsToProject, currentProject, selectImportedElements } from '$lib/stores/project';
+  import { addRoomPlanFloorToFloor, addRoomPlanFloorsToProject, currentProject, selectImportedElements, houseFixed, addFurniture, updateFurniture, beginUndoGroup, endUndoGroup, selectedElementId, selectedElementIds } from '$lib/stores/project';
   import { orderedFloors } from '$lib/utils/floors';
   import { selectableContentIds, type AddedContent } from '$lib/utils/roomplanMerge';
   import { interchangeProjectName } from '$lib/utils/interchange';
+  import { coarsePointer } from '$lib/stores/pointer';
+  import { buildPanelFolded } from '$lib/stores/ui';
+  import { projectSettings } from '$lib/stores/settings';
+  import { sizeText } from '$lib/utils/sizeText';
+  import { matchesCatalogSearch } from '$lib/utils/catalogSearch';
 
   const openingLifetime = new AbortController();
   onDestroy(() => openingLifetime.abort());
@@ -53,19 +58,29 @@
   /** The open plan's floors, lowest first, as the floor switcher lists them. */
   const importFloors = $derived($currentProject ? orderedFloors($currentProject.floors).map(entry => entry.floor) : []);
 
+  /** On a tablet held upright, fold the list once something is picked, so the plan is free to place it on. */
+  function foldForPlacing() {
+    if (get(coarsePointer) && typeof window !== 'undefined' && window.innerHeight > window.innerWidth) buildPanelFolded.set(true);
+  }
+
   function setTool(tool: Tool) {
+    if (get(houseFixed) && (tool === 'wall' || tool === 'door' || tool === 'window')) return;
     if (tool === 'measure' || tool === 'annotate') activateMeasurementTool(tool);
     else selectedTool.set(tool);
     placingFurnitureId.set(null);
+    if (tool === 'wall' || tool === 'text' || tool === 'annotate' || tool === 'measure') foldForPlacing();
   }
 
   let currentTool = $state<Tool>('select');
   onDestroy(selectedTool.subscribe((t) => { currentTool = t; }));
+  // A house tool already in hand is put down once the house is fixed.
+  $effect(() => { if ($houseFixed && ['wall', 'door', 'window'].includes(currentTool)) selectedTool.set('select'); });
 
   let currentPlacing = $state<string | null>(null);
   onDestroy(placingFurnitureId.subscribe((id) => { currentPlacing = id; }));
 
   function onPresetClick(presetId: string, templateName?: string) {
+    if (get(houseFixed)) return;
     const preset = roomPresets.find(p => p.id === presetId);
     if (preset) {
       let cx = 0, cy = 0;
@@ -80,9 +95,24 @@
     selectedTool.set('furniture');
     placingFurnitureId.set(item.id);
     addToRecent(item.id);
+    foldForPlacing();
   }
 
   let withFurniture = $state(true);
+
+  const BOX_CM = 91.44; // 3 ft
+  /** A plain box, named, in the middle of what the plan shows, selected, in one Undo step. */
+  function addPlainBox(name: string) {
+    const label = name.trim().slice(0, 60) || $t('adding.boxName');
+    beginUndoGroup();
+    const id = addFurniture('imported_object', { x: get(canvasCamX), y: get(canvasCamY) });
+    updateFurniture(id, { name: label, width: BOX_CM, depth: BOX_CM, height: BOX_CM });
+    endUndoGroup('Added a box');
+    selectedTool.set('select'); placingFurnitureId.set(null);
+    selectedElementId.set(id); selectedElementIds.set(new Set());
+    search = '';
+    foldForPlacing();
+  }
 
   let search = $state('');
 
@@ -123,20 +153,22 @@
 
   let filtered = $derived(
     (() => {
-      const s = normalizeCatalogSearch(search);
       let items = selectedCategory === 'Favorites'
         ? favoriteItems
         : furnitureCatalog.filter((f) => {
             const matchCat = selectedCategory === 'All' || f.category === selectedCategory;
             return matchCat;
           });
-      if (s) {
-        items = items.filter(f => [f.name, furnitureName(f.id, $locale), f.category, catalogCategoryLabels[f.category] ? $t(catalogCategoryLabels[f.category]) : f.category]
-          .some(value => normalizeCatalogSearch(value).includes(s)));
-      }
+      if (search.trim()) items = items.filter(f => matchesCatalogSearch(search, f.id,
+        [f.name, furnitureName(f.id, $locale), f.category, catalogCategoryLabels[f.category] ? $t(catalogCategoryLabels[f.category]) : f.category]));
       return items;
     })()
   );
+
+  /** Symbols the search finds; every symbol when the search is empty. */
+  let symbolMatches = $derived(entourageCatalog.filter(d => matchesCatalogSearch(search, d.id,
+    [d.name, entourageLabels[d.id] ? $t(entourageLabels[d.id]) : d.name, $t(`entourageLabels.${d.category}`)])));
+  let searching = $derived(search.trim().length > 0);
 
   const doorCatalog: { type: Door['type']; name: string; desc: string; icon: string }[] = $derived([
     { type: 'single', name: $t('openingCatalog.single'), desc: $t('openingCatalog.singleDescription'), icon: 'M6 3h12v18H6z' },
@@ -161,15 +193,19 @@
   let selectedWindowType = $state<Win['type']>('standard');
 
   function setDoorType(type: Door['type']) {
+    if (get(houseFixed)) return;
     selectedDoorType = type;
     placingDoorType.set(type);
     setTool('door');
+    foldForPlacing();
   }
 
   function setWindowType(type: Win['type']) {
+    if (get(houseFixed)) return;
     selectedWindowType = type;
     placingWindowType.set(type);
     setTool('window');
+    foldForPlacing();
   }
 
   let isPlacingStair = $state(false);
@@ -180,11 +216,19 @@
   onDestroy(placingEntourageId.subscribe(v => { placingEntId = v; }));
   let customEntDefs = $state<CustomEntourageDef[]>([]);
   onDestroy(currentProject.subscribe(p => { customEntDefs = p?.customEntourage ?? []; }));
+  /** Uploaded symbols whose name holds the search; all of them when the search is empty. */
+  let customSymbolMatches = $derived(search.trim()
+    ? customEntDefs.filter(d => normalizeCatalogSearch(d.name).includes(normalizeCatalogSearch(search.trim())))
+    : customEntDefs);
+  /** Everything the search finds: furniture, symbols and uploaded symbols. */
+  let foundCount = $derived(filtered.length + symbolMatches.length + (search.trim() ? customSymbolMatches.length : 0));
   let entourageFileInput = $state<HTMLInputElement | null>(null);
 
   function armEntourage(id: string) {
-    placingEntourageId.set(placingEntId === id ? null : id);
+    const arming = placingEntId !== id;
+    placingEntourageId.set(arming ? id : null);
     setTool('select');
+    if (arming) foldForPlacing();
   }
 
   let symbolUploadError = $state<'tooLarge' | 'readFailed' | 'invalid' | null>(null);
@@ -396,7 +440,7 @@
   };
 </script>
 
-<div class="w-64 bg-white border-r border-gray-200 flex flex-col h-full overflow-hidden">
+<div class="w-64 bg-white border-r border-gray-200 flex flex-col h-full overflow-hidden" data-build-folded={$buildPanelFolded}>
   <!-- Tabs -->
   <div class="flex border-b border-gray-200">
     <button
@@ -416,6 +460,9 @@
   <div class="flex-1 overflow-y-auto p-3">
     {#if activeTab === 'draw'}
       <div class="space-y-1">
+        {#if $houseFixed}
+          <p role="note" data-house-fixed-note class="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">{$t('adding.houseFixed')}</p>
+        {/if}
         <h3 class="text-xs font-semibold text-gray-400 uppercase mb-2">{$t('buildTools.tools')}</h3>
         <button
           class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors {currentTool === 'select' ? 'bg-blue-50 text-slate-800 ring-1 ring-blue-200' : 'hover:bg-gray-50 text-gray-700'}"
@@ -430,7 +477,8 @@
           </div>
         </button>
         <button
-          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors {currentTool === 'wall' ? 'bg-blue-50 text-slate-800 ring-1 ring-blue-200' : 'hover:bg-gray-50 text-gray-700'}"
+          disabled={$houseFixed}
+          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed {currentTool === 'wall' ? 'bg-blue-50 text-slate-800 ring-1 ring-blue-200' : 'hover:bg-gray-50 text-gray-700'}"
           onclick={() => setTool('wall')}
         >
           <div class="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center {currentTool === 'wall' ? 'bg-blue-100' : ''}">
@@ -573,16 +621,17 @@
           <div class="grid grid-cols-2 gap-2 mb-3">
             {#each doorCatalog as dc}
               <button
-                class="flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition-colors cursor-grab active:cursor-grabbing {currentTool === 'door' && selectedDoorType === dc.type ? 'border-blue-400 bg-blue-50' : 'border-gray-100 hover:border-gray-200'}"
+                class="flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition-colors cursor-grab active:cursor-grabbing disabled:opacity-40 disabled:cursor-not-allowed {currentTool === 'door' && selectedDoorType === dc.type ? 'border-blue-400 bg-blue-50' : 'border-gray-100 hover:border-gray-200'}"
                 onclick={() => setDoorType(dc.type)}
-                draggable="true"
+                disabled={$houseFixed}
+                draggable={!$houseFixed}
                 ondragstart={(e) => { e.dataTransfer?.setData('application/o3d-type', 'door'); e.dataTransfer?.setData('application/o3d-id', dc.type); }}
               >
                 <div class="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#92400e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="{dc.icon}"/></svg>
                 </div>
                 <span class="text-xs font-medium text-gray-600">{dc.name}</span>
-                <span class="text-[10px] text-gray-400">{dc.desc}</span>
+                <span class="text-[10px] text-gray-400">{sizeText(dc.desc, $projectSettings.units)}</span>
               </button>
             {/each}
           </div>
@@ -591,16 +640,17 @@
           <div class="grid grid-cols-2 gap-2">
             {#each windowCatalog as wc}
               <button
-                class="flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition-colors cursor-grab active:cursor-grabbing {currentTool === 'window' && selectedWindowType === wc.type ? 'border-blue-400 bg-blue-50' : 'border-gray-100 hover:border-gray-200'}"
+                class="flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition-colors cursor-grab active:cursor-grabbing disabled:opacity-40 disabled:cursor-not-allowed {currentTool === 'window' && selectedWindowType === wc.type ? 'border-blue-400 bg-blue-50' : 'border-gray-100 hover:border-gray-200'}"
                 onclick={() => setWindowType(wc.type)}
-                draggable="true"
+                disabled={$houseFixed}
+                draggable={!$houseFixed}
                 ondragstart={(e) => { e.dataTransfer?.setData('application/o3d-type', 'window'); e.dataTransfer?.setData('application/o3d-id', wc.type); }}
               >
                 <div class="w-9 h-9 rounded-lg bg-cyan-50 flex items-center justify-center">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0e7490" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
                 </div>
                 <span class="text-xs font-medium text-gray-600">{wc.name}</span>
-                <span class="text-[10px] text-gray-400">{wc.desc}</span>
+                <span class="text-[10px] text-gray-400">{sizeText(wc.desc, $projectSettings.units)}</span>
               </button>
             {/each}
           </div>
@@ -609,14 +659,18 @@
 
     {:else if activeTab === 'rooms'}
       <div class="space-y-2">
+        {#if $houseFixed}
+          <p role="note" data-house-fixed-note class="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">{$t('adding.houseFixed')}</p>
+        {/if}
         <h3 class="text-xs font-semibold text-gray-400 uppercase mb-2">{$t('roomChoices.presets')}</h3>
         <p class="text-xs text-gray-400 mb-3">{$t('roomChoices.presetsHelp')}</p>
         <div class="grid grid-cols-2 gap-2">
           {#each roomPresets as preset}
             <button
-              class="flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 border-gray-100 hover:border-blue-300 hover:bg-blue-50 transition-colors cursor-grab active:cursor-grabbing"
+              class="flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 border-gray-100 hover:border-blue-300 hover:bg-blue-50 transition-colors cursor-grab active:cursor-grabbing disabled:opacity-40 disabled:cursor-not-allowed"
               onclick={() => onPresetClick(preset.id)}
-              draggable="true"
+              disabled={$houseFixed}
+              draggable={!$houseFixed}
               ondragstart={(e) => { e.dataTransfer?.setData('application/o3d-type', 'room'); e.dataTransfer?.setData('application/o3d-id', preset.id); }}
             >
               <div class="w-12 h-12 rounded-lg bg-gray-50 flex items-center justify-center text-2xl font-mono">{preset.icon}</div>
@@ -632,9 +686,10 @@
         <div class="grid grid-cols-2 gap-2">
           {#each roomTemplates as tmpl}
             <button
-              class="flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 border-gray-100 hover:border-green-300 hover:bg-green-50 transition-colors cursor-grab active:cursor-grabbing"
+              class="flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 border-gray-100 hover:border-green-300 hover:bg-green-50 transition-colors cursor-grab active:cursor-grabbing disabled:opacity-40 disabled:cursor-not-allowed"
               onclick={() => onPresetClick(tmpl.presetId, tmpl.name)}
-              draggable="true"
+              disabled={$houseFixed}
+              draggable={!$houseFixed}
               ondragstart={(e) => { e.dataTransfer?.setData('application/o3d-type', 'room-template'); e.dataTransfer?.setData('application/o3d-id', tmpl.name); }}
             >
               <div class="w-12 h-12 rounded-lg bg-green-50 flex items-center justify-center text-lg">
@@ -655,7 +710,20 @@
       </div>
 
     {:else if activeTab === 'objects'}
+      {#snippet boxNamedButton()}
+        <button
+          class="w-full px-3 py-2 rounded-lg border-2 border-dashed border-blue-300 text-left text-sm font-medium text-blue-800 hover:bg-blue-50 transition-colors break-words [@media(pointer:coarse)]:min-h-11"
+          onclick={() => addPlainBox(search)}
+        >{$t('adding.boxNamed', { name: search.trim().slice(0, 60) })}</button>
+      {/snippet}
       <div class="space-y-2">
+        <button
+          class="w-full flex flex-col items-start gap-0.5 px-3 py-2 rounded-lg border-2 border-dashed border-blue-300 text-left text-blue-800 hover:bg-blue-50 transition-colors [@media(pointer:coarse)]:min-h-11"
+          onclick={() => addPlainBox('')}
+        >
+          <span class="text-sm font-medium">{$t('adding.addBox')}</span>
+          <span class="text-xs text-gray-600">{$t('adding.addBoxHelp')}</span>
+        </button>
         <CustomModelPanel />
         <!-- Search with clear button and result count -->
         <div class="relative">
@@ -676,7 +744,12 @@
           {/if}
         </div>
         {#if search}
-          <div class="text-[10px] text-gray-400 px-1">{$t(filtered.length === 1 ? 'objectControls.result' : 'objectControls.results', { count: filtered.length, query: search })}</div>
+          {@const found = foundCount}
+          <div class="text-xs text-gray-600 px-1">{$t(found === 1 ? 'objectControls.result' : 'objectControls.results', { count: found, query: search })}</div>
+          {#if found === 0}
+            <p class="text-xs text-gray-600 px-1">{$t('adding.nothingCalled', { query: search.trim() })}</p>
+            {#if search.trim()}{@render boxNamedButton()}{/if}
+          {/if}
         {/if}
         <!-- Category filter -->
         <div class="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
@@ -751,7 +824,7 @@
                 {:else}
                   <span class="text-xs font-medium text-gray-600">{furnitureName(item.id, $locale)}</span>
                 {/if}
-                <span class="text-[10px] text-gray-400">{item.width}×{item.depth}cm</span>
+                <span class="text-[10px] text-gray-400">{sizeText(`${item.width}×${item.depth}cm`, $projectSettings.units)}</span>
               </button>
               <button
                 class="absolute top-1 right-1 text-[12px] leading-none cursor-pointer {favoriteIds.includes(item.id) ? 'text-pink-500' : 'text-gray-300 hover:text-pink-400'}"
@@ -765,10 +838,12 @@
         </div>
 
         <!-- Entourage: 2D presentation symbols (people, cars, planting) -->
+        {#if !searching || symbolMatches.length || customSymbolMatches.length}
         <div class="pt-3 mt-2 border-t border-gray-100">
           <h3 class="text-xs font-semibold text-gray-400 uppercase mb-2">{$t('entourageLabels.title')}</h3>
           {#each entourageCategories as cat}
-            {@const defs = entourageCatalog.filter(d => d.category === cat.key)}
+            {@const defs = symbolMatches.filter(d => d.category === cat.key)}
+            {#if !searching || defs.length}
             <div class="mb-2">
               <span class="text-[10px] font-medium text-gray-500">{cat.icon} {$t(`entourageLabels.${cat.key}`)}</span>
               <div class="grid grid-cols-3 gap-1.5 mt-1">
@@ -787,12 +862,13 @@
                 {/each}
               </div>
             </div>
+            {/if}
           {/each}
-          {#if customEntDefs.length}
+          {#if customSymbolMatches.length}
             <div class="mb-2">
               <span class="text-[10px] font-medium text-gray-500">🖼️ {$t('entourageLabels.custom')}</span>
               <div class="grid grid-cols-3 gap-1.5 mt-1">
-                {#each customEntDefs as def}
+                {#each customSymbolMatches as def}
                   <button
                     class="p-1.5 rounded-lg border text-center hover:border-blue-300 hover:bg-blue-50 transition-colors {placingEntId === def.id ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-200' : 'border-gray-200'}"
                     title={def.name}
@@ -805,13 +881,19 @@
               </div>
             </div>
           {/if}
+          {#if !searching}
           <button
             class="w-full py-1.5 border border-dashed border-gray-300 rounded-lg text-xs text-gray-500 hover:border-blue-300 hover:text-blue-600 transition-colors"
             onclick={() => entourageFileInput?.click()}
           >+ {$t('entourageLabels.upload')}</button>
+          {/if}
           {#if symbolUploadError}<p role="alert" class="text-xs text-red-700">{$t(`entourageLabels.${symbolUploadError}`)}</p>{/if}
           <input type="file" accept="image/png,image/jpeg,image/webp" class="hidden" bind:this={entourageFileInput} onchange={onEntourageUpload} />
         </div>
+        {/if}
+        {#if search.trim() && foundCount > 0}
+          {@render boxNamedButton()}
+        {/if}
       </div>
     {/if}
   </div>
@@ -837,7 +919,7 @@
           >{catalogCategoryLabels[item.category] ? $t(catalogCategoryLabels[item.category]) : item.category}</span>
         </div>
         <div class="text-xs text-gray-500">
-          {item.width} × {item.depth} × {item.height} cm
+          {sizeText(`${item.width} × ${item.depth} × ${item.height} cm`, $projectSettings.units)}
         </div>
       </div>
     </div>

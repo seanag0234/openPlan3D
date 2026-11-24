@@ -33,6 +33,8 @@
   import { SPIRAL_START_ANGLE, SPIRAL_SWEEP, stairFlights } from '$lib/utils/stairPlanGeometry';
   import { framingContext, shouldFrameScene, type FramingContext } from '$lib/utils/sceneFraming';
   import { WalkthroughMotion } from '$lib/utils/walkthroughMotion';
+  import { sizeText } from '$lib/utils/sizeText';
+  import { coarsePointer } from '$lib/stores/pointer';
   import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
   import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
   import { getCatalogItem, furnitureCatalog, furnitureCategories } from '$lib/utils/furnitureCatalog';
@@ -677,8 +679,35 @@
     return tex;
   }
 
+  /** The walk-through's arrow pad, laid out as a cross. */
+  const walkPad: { code: string; arrow: string; label: TranslationKey; place: string }[] = [
+    { code: 'ArrowUp', arrow: '▲', label: 'adding.walkForward', place: 'col-start-2 row-start-1' },
+    { code: 'ArrowLeft', arrow: '◀', label: 'adding.walkLeft', place: 'col-start-1 row-start-2' },
+    { code: 'ArrowRight', arrow: '▶', label: 'adding.walkRight', place: 'col-start-3 row-start-2' },
+    { code: 'ArrowDown', arrow: '▼', label: 'adding.walkBack', place: 'col-start-2 row-start-3' },
+  ];
+
+  /** The finger looking round the walk-through, and where it was last. */
+  let lookFinger: { id: number; x: number; y: number } | null = null;
+  function onLookDown(e: PointerEvent) {
+    if (!walkthroughMode || e.pointerType !== 'touch' || lookFinger) return;
+    lookFinger = { id: e.pointerId, x: e.clientX, y: e.clientY };
+  }
+  function onLookMove(e: PointerEvent) {
+    if (!lookFinger || e.pointerId !== lookFinger.id) return;
+    if (!walkthroughMode) { lookFinger = null; return; }
+    walkthroughMotion.look(e.clientX - lookFinger.x, e.clientY - lookFinger.y, camera);
+    lookFinger = { id: e.pointerId, x: e.clientX, y: e.clientY };
+    markSceneDirty();
+    requestRender();
+  }
+  function onLookEnd(e: PointerEvent) {
+    if (lookFinger && e.pointerId === lookFinger.id) lookFinger = null;
+  }
+
   function exitWalkthroughMode() {
     walkthroughMode = false;
+    lookFinger = null;
     controls.enabled = true;
     walkthroughMotion.reset();
     markSceneDirty();
@@ -849,6 +878,12 @@
     controls.minDistance = 1;
     // Mark dirty when orbit controls move the camera
     controls.addEventListener('change', markSceneDirty);
+
+    // In the walk-through a finger dragged across the view looks round.
+    renderer.domElement.addEventListener('pointerdown', onLookDown);
+    renderer.domElement.addEventListener('pointermove', onLookMove);
+    renderer.domElement.addEventListener('pointerup', onLookEnd);
+    renderer.domElement.addEventListener('pointercancel', onLookEnd);
 
     // Click-to-select walls via raycasting
     let pointerDownPos = { x: 0, y: 0 };
@@ -2188,12 +2223,15 @@
 
     // Three's lock() discards the browser's promise. Handle rejection here so
     // embedded/unsupported browsers can still use keyboard movement and look.
-    try {
-      Promise.resolve(renderer.domElement.requestPointerLock()).catch(() => {
-        if (walkthroughMode) walkthroughMouseUnavailable = true;
-      });
-    } catch {
-      walkthroughMouseUnavailable = true;
+    // A finger looks by dragging and has no mouse to lock.
+    if (!get(coarsePointer)) {
+      try {
+        Promise.resolve(renderer.domElement.requestPointerLock()).catch(() => {
+          if (walkthroughMode) walkthroughMouseUnavailable = true;
+        });
+      } catch {
+        walkthroughMouseUnavailable = true;
+      }
     }
     markSceneDirty();
   }
@@ -2343,6 +2381,10 @@
       controls.dispose();
       renderer.domElement.removeEventListener('webglcontextlost', onContextLost);
       renderer.domElement.removeEventListener('webglcontextrestored', markSceneDirty);
+      renderer.domElement.removeEventListener('pointerdown', onLookDown);
+      renderer.domElement.removeEventListener('pointermove', onLookMove);
+      renderer.domElement.removeEventListener('pointerup', onLookEnd);
+      renderer.domElement.removeEventListener('pointercancel', onLookEnd);
       releaseRenderer(renderer);
     };
   });
@@ -2707,7 +2749,7 @@
         <span class="text-white/70">{$t('viewerNav.eyeHeight')}</span>
         <div class="flex items-center gap-1">
           <input type="range" min="80" max="220" bind:value={eyeHeight} oninput={markSceneDirty} class="w-16 h-1 accent-blue-400" />
-          <span class="w-10 text-right">{eyeHeight}cm</span>
+          <span class="w-12 text-right">{sizeText(`${eyeHeight}cm`, $projectSettings.units)}</span>
         </div>
       </label>
       <label class="flex items-center justify-between gap-2">
@@ -2726,10 +2768,33 @@
       </label>
     </div>
 
+    {#if $coarsePointer}
+      <!-- Walking by finger: hold an arrow to walk, Done to leave. -->
+      <div class="absolute bottom-4 left-4 z-10 grid grid-cols-3 gap-1" style="touch-action: none">
+        {#each walkPad as pad (pad.code)}
+          <button
+            type="button"
+            class="w-14 h-14 rounded-xl bg-black/70 text-white text-xl select-none {pad.place}"
+            aria-label={$t(pad.label)}
+            onpointerdown={e => { try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* a pointer the browser no longer tracks */ } walkthroughMotion.setKey(pad.code, true); wakeWalkthrough(); }}
+            onpointerup={() => { walkthroughMotion.setKey(pad.code, false); wakeWalkthrough(); }}
+            onpointercancel={() => { walkthroughMotion.setKey(pad.code, false); wakeWalkthrough(); }}
+            onlostpointercapture={() => { walkthroughMotion.setKey(pad.code, false); wakeWalkthrough(); }}
+            oncontextmenu={e => e.preventDefault()}
+          >{pad.arrow}</button>
+        {/each}
+      </div>
+      <button
+        type="button"
+        class="absolute bottom-4 right-4 z-10 min-h-11 px-5 rounded-xl bg-black/70 text-white text-base font-semibold"
+        onclick={() => exitWalkthroughMode()}
+      >{$t('adding.walkDone')}</button>
+    {/if}
+
     <!-- Help Text -->
-    <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+    <div class="absolute {$coarsePointer ? 'bottom-20' : 'bottom-4'} left-1/2 transform -translate-x-1/2 z-10">
       <div class="bg-black/70 text-white text-sm px-4 py-2 rounded-lg backdrop-blur-sm">
-        {$t('viewerNav.walkHelp')}
+        {$coarsePointer ? $t('adding.walkHelpTouch') : $t('viewerNav.walkHelp')}
       </div>
     </div>
   {/if}

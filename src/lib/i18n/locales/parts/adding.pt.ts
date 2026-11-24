@@ -1,1 +1,17 @@
-export const addingPt = {} as const;
+export const addingPt = {
+  "adding.nothingCalled": "Nada na lista se chama “{query}”.",
+  "undoAction.addBox": "Caixa adicionada",
+  "adding.addBox": "＋ Adicionar uma caixa",
+  "adding.addBoxHelp": "Uma caixa simples para nomear e dimensionar",
+  "adding.boxName": "Caixa",
+  "adding.boxNamed": "＋ Adicionar uma caixa simples chamada “{name}”",
+  "adding.houseFixed": "A casa está fixa, então não dá para adicionar paredes, portas, janelas ou cômodos. Para mudar a casa, toque em “Casa: fixa” na barra abaixo da planta.",
+  "adding.modelInUse": "Isto está na planta uma vez. Tire-o da planta primeiro e depois remova o modelo.",
+  "adding.modelInUseMany": "Isto está na planta {count} vezes. Tire-os da planta primeiro e depois remova o modelo.",
+  "adding.walkForward": "Andar para frente",
+  "adding.walkBack": "Andar para trás",
+  "adding.walkLeft": "Passo à esquerda",
+  "adding.walkRight": "Passo à direita",
+  "adding.walkDone": "Concluir",
+  "adding.walkHelpTouch": "Arraste para olhar em volta • Segure uma seta para andar • Concluir para sair",
+} as const;

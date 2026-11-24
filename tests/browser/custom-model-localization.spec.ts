@@ -31,8 +31,8 @@ test('Portuguese model controls retain user names and explain invalid sources an
   await expect(page.getByRole('heading', { name: /Propriedades de Mesa \{modelo\}/ })).toBeVisible();
   await expect.poll(() => page.evaluate(() => (window as any).__customModelCaption)).toBe('Mesa {modelo}');
   await panel.getByRole('button', { name: 'Remover modelo', exact: true }).click();
-  await page.getByRole('dialog', { name: 'Remover modelo', exact: true }).getByRole('button', { name: 'Remover modelo', exact: true }).click();
-  await expect(panel.getByRole('alert')).toHaveText('Remova os móveis que usam este modelo antes de remover sua definição.');
+  await expect(page.getByRole('dialog', { name: 'Remover modelo', exact: true })).toBeHidden();
+  await expect(panel.getByText('Isto está na planta uma vez. Tire-o da planta primeiro e depois remova o modelo.', { exact: true })).toBeVisible();
   await expect(panel.getByText('Mesa {modelo}', { exact: true })).toBeVisible();
   await testInfo.attach('custom-model-portuguese', { body: await page.screenshot(), contentType: 'image/png' });
   expect(external).toEqual([]); expect(errors).toEqual([]);

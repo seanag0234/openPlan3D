@@ -93,7 +93,7 @@ test('with site storage blocked the snap step, Settings, the Gemini key and cata
   await page.getByRole('button', { name: 'Objects', exact: true }).click();
   await page.getByRole('button', { name: 'Add Sofa to favorites', exact: true }).first().click();
   await expect(page.getByRole('button', { name: 'Remove Sofa from favorites', exact: true }).first()).toHaveAttribute('aria-pressed', 'true');
-  await page.getByRole('button', { name: /^Sofa(?: Sofa)?(?: 200×90cm)?$/ }).first().click();
+  await page.getByRole('button', { name: /^Sofa(?: Sofa)?(?: 6'7" × 2'11")?$/ }).first().click();
   await expect(page.getByRole('heading', { name: 'Recent', exact: true })).toBeVisible();
   check();
 });
