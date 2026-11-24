@@ -8,4 +8,5 @@ export const homePt = {
   "home.haveCancel": "Cancelar",
   "home.haveCancelHelp": "Nada muda.",
   "home.startPlan": "Abrir a planta inicial",
+  "home.openPlanFile": "Abrir um arquivo de planta",
 } as const;

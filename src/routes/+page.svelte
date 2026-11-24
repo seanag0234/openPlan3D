@@ -7,7 +7,8 @@
   import { goto } from '$app/navigation';
   import { base } from '$app/paths';
   import { localStore, storageErrorMessage, downloadLibraryBackup } from '$lib/services/datastore';
-  import { openPlanFile, openProject } from '$lib/services/projectOpening';
+  import { openPlanFile, openProject, readPlanFile } from '$lib/services/projectOpening';
+  import { LibraryBackupFileError } from '$lib/services/libraryRestore';
   import ImportError from '$lib/components/ImportError.svelte';
   import { createDefaultProject } from '$lib/stores/project';
   import WelcomeScreen from '$lib/components/WelcomeScreen.svelte';
@@ -86,6 +87,24 @@
     } catch (error) {
       if (report && !openingLifetime.signal.aborted) openError = error instanceof Error ? error.message : String(error);
       return false;
+    }
+  }
+
+  let planFileInput = $state<HTMLInputElement>();
+
+  /** Open a plan file: the same plan opens as it is, a changed one is asked about. */
+  async function onPlanFileChosen(event: Event) {
+    const input = event.currentTarget as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    openError = null;
+    try {
+      const project = await openPlanFile(() => readPlanFile(file), openingLifetime.signal);
+      if (project) goto(`${base}/editor?id=${encodeURIComponent(project.id)}`);
+    } catch (error) {
+      if (error instanceof LibraryBackupFileError) { openRestore(file); return; }
+      if (!openingLifetime.signal.aborted) openError = error instanceof Error ? error.message : String(error);
     }
   }
 
@@ -214,6 +233,14 @@
         <p class="text-sm text-white/50 mt-0.5">{loading ? $t('library.loading') : $t(projects.length === 1 ? 'library.countOne' : 'library.countMany', { count: projects.length })}</p>
       </div>
       <div class="flex flex-wrap items-center gap-3">
+        <input type="file" accept=".json,application/json" class="hidden" bind:this={planFileInput} onchange={onPlanFileChosen} />
+        <button
+          onclick={() => planFileInput?.click()}
+          class="px-4 py-2.5 bg-white/10 text-white rounded-lg hover:bg-white/20 font-medium text-sm transition-all flex items-center gap-2 border border-white/20"
+        >
+          <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          {$t('home.openPlanFile')}
+        </button>
         <button
           onclick={() => showTemplateModal = true}
           class="px-4 py-2.5 bg-white/10 text-white rounded-lg hover:bg-white/20 font-medium text-sm transition-all flex items-center gap-2 border border-white/20"

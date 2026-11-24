@@ -8,4 +8,5 @@ export const homeEn = {
   "home.haveCancel": "Cancel",
   "home.haveCancelHelp": "Nothing changes.",
   "home.startPlan": "Get the starting plan",
+  "home.openPlanFile": "Open a plan file",
 } as const;
