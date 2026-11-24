@@ -1,6 +1,8 @@
 import type { Point, FurnitureItem, Wall } from '$lib/models/types';
 import { snap, SNAP } from './canvasInteraction';
 
+const ONE_INCH = 2.54;
+
 /** What snapping is set to: the top-bar switch, the grid or fine step, the grid size in cm and the units. */
 export interface SnapContext { enabled: boolean; snapToGrid: boolean; gridSize: number; units: 'metric' | 'imperial' }
 
@@ -24,8 +26,8 @@ export function snapPieceMove(wanted: Point, start: Point, s: SnapContext): Poin
   return { x: start.x + round(wanted.x - start.x), y: start.y + round(wanted.y - start.y) };
 }
 
-/** Step a resize rounds to, in cm; undefined leaves it free. */
-export function resizeStep(s: SnapContext): number | undefined { return undefined; }
+/** A resize lands on whole inches in feet and inches while snapping is on; otherwise it is free, as before. */
+export function resizeStep(s: SnapContext): number | undefined { return s.enabled && s.units === 'imperial' ? ONE_INCH : undefined; }
 
 /** The nearest place to `wanted` the piece may stand, coming from `previous`. */
 export function stopAtWalls(wanted: Point, previous: Point, piece: FurnitureItem, walls: readonly Wall[]): Point { return wanted; }
