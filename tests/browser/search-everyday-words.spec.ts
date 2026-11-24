@@ -10,6 +10,7 @@ test('the Objects search finds things by everyday words, symbols included', asyn
   const search = page.getByRole('textbox', { name: 'Search furniture...', exact: true });
   const symbol = (name: string) => page.getByRole('button', { name, exact: true });
   await expect(symbol('Person')).toBeVisible();
+  await expect(symbol('Person')).toHaveAttribute('title', 'Person (55 cm) — click the plan to place, Shift-click to stamp several');
 
   await search.fill('couch');
   await expect(page.getByRole('button', { name: /^Sofa(?: Sofa)? 200×90cm$/ })).toBeVisible();

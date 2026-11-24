@@ -1006,7 +1006,7 @@ Press **?** in the editor to see this list on screen (**Copy All** copies it;
 | **D** | Door tool (last chosen type) |
 | **H** | Pan mode |
 | **M** | Measure tool |
-| **N** | Dimension (annotate) tool |
+| **N** | Dimension tool |
 | **T** | Text tool |
 | **S** | Switch the size of the steps: 25 cm grid or 10 cm (the steps button in the bottom bar) |
 | **G** | Toggle grid |
