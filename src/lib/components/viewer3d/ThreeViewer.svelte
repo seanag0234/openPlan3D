@@ -34,6 +34,7 @@
   import { framingContext, shouldFrameScene, type FramingContext } from '$lib/utils/sceneFraming';
   import { WalkthroughMotion } from '$lib/utils/walkthroughMotion';
   import { sizeText } from '$lib/utils/sizeText';
+  import { coarsePointer } from '$lib/stores/pointer';
   import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
   import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
   import { getCatalogItem, furnitureCatalog, furnitureCategories } from '$lib/utils/furnitureCatalog';
@@ -2214,12 +2215,15 @@
 
     // Three's lock() discards the browser's promise. Handle rejection here so
     // embedded/unsupported browsers can still use keyboard movement and look.
-    try {
-      Promise.resolve(renderer.domElement.requestPointerLock()).catch(() => {
-        if (walkthroughMode) walkthroughMouseUnavailable = true;
-      });
-    } catch {
-      walkthroughMouseUnavailable = true;
+    // A finger looks by dragging and has no mouse to lock.
+    if (!get(coarsePointer)) {
+      try {
+        Promise.resolve(renderer.domElement.requestPointerLock()).catch(() => {
+          if (walkthroughMode) walkthroughMouseUnavailable = true;
+        });
+      } catch {
+        walkthroughMouseUnavailable = true;
+      }
     }
     markSceneDirty();
   }
