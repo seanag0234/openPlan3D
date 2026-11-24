@@ -421,7 +421,7 @@
   <!-- Back to Projects -->
   <a
     href={base || '/'}
-    class="flex items-center gap-1 text-white/70 hover:text-white text-sm transition-colors {stacked}"
+    class="flex items-center gap-1 text-white/70 hover:text-white text-sm transition-colors {stacked} {$coarsePointer ? 'min-w-[44px] min-h-[44px]' : ''}"
     title={$t('projectToolbar.back')}
   >
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
@@ -447,7 +447,7 @@
     />
   {:else}
     <button
-      class="font-semibold text-white text-sm hover:bg-white/10 px-2 py-0.5 rounded transition-colors max-w-[12rem] min-w-0 truncate max-xl:max-w-[8rem]"
+      class="font-semibold text-white text-sm hover:bg-white/10 px-2 py-0.5 rounded transition-colors max-w-[12rem] min-w-0 truncate max-xl:max-w-[8rem] {$coarsePointer ? 'max-sm:max-w-[5rem]' : ''}"
       onclick={() => editingName = true}
       title={$t('projectToolbar.rename')}
     >{projectName}</button>
@@ -527,11 +527,11 @@
   <!-- Never disabled: pressing either with nothing left is harmless; they only look switched off. -->
   <button onclick={undo} aria-disabled={$undoHistoryStore.entries.length === 0} class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors {stacked} {$undoHistoryStore.entries.length === 0 ? 'opacity-40' : ''}" title={$t('projectToolbar.undoHint')} aria-label={$t('projectToolbar.undo')}>
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-    {#if $coarsePointer}<span aria-hidden="true" class="block text-[10px] leading-none">{$t('projectToolbar.undo')}</span>{/if}
+    {#if $coarsePointer}<span aria-hidden="true" class="block text-[10px] leading-none max-sm:hidden">{$t('projectToolbar.undo')}</span>{/if}
   </button>
   <button onclick={redo} aria-disabled={$undoHistoryStore.redoCount === 0} class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors {stacked} {$undoHistoryStore.redoCount === 0 ? 'opacity-40' : ''}" title={$t('projectToolbar.redoHint')} aria-label={$t('projectToolbar.redo')}>
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10"/></svg>
-    {#if $coarsePointer}<span aria-hidden="true" class="block text-[10px] leading-none">{$t('projectToolbar.redo')}</span>{/if}
+    {#if $coarsePointer}<span aria-hidden="true" class="block text-[10px] leading-none max-sm:hidden">{$t('projectToolbar.redo')}</span>{/if}
   </button>
 
   <div class="h-5 w-px bg-white/20 max-2xl:hidden"></div>
@@ -668,6 +668,10 @@
     </button>
     {#if moreOpen}
       <div data-popup="menu" class="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 w-56 z-50 max-h-[70vh] overflow-y-auto">
+        {#if $coarsePointer}
+          <!-- On a phone held in the hand Feedback leaves the bar for here. -->
+          <button class="sm:hidden w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={() => { feedbackOpen.set(true); moreOpen = false; }}>{$t('bars.feedback')}</button>
+        {/if}
         <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={onImportJSON}>{$t('bars.openPlanFile')}</button>
         <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={sendPlan}>{$t('bars.sendPlan')}</button>
         <div class="h-px bg-gray-100 my-1"></div>
@@ -744,7 +748,7 @@
   <button
     onclick={() => feedbackOpen.set(true)}
     data-feedback-open={$feedbackOpen}
-    class="px-2 py-1.5 text-sm text-white/90 hover:text-white hover:bg-white/10 rounded transition-colors {$coarsePointer ? stacked : 'flex items-center gap-1.5'}"
+    class="px-2 py-1.5 text-sm text-white/90 hover:text-white hover:bg-white/10 rounded transition-colors {$coarsePointer ? `${stacked} max-sm:hidden` : 'flex items-center gap-1.5'}"
     title={$t('bars.feedback')}
     aria-label={$t('bars.feedback')}
   >
