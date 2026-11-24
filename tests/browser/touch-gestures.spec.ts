@@ -214,7 +214,7 @@ test('a tap on the locked Reading corner label selects it and changes nothing', 
   await expect(details).toHaveCount(1);
   await details.tap();
   await expect(page.getByRole('heading', { name: /Text label/ })).toBeVisible();
-  await expect(page.getByRole('heading', { name: /Room Properties/ })).toBeHidden();
+  await expect(page.getByRole('heading', { name: /Room details/ })).toBeHidden();
   // No text box opens over the plan.
   await expect(page.locator('input.absolute')).toHaveCount(0);
   expect((await savedPlan(page)).floors).toEqual(before.floors);

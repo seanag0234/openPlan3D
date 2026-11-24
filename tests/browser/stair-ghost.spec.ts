@@ -43,7 +43,7 @@ for (const width of [1440,390]) {
     const tip = page.getByRole('button', { name: 'Got it',exact: true });
     await expect(tip).toBeHidden({ timeout: 15_000 });
     await page.mouse.click(painted[0].x,painted[0].y);
-    await expect(page.getByText('Stair Properties', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('Stair details', { exact: true })).toHaveCount(0);
     await testInfo.attach(`stair-ghost-${width}`, { body: await page.screenshot(),contentType: 'image/png' });
     await page.getByTitle('Show and hide', { exact: true }).press('Enter');
     await page.getByRole('checkbox', { name: 'Floor Below (Ground Floor)',exact: true }).uncheck();

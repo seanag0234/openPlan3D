@@ -22,7 +22,7 @@ for (const width of [1440, 390]) for (const kind of ['door', 'window'] as const)
   const canvas = page.getByLabel(/^(?:Floor plan editor canvas|Área de edição da planta baixa)$/, { exact: true });
   await canvas.focus();
   await canvas.press('Shift+F10');
-  const properties = page.getByRole('menuitem', { name: '⚙️ Propriedades', exact: true });
+  const properties = page.getByRole('menuitem', { name: '⚙️ Detalhes', exact: true });
   await expect(properties).toBeFocused();
   await properties.press('Enter');
   await expect(page.getByRole('menu')).toHaveCount(0);

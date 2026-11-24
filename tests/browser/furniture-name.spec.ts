@@ -37,7 +37,7 @@ test('a piece takes a name that shows as its caption, Layers row, heading and in
   await page.getByRole('button', { name: /Sofa$/ }).click();
   const field = page.getByLabel('Name', { exact: true });
   await field.fill(name);
-  await expect(page.getByRole('heading', { name: new RegExp(`${name} Properties`) })).toBeVisible();
+  await expect(page.getByRole('heading', { name: new RegExp(`${name}: details`) })).toBeVisible();
   await expect(page.getByRole('button', { name: new RegExp(`${name}$`) })).toBeVisible();
   await expect.poll(() => page.evaluate(n => ((window as any).__captions ?? []).includes(n), name)).toBe(true);
 
