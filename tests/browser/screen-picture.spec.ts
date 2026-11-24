@@ -26,6 +26,6 @@ test('in 3D the Export menu has no Picture of the screen', async ({ page }) => {
   await openPlan(page, FIXTURE);
   await page.getByRole('button', { name: '3D', exact: true }).click();
   await page.getByRole('button', { name: 'Export', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Export 2D as PNG', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Save the plan as a picture (PNG)', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Picture of the screen', exact: true })).toHaveCount(0);
 });
