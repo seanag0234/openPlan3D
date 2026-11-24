@@ -678,8 +678,27 @@
     return tex;
   }
 
+  /** The finger looking round the walk-through, and where it was last. */
+  let lookFinger: { id: number; x: number; y: number } | null = null;
+  function onLookDown(e: PointerEvent) {
+    if (!walkthroughMode || e.pointerType !== 'touch' || lookFinger) return;
+    lookFinger = { id: e.pointerId, x: e.clientX, y: e.clientY };
+  }
+  function onLookMove(e: PointerEvent) {
+    if (!lookFinger || e.pointerId !== lookFinger.id) return;
+    if (!walkthroughMode) { lookFinger = null; return; }
+    walkthroughMotion.look(e.clientX - lookFinger.x, e.clientY - lookFinger.y, camera);
+    lookFinger = { id: e.pointerId, x: e.clientX, y: e.clientY };
+    markSceneDirty();
+    requestRender();
+  }
+  function onLookEnd(e: PointerEvent) {
+    if (lookFinger && e.pointerId === lookFinger.id) lookFinger = null;
+  }
+
   function exitWalkthroughMode() {
     walkthroughMode = false;
+    lookFinger = null;
     controls.enabled = true;
     walkthroughMotion.reset();
     markSceneDirty();
@@ -850,6 +869,12 @@
     controls.minDistance = 1;
     // Mark dirty when orbit controls move the camera
     controls.addEventListener('change', markSceneDirty);
+
+    // In the walk-through a finger dragged across the view looks round.
+    renderer.domElement.addEventListener('pointerdown', onLookDown);
+    renderer.domElement.addEventListener('pointermove', onLookMove);
+    renderer.domElement.addEventListener('pointerup', onLookEnd);
+    renderer.domElement.addEventListener('pointercancel', onLookEnd);
 
     // Click-to-select walls via raycasting
     let pointerDownPos = { x: 0, y: 0 };
@@ -2344,6 +2369,10 @@
       controls.dispose();
       renderer.domElement.removeEventListener('webglcontextlost', onContextLost);
       renderer.domElement.removeEventListener('webglcontextrestored', markSceneDirty);
+      renderer.domElement.removeEventListener('pointerdown', onLookDown);
+      renderer.domElement.removeEventListener('pointermove', onLookMove);
+      renderer.domElement.removeEventListener('pointerup', onLookEnd);
+      renderer.domElement.removeEventListener('pointercancel', onLookEnd);
       releaseRenderer(renderer);
     };
   });
