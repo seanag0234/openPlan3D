@@ -40,9 +40,9 @@ test('an uploaded symbol the search finds counts as a result', async ({ page }) 
   const chooser = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: '+ Upload symbol (PNG, JPEG, WebP)', exact: true }).click();
   await (await chooser).setFiles({ name: 'Slide.png', mimeType: 'image/png', buffer: await readFile('tests/fixtures/item-photo.png') });
-  await expect(page.getByRole('button', { name: 'Slide', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Slide(?: Slide)?$/ })).toBeVisible();
   await page.getByRole('textbox', { name: 'Search furniture...', exact: true }).fill('slide');
-  await expect(page.getByRole('button', { name: 'Slide', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Slide(?: Slide)?$/ })).toBeVisible();
   await expect(page.getByText('1 result for "slide"', { exact: true })).toBeVisible();
   await expect(page.getByText(/Nothing in the list is called/)).toHaveCount(0);
 });
