@@ -129,6 +129,15 @@ export interface FurnitureResizeResult {
   scale: { x: number; y: number };
 }
 
+/** Where a resize handle's own point is on the plan: the piece's corner or the middle of its edge, turned with it. */
+export function resizeHandlePoint(position: Point, rotation: number, width: number, depth: number, handle: Exclude<HandleType, 'rotate'>): Point {
+  const side = handle.slice('resize-'.length);
+  const lx = side.includes('l') ? -width / 2 : side.includes('r') ? width / 2 : 0;
+  const ly = side.includes('t') ? -depth / 2 : side.includes('b') ? depth / 2 : 0;
+  const a = (rotation * Math.PI) / 180;
+  return { x: position.x + lx * Math.cos(a) - ly * Math.sin(a), y: position.y + lx * Math.sin(a) + ly * Math.cos(a) };
+}
+
 /**
  * Resize a furniture rectangle from a handle while keeping the opposite edge
  * or corner fixed. All geometry is calculated in the item's local coordinates,

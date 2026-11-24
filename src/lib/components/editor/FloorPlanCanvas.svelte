@@ -37,7 +37,7 @@
   import { projectSettings, formatLength, formatArea, DEFAULT_SETTINGS } from '$lib/stores/settings';
   import type { ProjectSettings } from '$lib/stores/settings';
   import { snapStatus } from '$lib/utils/snapStep';
-  import { angleSnapWithin, cameraAfterResize, resizeFurnitureFromHandle, type CanvasState } from '$lib/utils/canvasInteraction';
+  import { angleSnapWithin, cameraAfterResize, resizeFurnitureFromHandle, resizeHandlePoint, type CanvasState } from '$lib/utils/canvasInteraction';
   import { beginCaptions, drawCaptions } from '$lib/utils/captionPlan';
   import { fitIds } from '$lib/utils/fitBounds';
   import { drawNoteMarks, noteMarkAt } from '$lib/utils/noteMarks';
@@ -286,6 +286,7 @@
   let handleOrigScale: { x: number; y: number } = { x: 1, y: 1 };
   let handleOrigRotation: number = 0;
   let handleOrigPosition: Point = { x: 0, y: 0 };
+  let handleGrabOffset: Point = { x: 0, y: 0 };
   let handleOrigBaseSize: { width: number; depth: number } = { width: 50, depth: 50 };
 
   // Wall parallel drag state (drag midpoint to move wall parallel)
@@ -2698,6 +2699,9 @@
           const scaleY = Math.abs(handleOrigScale.y) || 1;
           const size = getFurnitureSize(fi);
           handleOrigBaseSize = { width: size.width / scaleX, depth: size.depth / scaleY };
+          // Under a finger the handle answers well outside the corner: keep how far off the press was, so the corner does not jump to it.
+          const grabbed = handle !== 'rotate' && currentCoarse ? resizeHandlePoint(fi.position, fi.rotation, size.width, size.depth, handle) : null;
+          handleGrabOffset = grabbed ? { x: wp.x - grabbed.x, y: wp.y - grabbed.y } : { x: 0, y: 0 };
           return;
         }
       }
@@ -3127,7 +3131,7 @@
             depth: handleOrigBaseSize.depth,
             scale: handleOrigScale,
             handle: draggingHandle,
-            pointer: mousePos,
+            pointer: { x: mousePos.x - handleGrabOffset.x, y: mousePos.y - handleGrabOffset.y },
             preserveAspectRatio: shiftDown,
             sizeStep: resizeStep(snapContext()),
           });
