@@ -23,13 +23,13 @@ for (const locale of ['en', 'pt'] as const) test(`${locale}: empty-floor PNG, SV
     ['Exportar 2D como PNG', 'Não foi possível exportar o PNG 2D', 'PNG'],
     ['Exportar como SVG', 'Não foi possível exportar o SVG', 'SVG'],
     ['Exportar como DXF', 'Não foi possível exportar o DXF', 'DXF'],
-    ['Exportar como DWG', 'Não foi possível exportar o DWG', 'DWG'],
+    ['Exportar para o AutoCAD (DWG)', 'Não foi possível exportar o DWG', 'DWG'],
     ['Exportar como PDF', 'Não foi possível exportar o PDF', 'PDF'],
   ] : [
     ['Export 2D as PNG', "Couldn't export 2D PNG", 'PNG'],
     ['Export as SVG', "Couldn't export SVG", 'SVG'],
     ['Export as DXF', "Couldn't export DXF", 'DXF'],
-    ['Export as DWG', "Couldn't export DWG", 'DWG'],
+    ['Export for AutoCAD (DWG)', "Couldn't export DWG", 'DWG'],
     ['Export as PDF', "Couldn't export PDF", 'PDF'],
   ];
   for (const [item, title, format] of menuItems) {

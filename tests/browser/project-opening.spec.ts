@@ -130,7 +130,7 @@ test('sidebar RoomPlan import and toolbar New Project preserve pending predecess
   const check = observe(page), source = await seed(page);
   await rename(page, 'Before RoomPlan import');
   const pending = page.waitForEvent('filechooser');
-  await page.getByRole('button', { name: /Import RoomPlan iOS LiDAR scan/ }).click();
+  await page.getByRole('button', { name: /Add an iPhone room scan iOS LiDAR scan/ }).click();
   await (await pending).setFiles(resolve('tests/fixtures/handoff-roomplan.json'));
   await page.getByRole('button', { name: 'Import', exact: true }).click();
   await expect(page.getByRole('combobox', { name: 'Current floor' }).locator('option')).toHaveText(['Entry', 'Loft', 'Future Floor']);

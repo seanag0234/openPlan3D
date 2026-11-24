@@ -8,9 +8,9 @@ type Point = { x: number; y: number };
 
 async function addScanToPlan(page: Page) {
   const chooser = page.waitForEvent('filechooser');
-  await page.getByRole('button', { name: /Import RoomPlan iOS LiDAR scan/ }).click();
+  await page.getByRole('button', { name: /Add an iPhone room scan iOS LiDAR scan/ }).click();
   await (await chooser).setFiles(fixturePath);
-  const dialog = page.getByRole('dialog', { name: 'Import RoomPlan', exact: true });
+  const dialog = page.getByRole('dialog', { name: 'Add an iPhone room scan', exact: true });
   await dialog.getByRole('radio', { name: /Add to this plan/ }).check();
   await dialog.getByRole('button', { name: 'Import', exact: true }).click();
   await expect(dialog).toHaveCount(0);

@@ -8,9 +8,9 @@ const samplePath = resolve('test-roomplan.json');
 
 async function importSample(page: Page, target: string) {
   const chooser = page.waitForEvent('filechooser');
-  await page.getByRole('button', { name: /Import RoomPlan iOS LiDAR scan/ }).click();
+  await page.getByRole('button', { name: /Add an iPhone room scan iOS LiDAR scan/ }).click();
   await (await chooser).setFiles(samplePath);
-  const dialog = page.getByRole('dialog', { name: 'Import RoomPlan', exact: true });
+  const dialog = page.getByRole('dialog', { name: 'Add an iPhone room scan', exact: true });
   await dialog.getByRole('radio', { name: target }).check();
   await dialog.getByRole('button', { name: 'Import', exact: true }).click();
   await expect(dialog).toHaveCount(0);

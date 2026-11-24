@@ -66,12 +66,12 @@ for (const width of [1440, 390]) test(`Portuguese layers preserve visibility, se
     await page.getByRole('button', { name: 'Mais ações', exact: true }).click();
     await page.getByRole('button', { name: 'Camadas', exact: true }).click();
   } else {
-    const layers = page.getByRole('button', { name: 'Alternar painel de camadas', exact: true });
+    const layers = page.getByRole('button', { name: 'Mostrar ou ocultar a lista de tudo na planta', exact: true });
     await expect(layers).toHaveAttribute('aria-expanded', 'false');
     await layers.click();
     await expect(layers).toHaveAttribute('aria-expanded', 'true');
   }
-  await expect(page.locator('div').filter({ hasText: /^🗂 Camadas$/ })).toBeVisible();
+  await expect(page.locator('div').filter({ hasText: /^🗂 Tudo na planta$/ })).toBeVisible();
   const hide = page.getByTitle('Ocultar Paredes', { exact: true });
   await hide.focus();
   await page.keyboard.press('Space');
@@ -80,7 +80,7 @@ for (const width of [1440, 390]) test(`Portuguese layers preserve visibility, se
   await wall.click();
   await expect(hide).toBeVisible();
   await expect(wall).toHaveClass(/bg-blue-100/);
-  const note = page.getByRole('button', { name: 'T Nota 1 (Original {number} note)', exact: true });
+  const note = page.getByRole('button', { name: 'T Rótulo 1 (Original {number} note)', exact: true });
   await note.click();
   await expect(note).toHaveClass(/bg-blue-100/);
   const after = await exported();

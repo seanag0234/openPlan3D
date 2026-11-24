@@ -35,7 +35,7 @@ function contents(project: Project) {
   }));
 }
 
-describe('Restore library backup', () => {
+describe('Bring back a backup of all plans', () => {
   it('restores one project saved with Download JSON instead of calling it a damaged library', async () => {
     const preview = prepareLibraryRestore(projectFile, 'Our house - shell(1).json');
     expect(preview.projectCount).toBe(1);
@@ -141,7 +141,7 @@ describe('Import JSON and Import a Plan', () => {
   });
 });
 
-describe('Import project package', () => {
+describe('Open a plan with its pictures', () => {
   it.each([
     ['a project saved with Download JSON', projectFile],
     ['a library backup', libraryFile],

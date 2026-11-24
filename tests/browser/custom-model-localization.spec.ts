@@ -18,7 +18,7 @@ test('Portuguese model controls retain user names and explain invalid sources an
   await page.getByRole('button', { name: 'Objetos', exact: true }).click();
   const panel = page.getByRole('region', { name: 'Meus modelos 3D', exact: true });
   await panel.locator('input[type=file]').setInputFiles('tests/fixtures/local-model-textured-box.glb');
-  const dialog = page.getByRole('dialog', { name: 'Importar modelo GLB', exact: true });
+  const dialog = page.getByRole('dialog', { name: 'Adicionar um modelo 3D (arquivo GLB)', exact: true });
   await expect(dialog.locator('canvas')).toBeVisible();
   await dialog.getByRole('textbox', { name: 'Nome do modelo', exact: true }).fill('Mesa {modelo}');
   await dialog.getByRole('textbox', { name: 'URL de origem (opcional)', exact: true }).fill('file:///model.glb');
@@ -51,7 +51,7 @@ test('Portuguese GLB diagnostics preserve extension identifiers and explain inva
   await page.goto('/editor');
   await page.getByRole('button', { name: 'Objetos', exact: true }).click();
   const input = page.getByRole('region', { name: 'Meus modelos 3D', exact: true }).locator('input[type=file]');
-  const dialog = page.getByRole('dialog', { name: 'Importar modelo GLB', exact: true });
+  const dialog = page.getByRole('dialog', { name: 'Adicionar um modelo 3D (arquivo GLB)', exact: true });
   await input.setInputFiles({ name: 'extension.glb', mimeType: 'model/gltf-binary', buffer: glb({ asset: { version: '2.0' }, extensionsUsed: ['CUSTOM_{name}'] }) });
   await expect(dialog.getByRole('alert')).toHaveText('Extensão GLB não suportada: a importação local de modelos ainda não aceita CUSTOM_{name}.');
   await expect(dialog.locator('canvas')).toHaveCount(0);

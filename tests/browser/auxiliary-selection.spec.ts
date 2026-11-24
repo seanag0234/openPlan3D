@@ -1,6 +1,6 @@
 import {expect,test} from '@playwright/test';
 import {readFile} from 'node:fs/promises';
-for(const [key,label] of [['guides','horizontal guide 1'],['measurements','Measurement 1'],['annotations','Annotation 1'],['textAnnotations','Note 1 (Off-screen note)']]) {
+for(const [key,label] of [['guides','horizontal guide 1'],['measurements','Measurement 1'],['annotations','Dimension line 1'],['textAnnotations','Label 1 (Off-screen note)']]) {
   test(`${key} selection clears on Escape and deletes only its target`,async({page})=>{
     test.setTimeout(90_000);await page.setViewportSize({width:390,height:900});
     await page.addInitScript(()=>localStorage.setItem('o3d_tips_seen',JSON.stringify(['first-wall','first-furniture','first-3d','first-export','first-door'])));

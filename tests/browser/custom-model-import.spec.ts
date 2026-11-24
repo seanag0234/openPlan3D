@@ -13,7 +13,7 @@ test('imports, previews, places and retains a local custom model through undo an
   const panel = page.getByRole('region', { name: 'My 3D models', exact: true });
   const input = panel.locator('input[type=file]');
   await input.setInputFiles('tests/fixtures/local-model-textured-box.glb');
-  const dialog = page.getByRole('dialog', { name: 'Import GLB model', exact: true });
+  const dialog = page.getByRole('dialog', { name: 'Add a 3D model (GLB file)', exact: true });
   // Includes lazy loader/component loading and bounded texture preparation.
   await expect(dialog.locator('canvas')).toBeVisible({ timeout: 60_000 });
   await expect(dialog.getByText('Width 100.0 × depth 75.0 × height 50.0 cm')).toBeVisible();

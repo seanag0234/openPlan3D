@@ -11,8 +11,8 @@ test('Portuguese package rejection leaves saved records unchanged and allows ano
   await page.goto('/');
   await expect(page.getByText('Nenhum projeto ainda', { exact: true })).toBeVisible();
   const before = await storedRecords(page);
-  await page.getByRole('button', { name: 'Importar pacote de projeto', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Importar pacote de projeto', exact: true });
+  await page.getByRole('button', { name: 'Abrir uma planta com as imagens', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Abrir uma planta com as imagens', exact: true });
   const missingAttachment = readPackageZip(await readFile('tests/fixtures/native-project-package.zip'));
   delete missingAttachment['assets/chair.png'];
   const invalidGeometry = readPackageZip(await readFile('tests/fixtures/native-project-package.zip'));
@@ -70,8 +70,8 @@ test('Portuguese recovery preview explains damage and preserves the backup', asy
   await page.goto('/');
   await expect(page.getByText('Nenhum projeto ainda', { exact: true })).toBeVisible();
   const before = await storedRecords(page);
-  await page.getByRole('button', { name: 'Restaurar backup da biblioteca', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Restaurar backup da biblioteca', exact: true });
+  await page.getByRole('button', { name: 'Recuperar um backup de todas as plantas', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Recuperar um backup de todas as plantas', exact: true });
   const chooser = page.waitForEvent('filechooser');
   await dialog.getByRole('button', { name: 'Escolher arquivo de backup', exact: true }).click();
   await (await chooser).setFiles({ name: 'mixed.json', mimeType: 'application/json', buffer: Buffer.from(raw) });
@@ -112,8 +112,8 @@ test('Portuguese backup rejection preserves each original file and saved records
   await expect(page.getByText('Nenhum projeto ainda', { exact: true })).toBeVisible();
   const before = await storedRecords(page);
   const history = await storedRecords(page, 'history');
-  await page.getByRole('button', { name: 'Restaurar backup da biblioteca', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Restaurar backup da biblioteca', exact: true });
+  await page.getByRole('button', { name: 'Recuperar um backup de todas as plantas', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Recuperar um backup de todas as plantas', exact: true });
   for (const [raw, message] of [
     ['{broken', 'Este backup não contém JSON legível.'],
     ['{"format":"openplan3d-library","version":2}', 'Esta versão do backup da biblioteca não é compatível.'],
@@ -133,8 +133,8 @@ test('Portuguese backup rejection preserves each original file and saved records
 });
 
 for (const flow of [
-  { title: 'Restaurar backup da biblioteca', choose: 'Escolher arquivo de backup', original: 'Baixar backup original', confirm: 'Restaurar como cópias', success: '1 projeto restaurado.', file: 'tests/fixtures/library-backup.json', preview: '1 projeto pronto para restaurar' },
-  { title: 'Importar pacote de projeto', choose: 'Escolher pacote de projeto', original: 'Baixar pacote original', confirm: 'Importar como cópia', success: 'Projeto importado.', file: 'tests/fixtures/native-project-package.zip', preview: 'arquivos anexos' },
+  { title: 'Recuperar um backup de todas as plantas', choose: 'Escolher arquivo de backup', original: 'Baixar backup original', confirm: 'Restaurar como cópias', success: '1 projeto restaurado.', file: 'tests/fixtures/library-backup.json', preview: '1 projeto pronto para restaurar' },
+  { title: 'Abrir uma planta com as imagens', choose: 'Escolher pacote de projeto', original: 'Baixar pacote original', confirm: 'Importar como cópia', success: 'Projeto importado.', file: 'tests/fixtures/native-project-package.zip', preview: 'arquivos anexos' },
 ]) {
   test(`Portuguese transfer preserves original bytes and requires confirmation: ${flow.title}`, async ({ page }) => {
     await page.addInitScript(() => {

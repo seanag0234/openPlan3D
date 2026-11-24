@@ -31,7 +31,7 @@ test('full 3D viewer shares model decoding and releases images when leaving the 
   await page.getByRole('button', { name: 'Objects', exact: true }).click();
   const panel = page.getByRole('region', { name: 'My 3D models', exact: true });
   await panel.locator('input[type=file]').setInputFiles('tests/fixtures/local-model-textured-box.glb');
-  const dialog = page.getByRole('dialog', { name: 'Import GLB model', exact: true });
+  const dialog = page.getByRole('dialog', { name: 'Add a 3D model (GLB file)', exact: true });
   await expect(dialog.locator('canvas')).toBeVisible();
   await dialog.getByRole('button', { name: 'Add to project', exact: true }).click();
   await expect(dialog).toBeHidden();

@@ -6,7 +6,7 @@
   import type { ProjectSettings } from '$lib/stores/settings';
   import { currentProject, updateProjectDescription, updateProjectName } from '$lib/stores/project';
   import type { Project } from '$lib/models/types';
-  import { themePreference, type ThemePreference } from '$lib/stores/theme';
+  import { themePreference, lessMotion, COMFORT_LOOKS, type ThemePreference } from '$lib/stores/theme';
   import { getGeminiKey, setGeminiKey } from '$lib/stores/aiKeys';
   import OpenAISettings from '$lib/components/ai/OpenAISettings.svelte';
   import FloorElevations from './FloorElevations.svelte';
@@ -57,6 +57,9 @@
     geminiKeySaved = true;
     setTimeout(() => { geminiKeySaved = false; }, 2000);
   }
+
+  /** The on/off switch look the Dimensions tab uses. */
+  const SWITCH = "w-10 h-5 rounded-full appearance-none cursor-pointer bg-gray-300 checked:bg-slate-700 relative transition-colors before:content-[''] before:absolute before:w-4 before:h-4 before:rounded-full before:bg-white before:top-0.5 before:left-0.5 before:transition-transform checked:before:translate-x-5";
 
   let currentTheme = $state<ThemePreference>('system');
   onDestroy(themePreference.subscribe((t) => { currentTheme = t; }));
@@ -283,6 +286,7 @@
                 {#each [['light', '☀️', $t('settings.themeLight')], ['dark', '🌙', $t('settings.themeDark')], ['system', '💻', $t('settings.themeSystem')]] as [value, icon, label]}
                   <button
                     class="flex-1 flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all {currentTheme === value ? 'border-slate-600 bg-slate-50 dark:border-slate-400 dark:bg-slate-700' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+                    aria-pressed={currentTheme === value}
                     onclick={() => themePreference.set(value as ThemePreference)}
                   >
                     <span class="text-2xl">{icon}</span>
@@ -290,6 +294,30 @@
                   </button>
                 {/each}
               </div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300 block mt-5 mb-1">{$t('words.comfortTitle')}</span>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">{$t('words.comfortHelp')}</p>
+              <div class="grid grid-cols-2 gap-3">
+                {#each COMFORT_LOOKS as look}
+                  <!-- Named by the look alone, so "Light" and "Dark" still name one button each; the help describes it. -->
+                  <button
+                    class="min-h-11 p-3 text-left rounded-xl border-2 transition-all {currentTheme === look ? 'border-slate-600 bg-slate-50 dark:border-slate-400 dark:bg-slate-700' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+                    aria-pressed={currentTheme === look}
+                    aria-label={$t(`words.look.${look}`)}
+                    aria-describedby="comfort-look-{look}-help"
+                    onclick={() => themePreference.set(look)}
+                  >
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300 block">{$t(`words.look.${look}`)}</span>
+                    <span id="comfort-look-{look}-help" class="text-xs text-gray-500 dark:text-gray-400 block">{$t(`words.look.${look}.help`)}</span>
+                  </button>
+                {/each}
+              </div>
+              <label class="flex items-center justify-between gap-3 mt-5 min-h-11 cursor-pointer">
+                <span>
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300 block">{$t('words.lessMotion')}</span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400 block">{$t('words.lessMotionHelp')}</span>
+                </span>
+                <input type="checkbox" checked={$lessMotion} onchange={(e) => lessMotion.set(e.currentTarget.checked)} class="{SWITCH} shrink-0" />
+              </label>
             </div>
           </div>
         {:else if activeTab === 'ai'}

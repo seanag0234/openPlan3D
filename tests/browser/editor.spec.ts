@@ -46,7 +46,7 @@ test('import, numeric edit, undo/redo, save/reload and export preserve a multi-f
   await page.getByTitle('Click to rename', { exact: true }).click();
   await page.getByRole('textbox', { name: 'Project name' }).fill('Browser regression home');
   await page.getByRole('textbox', { name: 'Project name' }).press('Enter');
-  await page.getByRole('button', { name: 'Toggle Layers Panel', exact: true }).click();
+  await page.getByRole('button', { name: 'Show or hide the list of everything on the plan', exact: true }).click();
   await page.getByRole('button', { name: /Wall 1$/ }).click();
   const thickness = page.getByRole('spinbutton', { name: 'Thickness (cm)', exact: true });
   await expect(thickness).toHaveValue('27.5');
@@ -83,7 +83,7 @@ test('import, numeric edit, undo/redo, save/reload and export preserve a multi-f
 
   // Retry via the other import entry point; prepared iPhone geometry must not be straightened.
   const chooser = page.waitForEvent('filechooser');
-  await page.getByRole('button', { name: /Import RoomPlan iOS LiDAR scan/ }).click();
+  await page.getByRole('button', { name: /Add an iPhone room scan iOS LiDAR scan/ }).click();
   await (await chooser).setFiles(fixture);
   await expect(page.getByRole('checkbox', { name: /Straighten/ })).not.toBeChecked();
   await expect(page.getByRole('checkbox', { name: /orthogonal/i })).not.toBeChecked();
@@ -200,7 +200,7 @@ test('sloped walls preserve heights and openings through edits, reversal, elevat
   await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeVisible();
   await importJSON(page, resolve('tests/fixtures/sloped-walls.openplan.json'));
   await expect(page.getByRole('application')).toContainText('4 walls');
-  await page.getByRole('button', { name: 'Toggle Layers Panel', exact: true }).click();
+  await page.getByRole('button', { name: 'Show or hide the list of everything on the plan', exact: true }).click();
   await page.getByRole('button', { name: /Wall 1$/ }).click();
   const start = page.getByRole('spinbutton', { name: 'Start Height (cm)', exact: true });
   const end = page.getByRole('spinbutton', { name: 'End Height (cm)', exact: true });

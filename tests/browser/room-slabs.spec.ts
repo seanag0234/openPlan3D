@@ -159,7 +159,7 @@ test('nested rooms export one slab at each point on active and stacked floors', 
   expect(svg).toContain('fill-rule="evenodd"');
   await page.getByRole('button',{name:'Export',exact:true}).click();
   const packageFile=page.waitForEvent('download');
-  await page.getByRole('button',{name:'Download project package',exact:true}).click();
+  await page.getByRole('button',{name:'Download the plan with its pictures',exact:true}).click();
   const files=readPackageZip(new Uint8Array(await readFile((await (await packageFile).path())!)));
   const native=packageJSON(files['plan.json']);
   const nativeOpening=native.rooms.find((r:any)=>r.name==='Nested room 2' && r.level===0);

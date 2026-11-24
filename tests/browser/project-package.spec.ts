@@ -19,7 +19,7 @@ function observe(page: Page) {
 async function packageDownload(page: Page) {
   await page.getByRole('button', { name: 'Export', exact: true }).click();
   const pending = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Download project package', exact: true }).click();
+  await page.getByRole('button', { name: 'Download the plan with its pictures', exact: true }).click();
   const path = (await (await pending).path())!;
   return readPackageZip(new Uint8Array(await readFile(path)));
 }
@@ -41,7 +41,7 @@ for (const width of [1440, 390]) test(`furniture category previews and original 
     await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
   }
   await page.getByRole('button', { name: '📦 Unrecognized item', exact: true }).click();
-  await expect(page.getByText('Original category: future-appliance. Shown as a neutral box.', { exact: true })).toBeVisible();
+  await expect(page.getByText('Original category: future-appliance. Shown as a plain box.', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: '🛏️ Queen Bed', exact: true }).click();
   const field = page.getByRole('spinbutton', { name: 'Width (cm)', exact: true });
   await expect(field).toHaveValue('160.125');
@@ -81,7 +81,7 @@ for (const width of [1440, 390]) test(`native package preview/import/edit/reload
   const check = observe(page);
   await page.goto('/');
   await page.getByRole('button', { name: 'Import a project package', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Import project package', exact: true });
+  const dialog = page.getByRole('dialog', { name: 'Open a plan with its pictures', exact: true });
   const before = await storedRecords(page);
   await choose(page);
   await expect(dialog).toContainText('QA Project Package');
@@ -135,11 +135,11 @@ test('package cancellation, invalid file and quota retry preserve the existing l
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await page.getByRole('link', { name: 'Projects', exact: true }).click();
   const before = await storedRecords(page);
-  await page.getByRole('button', { name: 'Import project package', exact: true }).click();
+  await page.getByRole('button', { name: 'Open a plan with its pictures', exact: true }).click();
   await choose(page); await expect(page.getByRole('dialog')).toContainText('QA Project Package');
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
   expect(await storedRecords(page)).toEqual(before);
-  await page.getByRole('button', { name: 'Import project package', exact: true }).click();
+  await page.getByRole('button', { name: 'Open a plan with its pictures', exact: true }).click();
   await choose(page, resolve('tests/fixtures/library-backup.json'));
   await expect(page.getByRole('alert')).toContainText('Invalid project package');
   expect(await storedRecords(page)).toEqual(before);
@@ -167,8 +167,8 @@ test('the editor imports a project package from the Export menu and opens the co
   await page.goto('/editor');
   await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Export', exact: true }).click();
-  await page.getByRole('button', { name: 'Import project package', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Import project package', exact: true });
+  await page.getByRole('button', { name: 'Open a plan with its pictures', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Open a plan with its pictures', exact: true });
   await choose(page);
   await expect(dialog).toContainText('3 floors · 5 walls · 2 attachment files');
   await dialog.getByRole('button', { name: 'Import as copy', exact: true }).click();

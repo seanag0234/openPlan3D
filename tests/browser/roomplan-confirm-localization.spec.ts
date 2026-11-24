@@ -10,9 +10,9 @@ for (const width of [1440, 390]) test(`RoomPlan confirmation preserves geometry 
     await page.goto('/editor');
     if (width < 768) await page.getByRole('button', { name: locale === 'pt' ? 'Alternar painel de ferramentas' : 'Toggle tools panel', exact: true }).click();
     const chooser = page.waitForEvent('filechooser');
-    await page.getByRole('button', { name: locale === 'pt' ? /Importar RoomPlan Escaneamento/ : /Import RoomPlan iOS/ }).click();
+    await page.getByRole('button', { name: locale === 'pt' ? /Adicionar um escaneamento de cômodo do iPhone Escaneamento/ : /Add an iPhone room scan iOS/ }).click();
     await (await chooser).setFiles({ name: 'Original {count}.json', mimeType: 'application/json', buffer: await readFile('tests/fixtures/handoff-roomplan.json') });
-    const dialog = page.getByRole('dialog', { name: locale === 'pt' ? 'Importar RoomPlan' : 'Import RoomPlan', exact: true });
+    const dialog = page.getByRole('dialog', { name: locale === 'pt' ? 'Adicionar um escaneamento de cômodo do iPhone' : 'Add an iPhone room scan', exact: true });
     await expect(dialog.getByRole('checkbox', { name: locale === 'pt' ? /Alinhar paredes/ : /Straighten walls/ })).not.toBeChecked();
     await expect(dialog.getByRole('checkbox', { name: locale === 'pt' ? /Aplicar ângulos retos/ : /Enforce orthogonal/ })).not.toBeChecked();
     await expect(dialog.getByRole('spinbutton')).toHaveValue('0');

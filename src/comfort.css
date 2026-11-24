@@ -1,1 +1,26 @@
 /* Comfort settings: larger text and calmer motion. */
+
+/* Looks that are easier on the eyes: one filter on the whole page, so bars, panels, dialogs and the plan change together.
+   No look shows pure white or pure black. A filter does not change what a canvas holds, so saved pictures keep their colours.
+   An open modal dialog draws in the top layer, above and outside <html>, so it carries the same filter itself. */
+:root[data-comfort='soft'], :root[data-comfort='soft'] :modal { filter: sepia(.35) contrast(.86) brightness(.96); }
+:root[data-comfort='rose'], :root[data-comfort='rose'] :modal { filter: sepia(.3) hue-rotate(-28deg) saturate(1.15) contrast(.86) brightness(.96); }
+:root[data-comfort='dim'], :root[data-comfort='dim'] :modal { filter: sepia(.15) contrast(.88) brightness(.72); }
+:root[data-comfort='night'], :root[data-comfort='night'] :modal { filter: invert(.9) hue-rotate(180deg) contrast(.85); }
+:root[data-comfort] { background-color: #fff; } /* the filter needs a painted page behind everything */
+
+/* Less motion: fades and slides end at once. */
+:root[data-less-motion] *, :root[data-less-motion] *::before, :root[data-less-motion] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
