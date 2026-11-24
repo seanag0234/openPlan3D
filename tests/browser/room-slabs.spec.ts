@@ -123,7 +123,7 @@ test('nested rooms export one slab at each point on active and stacked floors', 
     await page.evaluate(capture=>(window as any).__capturePDF=capture,format==='PDF');
     await page.getByRole('button',{name:'Export',exact:true}).click();
     const download=page.waitForEvent('download');
-    await page.getByRole('button',{name:format==='PNG'?'Export 2D as PNG':`Export as ${format}`,exact:true}).click();
+    await page.getByRole('button',{name:format==='PNG'?'Save the plan as a picture (PNG)':format==='SVG'?'Export as a drawing that scales (SVG)':'Export as PDF',exact:true}).click();
     const bytes=await readFile((await (await download).path())!);
     if (format==='SVG') expect(bytes.toString()).toContain('fill-rule="evenodd"');
     if (format==='PDF') expect(bytes.subarray(0,5).toString()).toBe('%PDF-');
@@ -154,7 +154,7 @@ test('nested rooms export one slab at each point on active and stacked floors', 
   await page.getByRole('button',{name:'Redo',exact:true}).click();await expect(opening).toBeChecked();
   await page.getByRole('button',{name:'Export',exact:true}).click();
   const openingSVG=page.waitForEvent('download');
-  await page.getByRole('button',{name:'Export as SVG',exact:true}).click();
+  await page.getByRole('button',{name:'Export as a drawing that scales (SVG)',exact:true}).click();
   const svg=await readFile((await (await openingSVG).path())!,'utf8');
   expect(svg).not.toContain('fill="#bbf7d0"');
   expect(svg).toContain('fill-rule="evenodd"');

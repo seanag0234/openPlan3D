@@ -43,7 +43,7 @@ test('a piece takes a name that shows as its caption, Layers row, heading and in
 
   const json = JSON.parse(await download(page, 'Download JSON'));
   expect(json.floors[0].furniture[0].name).toBe(name);
-  expect(await download(page, 'Export as SVG')).toContain(name);
+  expect(await download(page, 'Export as a drawing that scales (SVG)')).toContain(name);
 
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   const undone = JSON.parse(await download(page, 'Download JSON'));

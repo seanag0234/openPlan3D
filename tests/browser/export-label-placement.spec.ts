@@ -20,7 +20,7 @@ test('exports moved room labels without clipping and caps raster dimensions', as
   await page.getByRole('button', { name, exact: true }).click();
   return readFile((await (await pending).path())!);
  }
- const svg = (await download('Export as SVG')).toString('utf8');
+ const svg = (await download('Export as a drawing that scales (SVG)')).toString('utf8');
  const layout = await page.evaluate(svg => {
   const parsed = new DOMParser().parseFromString(svg, 'image/svg+xml');
   const root = document.importNode(parsed.documentElement, true) as unknown as SVGSVGElement;
@@ -34,10 +34,10 @@ test('exports moved room labels without clipping and caps raster dimensions', as
  expect(layout.x).toBeGreaterThanOrEqual(0); expect(layout.y).toBeGreaterThanOrEqual(0);
  expect(layout.right).toBeLessThan(layout.width); expect(layout.bottom).toBeLessThan(layout.height);
  expect(layout.right).toBeLessThan(layout.polygonX);
- const png = await download('Export 2D as PNG');
+ const png = await download('Save the plan as a picture (PNG)');
  expect(png.subarray(1, 4).toString()).toBe('PNG');
  expect(png.readUInt32BE(16)).toBe(4096); expect(png.readUInt32BE(20)).toBeLessThanOrEqual(4096);
- const dxf = (await download('Export as DXF')).toString();
+ const dxf = (await download('Export for CAD programs (DXF)')).toString();
  expect(dxf).toContain('Moved room'); expect(dxf).toMatch(/\r?\n10\r?\n-1775\r?\n20\r?\n-25\r?\n/);
  const pdf = await download('Export as PDF'); expect(pdf.subarray(0, 5).toString()).toBe('%PDF-'); expect(pdf.length).toBeGreaterThan(10000);
  await testInfo.attach('moved-label.svg', { body: svg, contentType: 'image/svg+xml' });

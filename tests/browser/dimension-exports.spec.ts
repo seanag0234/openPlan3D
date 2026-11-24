@@ -9,7 +9,7 @@ test('saved dimensions export with signed and zero offsets',async({page},testInf
  await(await chooser).setFiles({name:'dimensions.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(project))});
  await page.waitForLoadState('networkidle');
  async function download(name:string){await page.getByRole('button',{name:'Export',exact:true}).click();const pending=page.waitForEvent('download');await page.getByRole('button',{name,exact:true}).click();return readFile((await(await pending).path())!);}
- const svg=(await download('Export as SVG')).toString();
+ const svg=(await download('Export as a drawing that scales (SVG)')).toString();
  const result=await page.evaluate(svg=>{
   const doc=new DOMParser().parseFromString(svg,'image/svg+xml');
   const labels=[...doc.querySelectorAll('text')].filter(t=>['Saved dimension','Zero offset'].includes(t.textContent!));
@@ -18,13 +18,13 @@ test('saved dimensions export with signed and zero offsets',async({page},testInf
  },svg);
  expect(result.ys[1]-result.ys[0]).toBeCloseTo(400);
  for(const y of result.ys){expect(y).toBeGreaterThan(0);expect(y).toBeLessThan(result.view[3]);expect(result.ysLines.some(line=>line[0]===y+4&&line[1]===y+4)).toBe(true);}
- const png=await download('Export 2D as PNG');
+ const png=await download('Save the plan as a picture (PNG)');
  const purple=await page.evaluate(async data=>{
   const image=new Image();image.src=data;await image.decode();const canvas=document.createElement('canvas');canvas.width=image.width;canvas.height=image.height;
   const ctx=canvas.getContext('2d')!;ctx.drawImage(image,0,0);const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;let count=0;
   for(let i=0;i<pixels.length;i+=4)if(pixels[i]<150&&pixels[i+1]<150&&pixels[i+2]>180)count++;return count;
  },`data:image/png;base64,${png.toString('base64')}`);expect(purple).toBeGreaterThan(50);
- const dxf=(await download('Export as DXF')).toString();expect(dxf).toContain('Saved dimension');expect(dxf).toContain('Zero offset');
+ const dxf=(await download('Export for CAD programs (DXF)')).toString();expect(dxf).toContain('Saved dimension');expect(dxf).toContain('Zero offset');
  // DWG has no writer: the DXF downloads and a notice says so instead of a blocking alert.
  const dwg=(await download('Export for AutoCAD (DWG)')).toString();expect(dwg).toContain('Saved dimension');
  await expect(page.getByRole('alert')).toContainText('DWG saved as DXF');await expect(page.getByRole('alert')).toContainText('AutoCAD, SketchUp and FreeCAD open DXF directly.');
@@ -54,7 +54,7 @@ test('plan exports leave out the dimensions, notes and stairs hidden in the 2D v
  async function download(name:string){await page.getByRole('button',{name:'Export',exact:true}).click();const pending=page.waitForEvent('download');await page.getByRole('button',{name,exact:true}).click();return readFile((await(await pending).path())!);}
  async function drawn(name:string){await page.evaluate(()=>{(window as any).__exportText=[];});const file=await download(name);return {file,text:await page.evaluate(()=>(window as any).__exportText as string[])};}
  const wallLengths=(svg:string)=>svg.match(/>\d+ cm<\/text>/g)??[];
- let svg=(await download('Export as SVG')).toString();
+ let svg=(await download('Export as a drawing that scales (SVG)')).toString();
  expect(wallLengths(svg).length).toBeGreaterThan(0);
  for(const label of ['Estimated width','Shell note','data-stair='])expect(svg).toContain(label);
 
@@ -63,11 +63,11 @@ test('plan exports leave out the dimensions, notes and stairs hidden in the 2D v
  await layers.press('Enter');
  for(const name of ['Automatic dimensions','Dimensions','Text labels','Stairs'])await page.getByRole('checkbox',{name,exact:true}).uncheck();
  await layers.press('Enter');
- svg=(await download('Export as SVG')).toString();
+ svg=(await download('Export as a drawing that scales (SVG)')).toString();
  expect(wallLengths(svg)).toEqual([]);
  for(const label of ['Estimated width','Shell note','data-stair='])expect(svg).not.toContain(label);
  expect(svg).toContain('stroke="#333"'); // the shell itself stays
- for(const name of ['Export 2D as PNG','Export as PDF']){
+ for(const name of ['Save the plan as a picture (PNG)','Export as PDF']){
   const {file,text}=await drawn(name);
   expect(file.length).toBeGreaterThan(100);
   expect(text.filter(value=>/^\d+ cm$/.test(value))).toEqual([]);
@@ -75,7 +75,7 @@ test('plan exports leave out the dimensions, notes and stairs hidden in the 2D v
   expect(text).toContain('Room 1,1');
  }
  // DXF values are whole lines; 'UP' alone is the stair label (ACAD_GROUP also contains the letters).
- const dxf=(await download('Export as DXF')).toString().split(/\r?\n/).map(line=>line.trim());
+ const dxf=(await download('Export for CAD programs (DXF)')).toString().split(/\r?\n/).map(line=>line.trim());
  expect(dxf.filter(line=>/^\d+ cm$/.test(line))).toEqual([]);
  for(const label of ['Estimated width','Shell note','UP'])expect(dxf).not.toContain(label);
  expect(dxf).toContain('Room 1,1');
@@ -96,7 +96,7 @@ test('plan exports leave out the dimensions, notes and stairs hidden in the 2D v
  const automatic=settings.getByRole('checkbox',{name:'Dimensions',exact:true});
  await expect(automatic).not.toBeChecked();await automatic.check();
  await settings.getByRole('button',{name:'Close settings',exact:true}).click();
- svg=(await download('Export as SVG')).toString();
+ svg=(await download('Export as a drawing that scales (SVG)')).toString();
  expect(wallLengths(svg).length).toBeGreaterThan(0);expect(svg).not.toContain('Shell note');
 });
 
@@ -110,7 +110,7 @@ test('a floor whose every item is hidden explains itself instead of exporting an
  await page.waitForLoadState('networkidle');
  const layers=page.getByTitle('Show and hide',{exact:true});
  await layers.press('Enter');await page.getByRole('checkbox',{name:'Text labels',exact:true}).uncheck();await layers.press('Enter');
- await page.getByRole('button',{name:'Export',exact:true}).click();await page.getByRole('button',{name:'Export 2D as PNG',exact:true}).click();
+ await page.getByRole('button',{name:'Export',exact:true}).click();await page.getByRole('button',{name:'Save the plan as a picture (PNG)',exact:true}).click();
  await expect(page.getByRole('alert')).toContainText("Couldn't export 2D PNG");
  await expect(page.getByRole('alert')).toContainText('Everything on the active floor is on a hidden layer.');
  await page.getByRole('button',{name:'Dismiss export notice',exact:true}).click();

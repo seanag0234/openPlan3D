@@ -14,9 +14,9 @@ test('plan exports retain furniture symbols and mirrored captions',async({page},
  await expect(page.getByRole('button',{name:project.name,exact:true})).toBeVisible();
  async function download(name:string){await page.getByRole('button',{name:'Export',exact:true}).click();const pending=page.waitForEvent('download');await page.getByRole('button',{name,exact:true}).click();return readFile((await(await pending).path())!);}
  const before=JSON.parse((await download('Download JSON')).toString());
- const png=await download('Export 2D as PNG');expect(png.subarray(1,4).toString()).toBe('PNG');
+ const png=await download('Save the plan as a picture (PNG)');expect(png.subarray(1,4).toString()).toBe('PNG');
  await testInfo.attach('furniture-symbols',{body:png,contentType:'image/png'});
- const svg=(await download('Export as SVG')).toString();
+ const svg=(await download('Export as a drawing that scales (SVG)')).toString();
  expect(svg).not.toContain('<image');expect((svg.match(/<path/g)??[]).length).toBeGreaterThan(20);
  const preview=await page.evaluate(async svg=>{
    const image=new Image(),url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml'}));
@@ -28,7 +28,7 @@ test('plan exports retain furniture symbols and mirrored captions',async({page},
  await testInfo.attach('furniture-vector-preview',{body:Buffer.from(preview.split(',')[1],'base64'),contentType:'image/png'});
  const pdf=await download('Export as PDF');expect(pdf.subarray(0,5).toString()).toBe('%PDF-');
  await testInfo.attach('furniture-symbols-pdf',{body:pdf,contentType:'application/pdf'});
- const dxf=(await download('Export as DXF')).toString();
+ const dxf=(await download('Export for CAD programs (DXF)')).toString();
  expect(dxf).toContain('\nSPLINE\n');expect(dxf).toContain('Armchair');expect(dxf).not.toMatch(/NaN|Infinity/);
  await testInfo.attach('furniture-cad',{body:Buffer.from(dxf),contentType:'application/dxf'});
  const cadPreview=await page.evaluate(dxf=>{

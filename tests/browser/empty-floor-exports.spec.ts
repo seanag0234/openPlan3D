@@ -20,15 +20,15 @@ for (const locale of ['en', 'pt'] as const) test(`${locale}: empty-floor PNG, SV
     await expect(notice).toHaveCount(0);
   }
   const menuItems: [item: string, title: string, format: string][] = pt ? [
-    ['Exportar 2D como PNG', 'Não foi possível exportar o PNG 2D', 'PNG'],
-    ['Exportar como SVG', 'Não foi possível exportar o SVG', 'SVG'],
-    ['Exportar como DXF', 'Não foi possível exportar o DXF', 'DXF'],
+    ['Salvar a planta como imagem (PNG)', 'Não foi possível exportar o PNG 2D', 'PNG'],
+    ['Exportar como desenho redimensionável (SVG)', 'Não foi possível exportar o SVG', 'SVG'],
+    ['Exportar para programas de CAD (DXF)', 'Não foi possível exportar o DXF', 'DXF'],
     ['Exportar para o AutoCAD (DWG)', 'Não foi possível exportar o DWG', 'DWG'],
     ['Exportar como PDF', 'Não foi possível exportar o PDF', 'PDF'],
   ] : [
-    ['Export 2D as PNG', "Couldn't export 2D PNG", 'PNG'],
-    ['Export as SVG', "Couldn't export SVG", 'SVG'],
-    ['Export as DXF', "Couldn't export DXF", 'DXF'],
+    ['Save the plan as a picture (PNG)', "Couldn't export 2D PNG", 'PNG'],
+    ['Export as a drawing that scales (SVG)', "Couldn't export SVG", 'SVG'],
+    ['Export for CAD programs (DXF)', "Couldn't export DXF", 'DXF'],
     ['Export for AutoCAD (DWG)', "Couldn't export DWG", 'DWG'],
     ['Export as PDF', "Couldn't export PDF", 'PDF'],
   ];

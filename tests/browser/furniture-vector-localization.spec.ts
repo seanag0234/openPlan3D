@@ -16,10 +16,10 @@ test('Portuguese vector downloads use localized furniture captions', async ({ pa
     return readFile((await (await pending).path())!, 'utf8');
   }
   const before = JSON.parse(await download('Baixar JSON')).floors;
-  const svg = await download('Exportar como SVG');
+  const svg = await download('Exportar como desenho redimensionável (SVG)');
   expect(svg).toContain('Poltrona');
   expect(svg).not.toContain('Armchair');
-  const dxf = await download('Exportar como DXF');
+  const dxf = await download('Exportar para programas de CAD (DXF)');
   expect(dxf).toContain('Poltrona');
   expect(dxf).not.toContain('Armchair');
   expect(JSON.parse(await download('Baixar JSON')).floors).toEqual(before);

@@ -20,7 +20,7 @@ test('PNG waits for custom entourage and frames an entourage-only plan',async({p
  const before=JSON.parse(await download('Download JSON'));
  let downloaded=false;page.once('download',()=>downloaded=true);
  await page.getByRole('button',{name:'Export',exact:true}).click();const pending=page.waitForEvent('download');
- await page.getByRole('button',{name:'Export 2D as PNG',exact:true}).click();
+ await page.getByRole('button',{name:'Save the plan as a picture (PNG)',exact:true}).click();
  await page.waitForTimeout(200);expect(downloaded).toBe(false);
  await page.evaluate(()=>(window as any).__releaseImages());
  const png=await readFile((await(await pending).path())!);expect(png.subarray(1,4).toString()).toBe('PNG');

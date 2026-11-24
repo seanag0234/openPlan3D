@@ -18,8 +18,8 @@ test('stair-only plans retain every shape in all plan export formats',async({pag
  await(await chooser).setFiles({name:'stairs.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(project))});await expect(page.getByRole('button',{name:project.name,exact:true})).toBeVisible();
  async function download(name:string){await page.getByRole('button',{name:'Export',exact:true}).click();const pending=page.waitForEvent('download');await page.getByRole('button',{name,exact:true}).click();return readFile((await(await pending).path())!);}
  const before=JSON.parse((await download('Download JSON')).toString());
- const png=await download('Export 2D as PNG');expect(png.subarray(1,4).toString()).toBe('PNG');await testInfo.attach('stair-png',{body:png,contentType:'image/png'});
- const svg=(await download('Export as SVG')).toString();
+ const png=await download('Save the plan as a picture (PNG)');expect(png.subarray(1,4).toString()).toBe('PNG');await testInfo.attach('stair-png',{body:png,contentType:'image/png'});
+ const svg=(await download('Export as a drawing that scales (SVG)')).toString();
  expect((svg.match(/data-stair=/g)??[]).length).toBe(4);expect(svg).not.toMatch(/<image|NaN|Infinity/);
  const vector=await page.evaluate(async svg=>{const img=new Image(),url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml'}));try{await new Promise<void>((resolve,reject)=>{img.onload=()=>resolve();img.onerror=reject;img.src=url;});const canvas=document.createElement('canvas');canvas.width=img.width*2;canvas.height=img.height*2;const ctx=canvas.getContext('2d')!;ctx.fillStyle='white';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);return canvas.toDataURL('image/png');}finally{URL.revokeObjectURL(url);}},svg);
  await testInfo.attach('stair-svg-preview',{body:Buffer.from(vector.split(',')[1],'base64'),contentType:'image/png'});
@@ -28,7 +28,7 @@ test('stair-only plans retain every shape in all plan export formats',async({pag
  await testInfo.attach('stair-pdf-plan',{body:Buffer.from(planImage.image.split(',')[1],'base64'),contentType:'image/png'});
  const ink=await page.evaluate(async url=>{const img=new Image();await new Promise<void>((resolve,reject)=>{img.onload=()=>resolve();img.onerror=reject;img.src=url;});const canvas=document.createElement('canvas');canvas.width=img.width;canvas.height=img.height;const ctx=canvas.getContext('2d')!;ctx.drawImage(img,0,0);const data=ctx.getImageData(0,0,canvas.width,canvas.height).data,counts=[0,0,0,0];for(let y=0;y<canvas.height;y++)for(let x=0;x<canvas.width;x++){const i=(y*canvas.width+x)*4;if(data[i]<190&&data[i+1]<190&&data[i+2]<190)counts[(y>=canvas.height/2?2:0)+(x>=canvas.width/2?1:0)]++;}return counts;},`data:image/png;base64,${png.toString('base64')}`);
  for(const count of ink)expect(count).toBeGreaterThan(200);
- const dxf=(await download('Export as DXF')).toString();
+ const dxf=(await download('Export for CAD programs (DXF)')).toString();
  expect(dxf).toContain('\nSPLINE\n');expect(dxf).toContain('UP (u-shaped)');expect(dxf).toContain('DN (l-shaped)');expect(dxf).not.toMatch(/NaN|Infinity/);
  await testInfo.attach('stair-cad',{body:Buffer.from(dxf),contentType:'application/dxf'});
  const cadPreview=await page.evaluate(dxf=>{

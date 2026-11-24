@@ -17,7 +17,7 @@ test('curved wall exports draw the arc, leave its chord empty and include the st
   const pending=page.waitForEvent('download'); await page.getByRole('button',{name,exact:true}).click();
   return readFile((await (await pending).path())!);
  }
- const svg=(await download('Export as SVG')).toString();
+ const svg=(await download('Export as a drawing that scales (SVG)')).toString();
  expect(svg).toContain('Q 370 -80 670 220');
  expect(svg).toContain('viewBox="0 0 740 290"');
  const dimensionY = await page.evaluate(svg => {
@@ -26,7 +26,7 @@ test('curved wall exports draw the arc, leave its chord empty and include the st
  }, svg);
  expect(dimensionY).toBeCloseTo(30); // safely above the stroke, whose top is Y=50
 
- const png=await download('Export 2D as PNG');
+ const png=await download('Save the plan as a picture (PNG)');
  expect(png.readUInt32BE(16)).toBe(1600); expect(png.readUInt32BE(20)).toBe(700);
  const samples=await page.evaluate(async data => {
   const image=new Image(); image.src=data; await image.decode();
@@ -36,7 +36,7 @@ test('curved wall exports draw the arc, leave its chord empty and include the st
  },`data:image/png;base64,${png.toString('base64')}`);
  expect(samples[0].slice(0,3).every(c=>c<100)).toBe(true);
  expect(samples[1].slice(0,3).every(c=>c>240)).toBe(true);
- const dxf=(await download('Export as DXF')).toString();
+ const dxf=(await download('Export for CAD programs (DXF)')).toString();
  expect((dxf.match(/\nLWPOLYLINE\n/g)??[]).length).toBe(1);
  const pdf=await download('Export as PDF'); expect(pdf.subarray(0,5).toString()).toBe('%PDF-');
  await testInfo.attach('curved-wall.png',{body:png,contentType:'image/png'});
@@ -59,7 +59,7 @@ test('curved door and window exports clear their wall intervals', async ({ page 
   const pending=page.waitForEvent('download'); await page.getByRole('button',{name,exact:true}).click();
   return readFile((await (await pending).path())!);
  }
- const svg=(await download('Export as SVG')).toString();
+ const svg=(await download('Export as a drawing that scales (SVG)')).toString();
  const origin=await page.evaluate(svg=>{
   const doc=new DOMParser().parseFromString(svg,'image/svg+xml');
   const curves=[...doc.querySelectorAll('path')].filter(p=>p.getAttribute('d')?.includes(' Q '));
@@ -68,7 +68,7 @@ test('curved door and window exports clear their wall intervals', async ({ page 
   return {gaps:gaps.length,x:numbers[0],y:numbers[1]};
  },svg);
  expect(origin.gaps).toBe(2);
- const png=await download('Export 2D as PNG');
+ const png=await download('Save the plan as a picture (PNG)');
  const samples=await page.evaluate(async ({data,origin})=>{
   const image=new Image();image.src=data;await image.decode();
   const canvas=document.createElement('canvas');canvas.width=image.width;canvas.height=image.height;
@@ -77,7 +77,7 @@ test('curved door and window exports clear their wall intervals', async ({ page 
  },{data:`data:image/png;base64,${png.toString('base64')}`,origin});
  expect(samples[0].slice(0,3).every(c=>c>240)).toBe(true);
  expect(samples[1].slice(0,3).every(c=>c<100)).toBe(true);
- const dxf=(await download('Export as DXF')).toString();
+ const dxf=(await download('Export for CAD programs (DXF)')).toString();
  expect((dxf.match(/\nLWPOLYLINE\n/g)??[]).length).toBe(3); // wall runs on either side of two openings
  expect(dxf).toContain('ARC');
  const pdf=await download('Export as PDF');expect(pdf.subarray(0,5).toString()).toBe('%PDF-');
