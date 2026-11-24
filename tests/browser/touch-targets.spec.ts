@@ -55,6 +55,24 @@ for (const [name, device] of [['iPad landscape', ipadLandscape], ['iPad portrait
       const top = await page.locator('[data-bar="top"]').evaluate(bar => ({ scroll: bar.scrollWidth, client: bar.clientWidth }));
       expect(top.scroll).toBeLessThanOrEqual(top.client);
     });
+
+    test('the bottom bar keeps only what a finger needs, and the popup holds the rest', async ({ page }) => {
+      await openPlan(page, PLAN);
+      const bar = page.locator('[data-bar="bottom"]');
+      await expect(bar.getByText(/walls?$/)).toHaveCount(0);
+      await expect(bar.getByText(/rooms?$/)).toHaveCount(0);
+      for (const name of [/Grid/, /Rulers/, /Map/]) await expect(bar.getByRole('button', { name })).toHaveCount(0);
+      await bar.getByTitle('Layer Visibility', { exact: true }).click();
+      for (const name of ['Grid', 'Rulers', 'Map']) await expect(page.getByRole('checkbox', { name, exact: true })).toBeVisible();
+      const grid = page.getByRole('checkbox', { name: 'Grid', exact: true });
+      const before = await grid.isChecked();
+      await grid.click();
+      await expect(grid).toBeChecked({ checked: !before });
+      // The zoom buttons sit above the row, not on it.
+      const zoom = (await page.locator('[data-bar="zoom"]').boundingBox())!;
+      const row = (await bar.boundingBox())!;
+      expect(zoom.y + zoom.height).toBeLessThanOrEqual(row.y);
+    });
   });
 }
 

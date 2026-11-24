@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
+  import { coarsePointer } from '$lib/stores/pointer';
 
   let { zoom, minimumZoom, bottom, canFitSelection, onzoomout, onreset, onzoomin, onfit, onfitselection }: {
     zoom: number; minimumZoom: number; bottom: number; canFitSelection: boolean;
@@ -7,7 +8,8 @@
 </script>
 
 <!-- Zoom Controls (bottom-left) -->
-<div data-bar="zoom" style:bottom={`${bottom}px`} class="absolute left-3 max-md:left-20 z-20 flex items-center gap-1 bg-white rounded-lg shadow-lg border border-gray-200 px-1 py-0.5">
+<!-- On a touch screen the bottom bar spans the width, so the zoom buttons sit above it. -->
+<div data-bar="zoom" style:bottom={`${bottom + ($coarsePointer ? 52 : 0)}px`} class="absolute left-3 max-md:left-20 z-20 flex items-center gap-1 bg-white rounded-lg shadow-lg border border-gray-200 px-1 py-0.5">
   <button
     class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-600 hover:text-gray-800 font-bold text-lg"
     title={$t('canvasZoom.outHint')}
