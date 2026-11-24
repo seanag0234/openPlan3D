@@ -27,7 +27,7 @@ async function choose(page: Page, open: () => Promise<void>, file: { name: strin
   await chooser.setFiles(file);
 }
 async function restoreAll(page: Page, count: number) {
-  const dialog = page.getByRole('dialog', { name: 'Restore library backup', exact: true });
+  const dialog = page.getByRole('dialog', { name: 'Bring back a backup of all plans', exact: true });
   await expect(dialog).toContainText(count === 1 ? '1 project ready to restore' : `${count} projects ready to restore`);
   await dialog.getByRole('button', { name: 'Restore as copies', exact: true }).click();
   await expect(dialog.getByRole('status')).toContainText(count === 1 ? '1 project restored.' : `${count} projects restored.`);
@@ -65,12 +65,12 @@ test('Open a plan with its pictures says where a JSON file opens when the picker
 });
 
 for (const kind of kinds) {
-  test(`Restore library backup adds a Download JSON file reported as “${kind.mimeType || 'no type'}”`, async ({ page }) => {
+  test(`Bring back a backup of all plans adds a Download JSON file reported as “${kind.mimeType || 'no type'}”`, async ({ page }) => {
     const check = observe(page);
     await page.addInitScript(() => localStorage.setItem('hasSeenWelcome', 'true'));
     await page.goto('/');
-    await page.getByRole('button', { name: 'Restore library backup', exact: true }).click();
-    const dialog = page.getByRole('dialog', { name: 'Restore library backup', exact: true });
+    await page.getByRole('button', { name: 'Bring back a backup of all plans', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Bring back a backup of all plans', exact: true });
     await expect(dialog).toContainText('A library backup, or one project saved with Download JSON');
     await choose(page, () => dialog.getByRole('button', { name: 'Choose backup file', exact: true }).click(),
       { ...kind, buffer: await projectFile() }, '.json,application/json');

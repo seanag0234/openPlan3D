@@ -47,8 +47,8 @@ async function pressEscapeRepeatedly(page: Page) {
 
 test('a busy library restore survives repeated Escape and its dialog opens again afterwards', async ({ page }) => {
   const check = observe(page), source = await seed(page), before = await storedRecords(page);
-  const opener = page.getByRole('button', { name: 'Restore library backup', exact: true });
-  const dialog = page.getByRole('dialog', { name: 'Restore library backup', exact: true });
+  const opener = page.getByRole('button', { name: 'Bring back a backup of all plans', exact: true });
+  const dialog = page.getByRole('dialog', { name: 'Bring back a backup of all plans', exact: true });
   await opener.click();
   const chooser = page.waitForEvent('filechooser');
   await dialog.getByRole('button', { name: 'Choose backup file', exact: true }).click();
