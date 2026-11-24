@@ -2,6 +2,7 @@ import { readProject } from '$lib/utils/projectValidation';
 import type { Project } from '$lib/models/types';
 import { withDatabase, transaction, request, records, readRecord, libraryBackup, notifyLibraryChange } from './localDatabase';
 import { requestPersistentStorage } from './storagePersistence';
+import { deleteUndoJournal } from './undoJournal';
 export { PROJECTS_STORAGE_KEY, LIBRARY_CHANGE_KEY } from './localDatabase';
 
 export interface DataStore {
@@ -16,6 +17,33 @@ export interface DataStore {
   saveThumbnail(id: string, dataUrl: string): Promise<void>;
   getThumbnail(id: string): Promise<string | null>;
   getThumbnails(): Promise<Record<string, string>>;
+  /** For a page going away before its save could finish: a copy the next load of this plan picks up. Synchronous. */
+  stashUnsaved(project: Project): void;
+}
+
+const UNSAVED_PREFIX = 'o3d_unsaved:';
+
+/** Which stored text a copy was made on top of: its length and FNV-1a hash. */
+function stamp(text: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return `${text.length}:${hash.toString(16)}`;
+}
+
+function readUnsaved(id: string): { base: string; raw: string } | null | undefined {
+  try {
+    const text = localStorage.getItem(UNSAVED_PREFIX + id);
+    if (text === null) return undefined;
+    const copy = JSON.parse(text);
+    return copy && typeof copy.base === 'string' && typeof copy.raw === 'string' ? { base: copy.base, raw: copy.raw } : null;
+  } catch { return null; }
+}
+
+function removeUnsaved(id: string) {
+  try { localStorage.removeItem(UNSAVED_PREFIX + id); } catch {}
 }
 
 
@@ -65,6 +93,10 @@ export async function downloadLibraryBackup() {
   URL.revokeObjectURL(url);
 }
 
+function validCopy(id: string, raw: string): boolean {
+  try { return readProject(JSON.parse(raw)).id === id; } catch { return false; }
+}
+
 /** Each browser document remembers only revisions it actually opened or saved. */
 export function createLocalStore(): DataStore {
   const opened = new Map<string, string | null>();
@@ -92,6 +124,7 @@ export function createLocalStore(): DataStore {
         opened.set(id, raw);
         notifyLibraryChange(id);
       });
+      removeUnsaved(id);
       // Committed work can now ask the browser to keep the library; the save never waits.
       void requestPersistentStorage();
     },
@@ -120,8 +153,9 @@ export function createLocalStore(): DataStore {
     async load(id) {
       // Invalidate queued saves immediately, including while this read is waiting.
       generations.set(id, (generations.get(id) ?? 0) + 1);
-      const raw = await readRecord('projects', id);
+      let raw = await readRecord('projects', id);
       if (raw === null) { opened.set(id, null); return null; }
+      raw = await takeUnsaved(id, raw);
       const project = readProject(JSON.parse(raw));
       if (project.id !== id) throw new Error('The saved project ID does not match its library entry. Download a library backup before recovery.');
       opened.set(id, raw);
@@ -160,6 +194,9 @@ export function createLocalStore(): DataStore {
         listed.delete(id);
         notifyLibraryChange(id);
       });
+      removeUnsaved(id);
+      // The plan's kept Undo steps go with it; they never hold the delete up.
+      void deleteUndoJournal(id).catch(() => {});
     },
 
     async duplicate(id) {
@@ -195,7 +232,38 @@ export function createLocalStore(): DataStore {
       try { return await withDatabase(db => transaction(db, ['thumbnails'], 'readonly', tx => records(tx, 'thumbnails'))); }
       catch { return {}; }
     },
+
+    stashUnsaved(project) {
+      try {
+        const base = opened.get(project.id);
+        if (base === undefined || base === null) return;
+        localStorage.setItem(UNSAVED_PREFIX + project.id, JSON.stringify({ base: stamp(base), raw: JSON.stringify(project) }));
+      } catch {} // A full or missing localStorage leaves only the regular save.
+    },
   };
+
+  /** The text to open for a plan: the copy a page left on its way out when it was made on top of the stored text,
+   *  written as the stored plan first; otherwise the stored text. */
+  async function takeUnsaved(id: string, stored: string): Promise<string> {
+    const copy = readUnsaved(id);
+    if (copy === undefined) return stored;
+    if (!copy || copy.base !== stamp(stored) || copy.raw === stored || !validCopy(id, copy.raw)) {
+      removeUnsaved(id);
+      return stored;
+    }
+    try {
+      await mutateLibrary(async () => {
+        await withDatabase(db => transaction(db, ['projects'], 'readwrite', async tx => {
+          const projects = tx.objectStore('projects');
+          if (((await request(projects.get(id))) ?? null) !== stored) throw new ProjectConflictError();
+          projects.put(copy.raw, id);
+        }));
+        notifyLibraryChange(id);
+      });
+    } catch { return stored; } // Kept for the next load.
+    removeUnsaved(id);
+    return copy.raw;
+  }
 }
 
 export const localStore = createLocalStore();

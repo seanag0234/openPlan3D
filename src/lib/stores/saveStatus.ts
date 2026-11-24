@@ -1,5 +1,6 @@
 import { writable, get } from 'svelte/store';
-import { currentProject, loadProject } from './project';
+import { currentProject, historyForJournal, loadProject, restoreHistory } from './project';
+import { buildJournal, journalFor, readUndoJournal, writeUndoJournal } from '$lib/services/undoJournal';
 import { localStore, storageErrorMessage, ProjectConflictError, PROJECTS_STORAGE_KEY, LIBRARY_CHANGE_KEY } from '$lib/services/datastore';
 import { saveSnapshot } from '$lib/stores/versionHistory';
 import type { Project } from '$lib/models/types';
@@ -11,12 +12,16 @@ export const lastSavedAt = writable<Date | null>(null);
 export const saveError = writable<string | null>(null);
 export const saveConflict = writable(false);
 export const savingCopy = writable(false);
+/** A short message about saving for the person editing, shown by SaveNotice. */
+export const saveNotice = writable<'saving.caughtUp' | null>(null);
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let stopWatching: (() => void) | null = null;
 let revision = 0;
 let saveAttempt = 0;
 let lastProjectId: string | undefined;
+/** This tab has changes of its own that are not saved yet. */
+let ownEdits = false;
 
 /** One autosave owner per mounted editor. The caller must dispose on unmount. */
 export function initAutoSave() {
@@ -55,10 +60,41 @@ export function initAutoSave() {
     if (event.storageArea && event.storageArea !== localStorage) return;
     void checkCurrent();
   };
+  // A page going away within the save wait leaves a copy the browser writes at once; the next load picks it up.
+  const stashUnsaved = () => {
+    try {
+      const project = get(currentProject);
+      if (!project || get(saveState) === 'saved' || get(saveConflict)) return;
+      localStore.stashUnsaved(project);
+    } catch {}
+  };
+  // A tab that comes back with no change of its own catches up with a plan another tab saved meanwhile. A tab
+  // with changes of its own keeps the bar that offers a copy or a file. Only coming back starts this: while the
+  // tab stays in front, the bar appears as it always has.
+  const catchUp = async () => {
+    await checkCurrent();
+    const project = get(currentProject);
+    if (disposed || !project || !get(saveConflict) || ownEdits) return;
+    const stored = await localStore.load(project.id);
+    // A plan deleted in another tab keeps the bar.
+    if (!stored || disposed || get(currentProject) !== project || ownEdits) return;
+    loadProject(stored);
+    markClean();
+    saveNotice.set('saving.caughtUp');
+  };
+  const onVisibility = () => {
+    if (typeof document === 'undefined') return;
+    if (document.visibilityState === 'hidden') stashUnsaved();
+    else if (document.visibilityState === 'visible') void catchUp().catch(() => {});
+  };
   if (typeof window !== 'undefined') {
     window.addEventListener('storage', onStorage);
     window.addEventListener('focus', checkCurrent);
+    window.addEventListener('pagehide', stashUnsaved);
   }
+  // The document listened to, kept so `stop` removes from the same one.
+  const doc = typeof document !== 'undefined' && typeof document.addEventListener === 'function' ? document : null;
+  doc?.addEventListener('visibilitychange', onVisibility);
   const stop = () => {
     disposed = true;
     unsubscribe();
@@ -66,7 +102,9 @@ export function initAutoSave() {
     if (typeof window !== 'undefined') {
       window.removeEventListener('storage', onStorage);
       window.removeEventListener('focus', checkCurrent);
+      window.removeEventListener('pagehide', stashUnsaved);
     }
+    try { doc?.removeEventListener('visibilitychange', onVisibility); } catch {}
     if (stopWatching === stop) stopWatching = null;
   };
   stopWatching = stop;
@@ -81,6 +119,7 @@ function clearSaveTimer() {
 /** Mark project as dirty (unsaved). */
 export function markDirty() {
   revision++;
+  ownEdits = true;
   saveState.set('unsaved');
   clearSaveTimer();
   if (get(saveConflict)) return;
@@ -137,11 +176,13 @@ async function persist(manual: boolean): Promise<boolean> {
       // Let reactive updates, zoom-to-fit and a paint finish before taking a preview.
       // Preview work must not delay the save or capture a newer revision/project.
       scheduleThumbnail(p);
-      if (manual) saveSnapshot(p, 'Manual save');
+      if (manual) saveSnapshot(p, 'Manual save', true);   // true: skip a plan equal to the newest version
       saveState.set('saved');
       saveError.set(null);
       saveConflict.set(false);
       lastSavedAt.set(new Date());
+      ownEdits = false;
+      keepUndoSteps(p);
     }
     return true;
   } catch (e) {
@@ -186,6 +227,32 @@ export async function saveCurrentAsCopy(): Promise<boolean> {
   } finally { savingCopy.set(false); }
 }
 
+/** Write the newest Undo steps beside the plan just saved, so a reload can give them back. Never waits or throws. */
+function keepUndoSteps(p: Project) {
+  try {
+    const history = historyForJournal();
+    if (!history) return;
+    const journal = buildJournal({ ...history, planUpdatedAt: new Date(p.updatedAt).toISOString(), now: Date.now(), keepEmpty: true });
+    void writeUndoJournal(p.id, journal).catch(() => {});
+  } catch {}
+}
+
+/** Give the plan just loaded the Undo steps it had before the page was reloaded. Never waits or throws. */
+function recallUndoSteps() {
+  try {
+    const project = get(currentProject);
+    if (!project) return;
+    void readUndoJournal(project.id).then(journal => {
+      if (get(currentProject) !== project) return;
+      const steps = journalFor(journal, new Date(project.updatedAt).toISOString());
+      if (steps) restoreHistory(steps);
+      // A plan with no steps kept for it gets the plan itself, so a change lost to a reload in the next second
+      // (left behind with stashUnsaved) still has a step to go back to.
+      else if (get(saveState) === 'saved') keepUndoSteps(project);
+    }).catch(() => {});
+  } catch {}
+}
+
 /** Call after loading a project that is already persisted. */
 export function markClean() {
   clearSaveTimer();
@@ -196,4 +263,6 @@ export function markClean() {
   saveConflict.set(false);
   lastSavedAt.set(null);
   lastProjectId = get(currentProject)?.id;
+  ownEdits = false;
+  recallUndoSteps();
 }

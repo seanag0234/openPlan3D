@@ -11,6 +11,7 @@
   import DeploymentNotice from '$lib/components/DeploymentNotice.svelte';
   import FeedbackSheet from '$lib/components/FeedbackSheet.svelte';
   import ImportQuestionDialog from '$lib/components/ImportQuestionDialog.svelte';
+  import SaveNotice from '$lib/components/SaveNotice.svelte';
   // Self-hosted instances and browser tests can run without sending analytics.
   onMount(() => { if (window.location.pathname !== '/render-lab' && env.PUBLIC_ENABLE_ANALYTICS !== 'false') void import('$lib/firebase'); });
   let { children } = $props();
@@ -20,3 +21,4 @@
 <DeploymentNotice />
 <FeedbackSheet />
 <ImportQuestionDialog />
+<SaveNotice />
