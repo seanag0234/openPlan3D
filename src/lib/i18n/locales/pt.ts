@@ -502,7 +502,7 @@ export const pt = {
   "saveControls.savingCopy": "Salvando cópia…",
   "saveControls.copy": "Salvar como cópia",
   "saveControls.retry": "Tentar salvar novamente",
-  "saveControls.backup": "Baixar backup JSON",
+  "saveControls.backup": "Baixar uma cópia desta planta",
   "layers.title": "Camadas",
   "layers.walls": "Paredes",
   "layers.doors": "Portas",

@@ -94,7 +94,7 @@ test('a failed current save blocks import and New Project, with backup and retry
   expect(page.url()).toBe(url);
   await page.getByRole('button', { name: 'Dismiss import error', exact: true }).click();
   const backup = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Download JSON backup', exact: true }).click();
+  await page.getByRole('button', { name: 'Download a copy of this plan', exact: true }).click();
   const recovered = JSON.parse(await readFile((await (await backup).path())!, 'utf8'));
   expect(recovered.name).toBe('Unsaved work to recover'); expect(recovered.id).toBe(source.id);
   await page.evaluate(() => { (window as any).failProjectWrites = false; });

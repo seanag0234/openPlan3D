@@ -502,7 +502,7 @@ export const en = {
   "saveControls.savingCopy": "Saving copy…",
   "saveControls.copy": "Save as copy",
   "saveControls.retry": "Retry save",
-  "saveControls.backup": "Download JSON backup",
+  "saveControls.backup": "Download a copy of this plan",
   "layers.title": "Layers",
   "layers.walls": "Walls",
   "layers.doors": "Doors",

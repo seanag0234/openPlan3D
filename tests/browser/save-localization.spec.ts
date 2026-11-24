@@ -20,7 +20,7 @@ test('Portuguese save recovery retains edits and translates the elapsed tooltip 
   const alert = page.getByRole('alert');
   await expect(alert).toContainText('As alterações não foram salvas.');
   const pending = page.waitForEvent('download');
-  await alert.getByRole('button', { name: 'Baixar backup JSON', exact: true }).click();
+  await alert.getByRole('button', { name: 'Baixar uma cópia desta planta', exact: true }).click();
   const backup = JSON.parse(await readFile((await (await pending).path())!, 'utf8'));
   expect(backup.name).toBe('Original {count} recovery');
   await page.evaluate(() => { (window as any).failProjectWrites = false; });

@@ -44,7 +44,7 @@ test('with site storage blocked a new plan still opens, downloads as JSON and ta
 
   // The plan exists only in memory; the JSON backup keeps it.
   const pending = page.waitForEvent('download');
-  await saveAlert.getByRole('button', { name: 'Download JSON backup', exact: true }).click();
+  await saveAlert.getByRole('button', { name: 'Download a copy of this plan', exact: true }).click();
   const backup = JSON.parse(await readFile((await (await pending).path())!, 'utf8'));
   expect(backup.id).toBe(new URL(page.url()).searchParams.get('id'));
 

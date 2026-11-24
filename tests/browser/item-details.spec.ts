@@ -227,7 +227,7 @@ test('bad photos and quota failures keep the saved project and an exportable dra
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('Browser storage is full');
   expect(await storedRecords(page)).toEqual(before);
-  const draft = JSON.parse((await download(page, 'Download JSON backup')).toString());
+  const draft = JSON.parse((await download(page, 'Download a copy of this plan')).toString());
   expect(draft.floors[0].furniture[0].details.note).toBe('Keep this unsaved photo draft');
   expect(draft.floors[0].furniture[0].details.photos).toHaveLength(2);
   expect(Object.keys(draft.projectPackage.assets)).toHaveLength(3);
