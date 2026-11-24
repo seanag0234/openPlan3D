@@ -19,11 +19,14 @@ const linesOf = (placed: ReturnType<typeof placeCaptions>, id: string) => placed
 /** A context that records what is painted and measures as `measure` does. */
 function recorder() {
   const painted: { text: string; x: number; y: number; font: string }[] = [];
+  let origin = { x: 0, y: 0 };
+  const saved: { x: number; y: number }[] = [];
   const ctx = {
     font: '', textAlign: '', textBaseline: '', lineJoin: '', lineWidth: 0, strokeStyle: '', fillStyle: '',
-    save() {}, restore() {}, strokeText() {},
+    save() { saved.push(origin); }, restore() { origin = saved.pop()!; }, strokeText() {},
+    translate(x: number, y: number) { origin = { x: origin.x + x, y: origin.y + y }; },
     measureText: (text: string) => ({ width: measure(text) }),
-    fillText(text: string, x: number, y: number) { painted.push({ text, x, y, font: this.font }); },
+    fillText(text: string, x: number, y: number) { painted.push({ text, x: origin.x + x, y: origin.y + y, font: this.font }); },
   };
   const cs = { ctx: ctx as unknown as CanvasRenderingContext2D, width: 800, height: 600, zoom: 1, camX: 0, camY: 0 } as CanvasState;
   return { cs, painted };
@@ -43,7 +46,7 @@ describe('the caption frame', () => {
     const { cs, painted } = recorder();
     drawCaptions(cs);
     expect(captionFrameOpen()).toBe(false);
-    expect(painted.map(line => line.text)).toEqual(['Box A', '120 × 90 cm']);
+    expect(painted.map(({ text, x, y }) => ({ text, x, y }))).toEqual([{ text: 'Box A', x: 300, y: 292.5 }, { text: '120 × 90 cm', x: 300, y: 307.5 }]);
     expect(painted.every(line => line.font === '12px sans-serif')).toBe(true);
     expect(queueCaption(piece('Box A', { x: 300, y: 300 }, 200, 100))).toBe(false);
   });

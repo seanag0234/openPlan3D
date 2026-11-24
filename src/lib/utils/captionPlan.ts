@@ -102,6 +102,14 @@ export function drawCaptions(cs: CanvasState): void {
   ctx.font = `${READABLE_CAPTION_PX}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   // Dark ink on a light halo stays legible over zone colours.
   ctx.lineJoin = 'round'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)'; ctx.fillStyle = '#111827';
-  for (const line of placeCaptions(queued, text => ctx.measureText(text).width)) { ctx.strokeText(line.text, line.x, line.y); ctx.fillText(line.text, line.x, line.y); }
+  // Each line is painted from its piece's centre, as drawFurnitureItem paints it outside a frame, but never turned.
+  const centres = new Map(queued.map(request => [request.id, request.center ?? { x: 0, y: 0 }]));
+  for (const line of placeCaptions(queued, text => ctx.measureText(text).width)) {
+    const c = centres.get(line.id)!;
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.strokeText(line.text, line.x - c.x, line.y - c.y); ctx.fillText(line.text, line.x - c.x, line.y - c.y);
+    ctx.restore();
+  }
   ctx.restore();
 }

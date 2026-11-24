@@ -16,6 +16,7 @@ import { formatLength, formatArea } from '$lib/stores/settings';
 import { getCatalogItem, getFurnitureSize } from '$lib/utils/furnitureCatalog';
 import { drawFurnitureIcon } from '$lib/utils/furnitureIcons';
 import { READABLE_CAPTION_PX, readableCaptionLines } from '$lib/utils/furnitureCaption';
+import { captionFrameOpen, queueCaption } from '$lib/utils/captionPlan';
 import { getRoomPolygon, roomCentroid, roomLabelPosition } from '$lib/utils/roomDetection';
 import { getWallTextureCanvas, getFloorTextureCanvas } from '$lib/utils/textureGenerator';
 import { getEntourageDef } from '$lib/utils/entourageCatalog';
@@ -924,8 +925,14 @@ export function drawFurnitureItem(cs: CanvasState, item: FurnitureItem, selected
   drawFurnitureIcon(ctx, item.catalogId, w, d, itemColor, strokeColor);
 
   const fontSize = Math.max(8, Math.min(12, Math.min(w, d) * 0.2));
-  if (sizeLabel !== undefined) {
-    const lines = [caption ?? cat?.name ?? 'Unknown furniture', sizeLabel];
+  // Inside the editor's frame the caption plan places and paints the two-line caption, clear of its
+  // neighbours and upright; outside a frame (picture, PDF, print, tests) it is painted here as before.
+  const name = caption ?? cat?.name ?? 'Unknown furniture';
+  const bw = Math.abs(w * Math.cos(angle)) + Math.abs(d * Math.sin(angle)), bd = Math.abs(w * Math.sin(angle)) + Math.abs(d * Math.cos(angle));
+  const queued = sizeLabel !== undefined && queueCaption({ id: item.id, kind: 'piece', name, size: sizeLabel, selected,
+    box: { left: s.x - bw / 2, top: s.y - bd / 2, right: s.x + bw / 2, bottom: s.y + bd / 2 }, center: s, width: w, depth: d, angle });
+  if (sizeLabel !== undefined && !queued) {
+    const lines = [name, sizeLabel];
     ctx.save();
     ctx.scale(Math.sign(sx) || 1, Math.sign(sy) || 1);
     ctx.font = `${READABLE_CAPTION_PX}px sans-serif`;
@@ -939,7 +946,7 @@ export function drawFurnitureItem(cs: CanvasState, item: FurnitureItem, selected
     ctx.fillStyle = '#111827';
     lines.forEach((line, i) => { ctx.strokeText(line, 0, offsets[i]); ctx.fillText(line, 0, offsets[i]); });
     ctx.restore();
-  } else if (Math.min(w, d) > 20) {
+  } else if (sizeLabel === undefined && Math.min(w, d) > 20) {
     ctx.save();
     // Mirror the symbol, while keeping its caption readable.
     ctx.scale(Math.sign(sx) || 1, Math.sign(sy) || 1);
@@ -1283,6 +1290,13 @@ export function drawTextAnnotations(cs: CanvasState, floor: Floor, selectedTextA
     const lines = ta.text.split('\n');
     const lineHeight = fontSize * 1.2;
     const totalHeight = lines.length * lineHeight;
+    if (captionFrameOpen()) {
+      // Reserve the label's place on screen so piece captions keep clear of it; it is still painted here.
+      const wide = Math.max(...lines.map(line => ctx.measureText(line).width));
+      const r = (ta.rotation || 0) * Math.PI / 180, hw = (Math.abs(wide * Math.cos(r)) + Math.abs(totalHeight * Math.sin(r))) / 2;
+      const hh = (Math.abs(wide * Math.sin(r)) + Math.abs(totalHeight * Math.cos(r))) / 2;
+      queueCaption({ id: ta.id, kind: 'label', selected, box: { left: s.x - hw, top: s.y - hh, right: s.x + hw, bottom: s.y + hh } });
+    }
     for (let i = 0; i < lines.length; i++) {
       ctx.fillText(lines[i], 0, -totalHeight / 2 + lineHeight / 2 + i * lineHeight);
     }
