@@ -2486,7 +2486,7 @@
     if (currentEntourageDefId) {
       const entW = getEntourageDef(currentEntourageDefId)?.width ?? 100;
       const entId = addEntourageItem(currentEntourageDefId, { x: snap(wp.x), y: snap(wp.y) }, entW);
-      if (!e.shiftKey) placingEntourageId.set(null); // hold Shift to keep stamping
+      if (!e.shiftKey) { placingEntourageId.set(null); selectedTool.set('select'); } // hold Shift to keep stamping
       selectedElementId.set(entId);
       return;
     }
@@ -2589,7 +2589,8 @@
       try {
         const id = addFurniture(currentPlacingId, pos);
         if (rot !== 0) rotateFurniture(id, rot);
-        selectedElementId.set(id);
+        // One press puts one piece down, selects it and goes back to Select.
+        selectedElementId.set(id); placingFurnitureId.set(null); selectedTool.set('select');
       } finally {
         endUndoGroup('Placed furniture');
       }
