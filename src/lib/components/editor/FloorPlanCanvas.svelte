@@ -26,6 +26,7 @@
   import { hasOpenModal } from '$lib/utils/modalDialog';
   import { focusInlineEditor } from '$lib/utils/inlineEditorFocus';
   import StatusBar from './canvas/StatusBar.svelte';
+  import ZoomControls from './canvas/ZoomControls.svelte';
   import ContextMenu from './ContextMenu.svelte';
   import MoveToFloorMenu from './MoveToFloorMenu.svelte';
   import { roomPresets, placePreset } from '$lib/utils/roomPresets';
@@ -4232,52 +4233,23 @@
     </div>
   {/if}
 
-  <!-- Zoom Controls (bottom-left) -->
-  <div style:bottom={`${zoomControlsBottom}px`} class="absolute left-3 max-md:left-20 z-20 flex items-center gap-1 bg-white rounded-lg shadow-lg border border-gray-200 px-1 py-0.5">
-    <button
-      class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-600 hover:text-gray-800 font-bold text-lg"
-      title={$t('canvasZoom.outHint')}
-      aria-label={$t('canvasZoom.out')}
-      onclick={() => {
-        const newZoom = Math.max(minimumZoom, zoom * 0.8);
-        // Zoom towards canvas center
-        const worldCX = (width / 2 - width / 2) / zoom + camX;
-        const worldCY = (height / 2 - height / 2) / zoom + camY;
-        camX = worldCX - (width / 2 - width / 2) / newZoom;
-        camY = worldCY - (height / 2 - height / 2) / newZoom;
-        zoom = newZoom;
-      }}
-    >−</button>
-    <button
-      class="min-w-[3.5rem] h-7 flex items-center justify-center rounded hover:bg-gray-100 text-xs font-medium text-gray-600 hover:text-gray-800 tabular-nums"
-      title={$t('canvasZoom.resetHint')}
-      aria-label={$t('canvasZoom.reset')}
-      onclick={() => { zoom = 1; }}
-    >{zoom < 0.01 ? (zoom * 100).toPrecision(2) : Math.round(zoom * 100)}%</button>
-    <button
-      class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-600 hover:text-gray-800 font-bold text-lg"
-      title={$t('canvasZoom.inHint')}
-      aria-label={$t('canvasZoom.in')}
-      onclick={() => {
-        const newZoom = Math.min(10, zoom * 1.25);
-        zoom = newZoom;
-      }}
-    >+</button>
-    <div class="w-px h-5 bg-gray-200"></div>
-    <button
-      class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700 text-sm"
-      title={$t('canvasZoom.fitHint')}
-      aria-label={$t('canvasZoom.fit')}
-      onclick={() => zoomToFit()}
-    >⊞</button>
-    <button
-      class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700 text-sm disabled:opacity-30 disabled:cursor-not-allowed"
-      title={$t('canvasZoom.selectionHint')}
-      aria-label={$t('canvasZoom.selection')}
-      disabled={fitSelectionIds().size === 0}
-      onclick={() => zoomToFit(true)}
-    >⊡</button>
-  </div>
+  <ZoomControls {zoom} {minimumZoom} bottom={zoomControlsBottom} canFitSelection={fitSelectionIds().size > 0}
+    onzoomout={() => {
+      const newZoom = Math.max(minimumZoom, zoom * 0.8);
+      // Zoom towards canvas center
+      const worldCX = (width / 2 - width / 2) / zoom + camX;
+      const worldCY = (height / 2 - height / 2) / zoom + camY;
+      camX = worldCX - (width / 2 - width / 2) / newZoom;
+      camY = worldCY - (height / 2 - height / 2) / newZoom;
+      zoom = newZoom;
+    }}
+    onreset={() => { zoom = 1; }}
+    onzoomin={() => {
+      const newZoom = Math.min(10, zoom * 1.25);
+      zoom = newZoom;
+    }}
+    onfit={() => zoomToFit()}
+    onfitselection={() => zoomToFit(true)} />
 
   {#if splitBlocked}
     <div role="status" class="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 shadow-md max-w-[90%]">
