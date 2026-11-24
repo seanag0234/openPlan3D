@@ -7,8 +7,12 @@
   const furnitureFinishLabels: Record<string, TranslationKey> = {"Wood": "furnitureFinish.Wood", "Metal": "furnitureFinish.Metal", "Fabric": "furnitureFinish.Fabric", "Leather": "furnitureFinish.Leather", "Glass": "furnitureFinish.Glass", "Plastic": "furnitureFinish.Plastic", "Stone": "furnitureFinish.Stone", "Ceramic": "furnitureFinish.Ceramic"};
   import { furnitureFinishes } from '$lib/utils/furnitureFinishes';
   import { resolveRooms } from '$lib/utils/roomDetection';
-  import { onDestroy } from 'svelte';
+  import { onDestroy, tick } from 'svelte';
+  import { get } from 'svelte/store';
+  import { coarsePointer } from '$lib/stores/pointer';
+  import { detailsOpen, planObstruction, revealSelection } from '$lib/stores/ui';
   import ItemDetailsPanel from './ItemDetailsPanel.svelte';
+  import LengthInput from '../LengthInput.svelte';
   import type { DetailTarget } from '$lib/models/types';
   import { catalogAssetUrl } from '$lib/utils/catalogAssetUrl';
   import { canDeleteItem } from '$lib/utils/editPolicy';
@@ -41,9 +45,6 @@
   function displayValue(cm: number): number {
     return settings.units === 'imperial' ? Math.round(cm / 2.54 * 10) / 10 : Math.round(cm * 1000) / 1000;
   }
-  function inputToCm(value: number): number {
-    return settings.units === 'imperial' ? value * 2.54 : value;
-  }
   function unitLabel(): string {
     return settings.units === 'imperial' ? 'in' : 'cm';
   }
@@ -73,6 +74,8 @@
   let invalidWallLength = $state(false);
   $effect(() => { void selId; fixedEndpoint = 'start'; wallLengthError = null; invalidWallLength = false; });
 
+  let doorWallLength = $derived(selectedDoorWall ? calcWallLength(selectedDoorWall) : 0);
+  let windowWallLength = $derived(selectedWindowWall ? calcWallLength(selectedWindowWall) : 0);
   // Calculate door distances
   let doorDistFromA = $derived(selectedDoor && selectedDoorWall ? calcWallLength(selectedDoorWall) * selectedDoor.position : 0);
   let doorDistFromB = $derived(selectedDoor && selectedDoorWall ? calcWallLength(selectedDoorWall) * (1 - selectedDoor.position) : 0);
@@ -95,14 +98,6 @@
     input.value = String(displayValue(calcWallLength(selectedWall)));
   }
 
-  /** Blank/invalid drafts leave geometry untouched; restore the saved value on blur. */
-  function dimensionInput(e: Event, current: number, save: (cm: number) => void, zeroAllowed = false, max = Infinity) {
-    const input = e.target as HTMLInputElement;
-    const value = inputToCm(input.valueAsNumber);
-    const valid = input.value.trim() && input.validity.valid && Number.isFinite(value) && (zeroAllowed ? value >= 0 : value > 0) && value <= max;
-    if (valid && input.valueAsNumber !== displayValue(current)) save(value);
-    else if (!valid && e.type === 'blur') input.value = String(displayValue(current));
-  }
   function scalarInput(e: Event, current: number, save: (value: number) => void) {
     const input = e.target as HTMLInputElement;
     const value = input.valueAsNumber;
@@ -110,26 +105,11 @@
     if (valid && value !== current) save(value);
     else if (!valid && e.type === 'blur') input.value = String(current);
   }
-  function onStairWidth(e: Event) {
-    if (selectedStair) dimensionInput(e, selectedStair.width, value => updateStair(selectedStair!.id, { width: value }));
-  }
-  function onStairDepth(e: Event) {
-    if (selectedStair) dimensionInput(e, selectedStair.depth, value => updateStair(selectedStair!.id, { depth: value }));
-  }
   function onStairRisers(e: Event) {
     if (selectedStair) scalarInput(e, selectedStair.riserCount, value => updateStair(selectedStair!.id, { riserCount: value }));
   }
   function onStairRotation(e: Event) {
     if (selectedStair) scalarInput(e, selectedStair.rotation, value => updateStair(selectedStair!.id, { rotation: value }));
-  }
-  function onColumnDiameter(e: Event) {
-    if (selectedColumn) dimensionInput(e, selectedColumn.diameter, value => updateColumn(selectedColumn!.id, { diameter: value }));
-  }
-  function onColumnHeight(e: Event) {
-    if (selectedColumn) dimensionInput(e, selectedColumn.height, value => updateColumn(selectedColumn!.id, { height: value }));
-  }
-  function onWallThickness(e: Event) {
-    if (selectedWall) dimensionInput(e, selectedWall.thickness, value => updateWall(selectedWall!.id, { thickness: value }));
   }
   let clippedOpenings = $derived.by(() => {
     if (!selectedWall || !floor) return false;
@@ -141,12 +121,6 @@
       return !rect || rect.right - rect.left < item.width - 0.01 || rect.top - rect.bottom < item.height - 0.01;
     });
   });
-  function onWallStartHeight(e: Event) {
-    if (selectedWall) dimensionInput(e, getWallStartHeight(selectedWall), value => updateWall(selectedWall!.id, { startHeight: value }), true);
-  }
-  function onWallEndHeight(e: Event) {
-    if (selectedWall) dimensionInput(e, getWallEndHeight(selectedWall), value => updateWall(selectedWall!.id, { endHeight: value }), true);
-  }
   function equalizeWallHeights() {
     if (!selectedWall) return;
     const startH = getWallStartHeight(selectedWall);
@@ -155,12 +129,6 @@
   function onWallColor(e: Event) {
     if (!selectedWall) return;
     updateWall(selectedWall.id, { color: (e.target as HTMLInputElement).value });
-  }
-  function onDoorWidth(e: Event) {
-    if (selectedDoor) dimensionInput(e, selectedDoor.width, value => updateDoor(selectedDoor!.id, { width: value }));
-  }
-  function onDoorHeight(e: Event) {
-    if (selectedDoor) dimensionInput(e, selectedDoor.height ?? 210, value => updateDoor(selectedDoor!.id, { height: value }));
   }
   function onDoorType(e: Event) {
     if (!selectedDoor) return;
@@ -182,15 +150,6 @@
     if (!selectedWindow) return;
     updateWindow(selectedWindow.id, { type: (e.target as HTMLSelectElement).value as Win['type'] });
   }
-  function onWindowWidth(e: Event) {
-    if (selectedWindow) dimensionInput(e, selectedWindow.width, value => updateWindow(selectedWindow!.id, { width: value }));
-  }
-  function onWindowHeight(e: Event) {
-    if (selectedWindow) dimensionInput(e, selectedWindow.height, value => updateWindow(selectedWindow!.id, { height: value }));
-  }
-  function onWindowSill(e: Event) {
-    if (selectedWindow) dimensionInput(e, selectedWindow.sillHeight ?? 90, value => updateWindow(selectedWindow!.id, { sillHeight: value }), true);
-  }
 
   // Furniture handlers
   function onFurnitureColor(color: string) {
@@ -202,26 +161,6 @@
   let furnitureSize = $derived(selectedFurniture ? getFurnitureSize(selectedFurniture) : null);
   function furnitureAxisScale(axis: 'x' | 'y' | 'z') {
     return Math.abs(selectedFurniture?.scale?.[axis] ?? 1) || 1;
-  }
-  function onFurnitureWidth(e: Event) {
-    if (!selectedFurniture || !furnitureSize) return;
-    dimensionInput(e, furnitureSize.width,
-      value => updateFurniture(selectedFurniture!.id, { width: value / furnitureAxisScale('x') }));
-  }
-  function onFurnitureDepth(e: Event) {
-    if (!selectedFurniture || !furnitureSize) return;
-    dimensionInput(e, furnitureSize.depth,
-      value => updateFurniture(selectedFurniture!.id, { depth: value / furnitureAxisScale('y') }));
-  }
-  function onFurnitureHeight(e: Event) {
-    if (!selectedFurniture || !furnitureSize) return;
-    dimensionInput(e, furnitureSize.height,
-      value => updateFurniture(selectedFurniture!.id, { height: value / furnitureAxisScale('z') }));
-  }
-  function onFurnitureElevation(e: Event) {
-    if (!selectedFurniture) return;
-    dimensionInput(e, furnitureElevation(selectedFurniture),
-      value => updateFurniture(selectedFurniture!.id, { elevation: storedFurnitureElevation(selectedFurniture!, value) }), true, MAX_FURNITURE_ELEVATION);
   }
   function onFurnitureMaterial(e: Event) {
     if (!selectedFurniture) return;
@@ -242,34 +181,10 @@
   }
 
   // Door distance handlers
-  function onDoorDistFromA(e: Event) {
-    if (!selectedDoor || !selectedDoorWall) return;
-    const length = calcWallLength(selectedDoorWall);
-    if (!Number.isFinite(length) || length <= 0) return;
-    dimensionInput(e, length * selectedDoor.position, value => updateDoor(selectedDoor!.id, { position: value / length }), true, length);
-  }
   
-  function onDoorDistFromB(e: Event) {
-    if (!selectedDoor || !selectedDoorWall) return;
-    const length = calcWallLength(selectedDoorWall);
-    if (!Number.isFinite(length) || length <= 0) return;
-    dimensionInput(e, length * (1 - selectedDoor.position), value => updateDoor(selectedDoor!.id, { position: 1 - value / length }), true, length);
-  }
 
   // Window distance handlers
-  function onWindowDistFromA(e: Event) {
-    if (!selectedWindow || !selectedWindowWall) return;
-    const length = calcWallLength(selectedWindowWall);
-    if (!Number.isFinite(length) || length <= 0) return;
-    dimensionInput(e, length * selectedWindow.position, value => updateWindow(selectedWindow!.id, { position: value / length }), true, length);
-  }
   
-  function onWindowDistFromB(e: Event) {
-    if (!selectedWindow || !selectedWindowWall) return;
-    const length = calcWallLength(selectedWindowWall);
-    if (!Number.isFinite(length) || length <= 0) return;
-    dimensionInput(e, length * (1 - selectedWindow.position), value => updateWindow(selectedWindow!.id, { position: 1 - value / length }), true, length);
-  }
   let detailTarget = $derived.by((): DetailTarget | null => {
     if (!floor) return null;
     for (const [kind, item] of [['walls', selectedWall], ['doors', selectedDoor], ['windows', selectedWindow], ['furniture', selectedFurniture], ['rooms', selectedRoom]] as const) {
@@ -379,11 +294,69 @@
     { label: '🧶 Carpet', ids: ['carpet-beige', 'carpet-gray'] },
   ];
 
+  let panelEl = $state<HTMLDivElement>();
+  // Every new selection starts its details at the top.
+  $effect(() => { void selId; void selRoomId; panelEl?.scrollTo({ top: 0 }); });
+
   let hasSelection = $derived(!!selectedWall || !!selectedDoor || !!selectedWindow || !!selectedFurniture || !!selectedRoom || !!selectedStair || !!selectedColumn || !!selectedTextAnnotation || !!selectedEntourage || (!is3D && hasBgImage));
+
+  // On a touch screen the details open only when asked, as a sheet over the plan that leaves its size alone.
+  let sheet = $derived($coarsePointer && !is3D);
+  let portrait = $state(false);
+  $effect(() => {
+    const upright = matchMedia('(orientation: portrait)');
+    const follow = () => { portrait = upright.matches; };
+    follow();
+    upright.addEventListener('change', follow);
+    return () => upright.removeEventListener('change', follow);
+  });
+  const todayClass = $derived(`${is3D ? 'w-80' : 'w-64'} shrink-0 bg-white border-l border-gray-200 flex flex-col overflow-y-auto p-3 fixed md:static right-0 top-12 bottom-9 z-40 shadow-lg max-md:top-auto max-md:bottom-0 max-md:left-0 max-md:w-full max-md:max-h-[45vh] max-md:border-l-0 max-md:border-t max-md:rounded-t-xl max-md:shadow-2xl`);
+  const sheetClass = $derived(portrait
+    ? 'bg-white border-t border-gray-200 flex flex-col overflow-y-auto p-3 fixed inset-x-0 bottom-0 max-h-[45vh] z-40 rounded-t-xl shadow-2xl'
+    : 'w-80 bg-white border-l border-gray-200 flex flex-col overflow-y-auto p-3 fixed right-0 top-12 bottom-0 z-40 shadow-2xl');
+  let sheetShowing = $derived(sheet && hasSelection && $detailsOpen);
+  $effect(() => { if (!hasSelection) detailsOpen.set(false); });
+  // Tell the plan how much of it the sheet covers, so it can slide the selection clear.
+  $effect(() => {
+    void selId; void selRoomId;
+    if (!sheetShowing) {
+      const now = get(planObstruction);
+      if (now.right || now.bottom) planObstruction.set({ right: 0, bottom: 0 });
+      return;
+    }
+    const upright = portrait;
+    let live = true;
+    tick().then(() => {
+      if (!live || !panelEl) return;
+      const rect = panelEl.getBoundingClientRect();
+      planObstruction.set(upright ? { right: 0, bottom: rect.height } : { right: rect.width, bottom: 0 });
+      revealSelection.update(n => n + 1);
+    });
+    return () => { live = false; };
+  });
+  onDestroy(() => { const now = get(planObstruction); if (now.right || now.bottom) planObstruction.set({ right: 0, bottom: 0 }); });
+  let sheetTitle = $derived.by(() => {
+    if (selectedFurniture) return customModelName(selectedFurniture, $currentProject) ?? (getCatalogItem(selectedFurniture.catalogId) ? furnitureName(selectedFurniture.catalogId, $locale) : $t('furnitureProperties.fallback'));
+    if (selectedWall) return $t('wallProperties.heading');
+    if (selectedDoor) return $t('openingProperties.door');
+    if (selectedWindow) return $t('openingProperties.window');
+    if (selectedRoom) return selectedRoom.name || $t('roomProperties.heading');
+    if (selectedEntourage) return $t('entourageLabels.title');
+    if (selectedStair) return $t('stairProperties.heading');
+    if (selectedColumn) return $t('columnProperties.heading');
+    if (selectedTextAnnotation) return selectedTextAnnotation.text || $t('annotationProperties.heading');
+    return $t('backgroundProperties.heading');
+  });
 </script>
 
-<!-- Right sidebar on md+; slides up as a bottom sheet on phones -->
-<div data-plan-properties class="{is3D ? 'w-80' : 'w-64'} shrink-0 bg-white border-l border-gray-200 flex flex-col overflow-y-auto p-3 fixed md:static right-0 top-12 bottom-9 z-40 shadow-lg max-md:top-auto max-md:bottom-0 max-md:left-0 max-md:w-full max-md:max-h-[45vh] max-md:border-l-0 max-md:border-t max-md:rounded-t-xl max-md:shadow-2xl" class:hidden={!hasSelection}>
+<!-- Right sidebar on md+; slides up as a bottom sheet on phones; a sheet over the plan on a touch screen -->
+<div data-plan-properties bind:this={panelEl} class={sheet ? sheetClass : todayClass} class:hidden={!hasSelection || (sheet && !$detailsOpen)}>
+  {#if sheet}
+    <div class="sticky top-0 -mx-3 -mt-3 mb-3 px-3 py-1 bg-white border-b border-gray-200 flex items-center gap-2 z-10">
+      <span class="flex-1 min-w-0 truncate text-sm font-semibold text-gray-800">{sheetTitle}</span>
+      <button class="min-h-[44px] px-4 rounded-lg bg-blue-600 text-white text-sm font-medium active:bg-blue-700" onclick={() => detailsOpen.set(false)}>{$t('panels.done')}</button>
+    </div>
+  {/if}
   {#if selectedWall}
     <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
       <span class="w-6 h-6 bg-gray-200 rounded flex items-center justify-center text-xs">▭</span>
@@ -404,19 +377,13 @@
       </label>
       <p class="text-xs text-gray-500">{$t('wallProperties.joinedHelp')}</p>
       {#if invalidWallLength || wallLengthError}<p role="alert" class="text-xs text-red-700">{invalidWallLength ? $t('wallProperties.minimum') : wallLengthError}</p>{/if}
-      <label class="block">
-        <span class="text-xs text-gray-500">{$t('wallProperties.thickness')} ({unitLabel()})</span>
-        <input type="number" value={displayValue(selectedWall.thickness)} oninput={onWallThickness} onblur={onWallThickness} step="any" class="w-full px-2 py-1 border border-gray-200 rounded text-sm" />
-      </label>
+      <LengthInput label={$t('wallProperties.thickness')} valueCm={selectedWall.thickness} units={settings.units}
+        oncommit={cm => updateWall(selectedWall!.id, { thickness: cm })} />
       <div class="grid grid-cols-2 gap-2">
-        <label class="block">
-          <span class="text-xs text-gray-500">{$t('wallProperties.startHeight')} ({unitLabel()})</span>
-          <input type="number" value={displayValue(getWallStartHeight(selectedWall))} min="0" step="any" oninput={onWallStartHeight} onblur={onWallStartHeight} class="w-full px-2 py-1 border border-gray-200 rounded text-sm" />
-        </label>
-        <label class="block">
-          <span class="text-xs text-gray-500">{$t('wallProperties.endHeight')} ({unitLabel()})</span>
-          <input type="number" value={displayValue(getWallEndHeight(selectedWall))} min="0" step="any" oninput={onWallEndHeight} onblur={onWallEndHeight} class="w-full px-2 py-1 border border-gray-200 rounded text-sm" />
-        </label>
+        <LengthInput label={$t('wallProperties.startHeight')} valueCm={getWallStartHeight(selectedWall)} units={settings.units} zeroAllowed
+          oncommit={cm => updateWall(selectedWall!.id, { startHeight: cm })} />
+        <LengthInput label={$t('wallProperties.endHeight')} valueCm={getWallEndHeight(selectedWall)} units={settings.units} zeroAllowed
+          oncommit={cm => updateWall(selectedWall!.id, { endHeight: cm })} />
       </div>
       {#if clippedOpenings}
         <p role="status" class="text-xs text-amber-800 bg-amber-50 rounded p-2">{$t('wallProperties.clipped')}</p>
@@ -562,22 +529,14 @@
       {$t('openingProperties.door')}
     </h3>
     <div class="space-y-3">
-      <label class="block">
-        <span class="text-xs text-gray-500">{$t('openingProperties.width')} ({unitLabel()})</span>
-        <input type="number" value={displayValue(selectedDoor.width)} oninput={onDoorWidth} onblur={onDoorWidth} step="any" min="0" class="w-full px-2 py-1 border border-gray-200 rounded text-sm" />
-      </label>
-      <label class="block">
-        <span class="text-xs text-gray-500">{$t('openingProperties.fromA')} ({unitLabel()})</span>
-        <input type="number" value={displayValue(doorDistFromA)} oninput={onDoorDistFromA} onblur={onDoorDistFromA} step="any" class="w-full px-2 py-1 border border-gray-200 rounded text-sm" />
-      </label>
-      <label class="block">
-        <span class="text-xs text-gray-500">{$t('openingProperties.fromB')} ({unitLabel()})</span>
-        <input type="number" value={displayValue(doorDistFromB)} oninput={onDoorDistFromB} onblur={onDoorDistFromB} step="any" class="w-full px-2 py-1 border border-gray-200 rounded text-sm" />
-      </label>
-      <label class="block">
-        <span class="text-xs text-gray-500">{$t('openingProperties.height')} ({unitLabel()})</span>
-        <input type="number" value={displayValue(selectedDoor.height ?? 210)} oninput={onDoorHeight} onblur={onDoorHeight} step="any" class="w-full px-2 py-1 border border-gray-200 rounded text-sm" />
-      </label>
+      <LengthInput label={$t('openingProperties.width')} valueCm={selectedDoor.width} units={settings.units}
+        oncommit={cm => updateDoor(selectedDoor!.id, { width: cm })} />
+      <LengthInput label={$t('openingProperties.fromA')} valueCm={doorDistFromA} units={settings.units} zeroAllowed maxCm={doorWallLength}
+        oncommit={cm => { if (doorWallLength > 0) updateDoor(selectedDoor!.id, { position: cm / doorWallLength }); }} />
+      <LengthInput label={$t('openingProperties.fromB')} valueCm={doorDistFromB} units={settings.units} zeroAllowed maxCm={doorWallLength}
+        oncommit={cm => { if (doorWallLength > 0) updateDoor(selectedDoor!.id, { position: 1 - cm / doorWallLength }); }} />
+      <LengthInput label={$t('openingProperties.height')} valueCm={selectedDoor.height ?? 210} units={settings.units}
+        oncommit={cm => updateDoor(selectedDoor!.id, { height: cm })} />
       <label class="block">
         <span class="text-xs text-gray-500">{$t('openingProperties.type')}</span>
         <select value={selectedDoor.type} onchange={onDoorType} class="w-full px-2 py-1 border border-gray-200 rounded text-sm">
@@ -680,26 +639,16 @@
           <option value="bay">{$t('openingCatalog.bay')}</option>
         </select>
       </label>
-      <label class="block">
-        <span class="text-xs text-gray-500">{$t('openingProperties.width')} ({unitLabel()})</span>
-        <input type="number" value={displayValue(selectedWindow.width)} oninput={onWindowWidth} onblur={onWindowWidth} step="any" min="0" class="w-full px-2 py-1 border border-gray-200 rounded text-sm" />
-      </label>
-      <label class="block">
-        <span class="text-xs text-gray-500">{$t('openingProperties.fromA')} ({unitLabel()})</span>
-        <input type="number" value={displayValue(windowDistFromA)} oninput={onWindowDistFromA} onblur={onWindowDistFromA} step="any" class="w-full px-2 py-1 border border-gray-200 rounded text-sm" />
-      </label>
-      <label class="block">
-        <span class="text-xs text-gray-500">{$t('openingProperties.fromB')} ({unitLabel()})</span>
-        <input type="number" value={displayValue(windowDistFromB)} oninput={onWindowDistFromB} onblur={onWindowDistFromB} step="any" class="w-full px-2 py-1 border border-gray-200 rounded text-sm" />
-      </label>
-      <label class="block">
-        <span class="text-xs text-gray-500">{$t('openingProperties.height')} ({unitLabel()})</span>
-        <input type="number" value={displayValue(selectedWindow.height)} oninput={onWindowHeight} onblur={onWindowHeight} step="any" class="w-full px-2 py-1 border border-gray-200 rounded text-sm" />
-      </label>
-      <label class="block">
-        <span class="text-xs text-gray-500">{$t('openingProperties.sill')} ({unitLabel()})</span>
-        <input type="number" value={displayValue(selectedWindow.sillHeight)} oninput={onWindowSill} onblur={onWindowSill} step="any" class="w-full px-2 py-1 border border-gray-200 rounded text-sm" />
-      </label>
+      <LengthInput label={$t('openingProperties.width')} valueCm={selectedWindow.width} units={settings.units}
+        oncommit={cm => updateWindow(selectedWindow!.id, { width: cm })} />
+      <LengthInput label={$t('openingProperties.fromA')} valueCm={windowDistFromA} units={settings.units} zeroAllowed maxCm={windowWallLength}
+        oncommit={cm => { if (windowWallLength > 0) updateWindow(selectedWindow!.id, { position: cm / windowWallLength }); }} />
+      <LengthInput label={$t('openingProperties.fromB')} valueCm={windowDistFromB} units={settings.units} zeroAllowed maxCm={windowWallLength}
+        oncommit={cm => { if (windowWallLength > 0) updateWindow(selectedWindow!.id, { position: 1 - cm / windowWallLength }); }} />
+      <LengthInput label={$t('openingProperties.height')} valueCm={selectedWindow.height} units={settings.units}
+        oncommit={cm => updateWindow(selectedWindow!.id, { height: cm })} />
+      <LengthInput label={$t('openingProperties.sill')} valueCm={selectedWindow.sillHeight ?? 90} units={settings.units} zeroAllowed
+        oncommit={cm => updateWindow(selectedWindow!.id, { sillHeight: cm })} />
     </div>
 
   {:else if selectedFurniture}
@@ -756,43 +705,15 @@
       </div>
       
       <!-- Dimensions -->
-      <label class="block">
-        <span class="text-xs text-gray-500">{$t('openingProperties.width')} ({unitLabel()})</span>
-        <input 
-          type="number" 
-          value={displayValue(furnitureSize?.width ?? 50)}
-          oninput={onFurnitureWidth} onblur={onFurnitureWidth} min={settings.units === 'imperial' ? 1 / 2.54 : 1} step="any"
-          class="w-full px-2 py-1 border border-gray-200 rounded text-sm" 
-        />
-      </label>
-      <label class="block">
-        <span class="text-xs text-gray-500">{$t('furnitureProperties.depth')} ({unitLabel()})</span>
-        <input 
-          type="number" 
-          value={displayValue(furnitureSize?.depth ?? 50)}
-          oninput={onFurnitureDepth} onblur={onFurnitureDepth} min={settings.units === 'imperial' ? 1 / 2.54 : 1} step="any"
-          class="w-full px-2 py-1 border border-gray-200 rounded text-sm" 
-        />
-      </label>
-      <label class="block">
-        <span class="text-xs text-gray-500">{$t('openingProperties.height')} ({unitLabel()})</span>
-        <input 
-          type="number" 
-          value={displayValue(furnitureSize?.height ?? 50)}
-          oninput={onFurnitureHeight} onblur={onFurnitureHeight} min={settings.units === 'imperial' ? 1 / 2.54 : 1} step="any"
-          class="w-full px-2 py-1 border border-gray-200 rounded text-sm" 
-        />
-      </label>
-      <label class="block">
-        <span class="text-xs text-gray-500">{$t('furnitureProperties.elevation')} ({unitLabel()})</span>
-        <input
-          type="number"
-          value={displayValue(furnitureElevation(selectedFurniture))}
-          oninput={onFurnitureElevation} onblur={onFurnitureElevation} min="0" step="any"
-          title={$t('furnitureProperties.elevationHelp')}
-          class="w-full px-2 py-1 border border-gray-200 rounded text-sm"
-        />
-      </label>
+      <LengthInput label={$t('openingProperties.width')} valueCm={furnitureSize?.width ?? 50} units={settings.units} minCm={1}
+        oncommit={cm => updateFurniture(selectedFurniture!.id, { width: cm / furnitureAxisScale('x') })} />
+      <LengthInput label={$t('furnitureProperties.depth')} valueCm={furnitureSize?.depth ?? 50} units={settings.units} minCm={1}
+        oncommit={cm => updateFurniture(selectedFurniture!.id, { depth: cm / furnitureAxisScale('y') })} />
+      <LengthInput label={$t('openingProperties.height')} valueCm={furnitureSize?.height ?? 50} units={settings.units} minCm={1}
+        oncommit={cm => updateFurniture(selectedFurniture!.id, { height: cm / furnitureAxisScale('z') })} />
+      <LengthInput label={$t('furnitureProperties.elevation')} valueCm={furnitureElevation(selectedFurniture)} units={settings.units}
+        zeroAllowed maxCm={MAX_FURNITURE_ELEVATION} title={$t('furnitureProperties.elevationHelp')}
+        oncommit={cm => updateFurniture(selectedFurniture!.id, { elevation: storedFurnitureElevation(selectedFurniture!, cm) })} />
       
       <!-- Material -->
       <label class="block">
@@ -961,10 +882,9 @@
         <span class="text-xs text-gray-500">{$t('symbolProperties.symbol')}</span>
         <p class="text-sm text-gray-700">{entourageLabels[selectedEntourage.defId] ? $t(entourageLabels[selectedEntourage.defId]) : getEntourageDef(selectedEntourage.defId)?.name ?? $t('symbolProperties.custom')}</p>
       </div>
-      <label class="block">
-        <span class="text-xs text-gray-500">{$t('openingProperties.width')} ({unitLabel()})</span>
-        <input type="number" value={displayValue(selectedEntourage.width)} oninput={(e) => dimensionInput(e, selectedEntourage!.width, value => updateEntourageItem(selectedEntourage!.id, { width: value }))} onblur={(e) => dimensionInput(e, selectedEntourage!.width, value => updateEntourageItem(selectedEntourage!.id, { width: value }))} min={settings.units === 'imperial' ? 1 / 2.54 : 1} step="any" class="w-full px-2 py-1 border border-gray-200 rounded text-sm" />
-      </label>
+      <!-- A single box in inches: tests/browser/property-drafts.spec.ts types a symbol's whole width into "Width (in)". -->
+      <LengthInput label={$t('openingProperties.width')} valueCm={selectedEntourage.width} units={settings.units} minCm={1} split={false}
+        oncommit={cm => updateEntourageItem(selectedEntourage!.id, { width: cm })} />
       <label class="block">
         <span class="text-xs text-gray-500">{$t('symbolProperties.rotation')}</span>
         <input type="number" value={selectedEntourage.rotation} oninput={(e) => scalarInput(e, selectedEntourage!.rotation, value => updateEntourageItem(selectedEntourage!.id, { rotation: value }))} onblur={(e) => scalarInput(e, selectedEntourage!.rotation, value => updateEntourageItem(selectedEntourage!.id, { rotation: value }))} step="any" class="w-full px-2 py-1 border border-gray-200 rounded text-sm" />
@@ -996,14 +916,10 @@
           <option value="spiral">{$t('stairProperties.spiral')}</option>
         </select>
       </label>
-      <label class="block">
-        <span class="text-xs text-gray-500">{$t('openingProperties.width')} ({unitLabel()})</span>
-        <input type="number" value={displayValue(selectedStair.width)} oninput={onStairWidth} onblur={onStairWidth} min="0" step="any" class="w-full px-2 py-1 border border-gray-200 rounded text-sm" />
-      </label>
-      <label class="block">
-        <span class="text-xs text-gray-500">{$t('furnitureProperties.depth')} ({unitLabel()})</span>
-        <input type="number" value={displayValue(selectedStair.depth)} oninput={onStairDepth} onblur={onStairDepth} min="0" step="any" class="w-full px-2 py-1 border border-gray-200 rounded text-sm" />
-      </label>
+      <LengthInput label={$t('openingProperties.width')} valueCm={selectedStair.width} units={settings.units}
+        oncommit={cm => updateStair(selectedStair!.id, { width: cm })} />
+      <LengthInput label={$t('furnitureProperties.depth')} valueCm={selectedStair.depth} units={settings.units}
+        oncommit={cm => updateStair(selectedStair!.id, { depth: cm })} />
       <label class="block">
         <span class="text-xs text-gray-500">{$t('stairProperties.risers')}</span>
         <input type="number" value={selectedStair.riserCount} min="3" max="30" step="1" oninput={onStairRisers} onblur={onStairRisers} class="w-full px-2 py-1 border border-gray-200 rounded text-sm" />
@@ -1033,14 +949,11 @@
           <button aria-pressed={selectedColumn.shape === 'square'} onclick={() => updateColumn(selectedColumn!.id, { shape: 'square' })} class="flex-1 px-2 py-1.5 border rounded text-sm transition-colors {selectedColumn.shape === 'square' ? 'bg-blue-100 border-blue-400 text-blue-700' : 'border-gray-200 hover:bg-gray-50'}">⬜ {$t('columnProperties.square')}</button>
         </div>
       </div>
-      <label class="block">
-        <span class="text-xs text-gray-500">{selectedColumn.shape === 'round' ? $t('columnProperties.diameter') : $t('columnProperties.side')} ({unitLabel()})</span>
-        <input type="number" value={displayValue(selectedColumn.diameter)} min={settings.units === 'imperial' ? 10 / 2.54 : 10} max={settings.units === 'imperial' ? 200 / 2.54 : 200} step="any" oninput={onColumnDiameter} onblur={onColumnDiameter} class="w-full px-2 py-1 border border-gray-200 rounded text-sm" />
-      </label>
-      <label class="block">
-        <span class="text-xs text-gray-500">{$t('openingProperties.height')} ({unitLabel()})</span>
-        <input type="number" value={displayValue(selectedColumn.height)} min={settings.units === 'imperial' ? 50 / 2.54 : 50} max={settings.units === 'imperial' ? 1000 / 2.54 : 1000} step="any" oninput={onColumnHeight} onblur={onColumnHeight} class="w-full px-2 py-1 border border-gray-200 rounded text-sm" />
-      </label>
+      <!-- Single boxes in inches: tests/browser/structural-dimensions.spec.ts types a column's whole size into "(in)". -->
+      <LengthInput label={selectedColumn.shape === 'round' ? $t('columnProperties.diameter') : $t('columnProperties.side')} valueCm={selectedColumn.diameter} units={settings.units} minCm={10} maxCm={200} split={false}
+        oncommit={cm => updateColumn(selectedColumn!.id, { diameter: cm })} />
+      <LengthInput label={$t('openingProperties.height')} valueCm={selectedColumn.height} units={settings.units} minCm={50} maxCm={1000} split={false}
+        oncommit={cm => updateColumn(selectedColumn!.id, { height: cm })} />
       <div>
         <span class="text-xs text-gray-500 mb-1.5 block">{$t('furnitureProperties.color')}</span>
         <div class="grid grid-cols-5 gap-1.5 mb-2">

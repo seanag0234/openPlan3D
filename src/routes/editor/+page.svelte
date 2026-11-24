@@ -31,6 +31,8 @@
   import NoteSheet from '$lib/components/editor/NoteSheet.svelte';
   import NotesList from '$lib/components/editor/NotesList.svelte';
   import OnboardingTooltip from '$lib/components/OnboardingTooltip.svelte';
+  import { coarsePointer } from '$lib/stores/pointer';
+  import { buildPanelFolded } from '$lib/stores/ui';
 
   let commandPaletteOpen = $state(false);
   let printOpen = $state(false);
@@ -180,6 +182,11 @@
 
   onMount(() => {
     void initializeEditor();
+    // Upright, the list of things to add folds away so the plan keeps its width; on its side it opens again.
+    const upright = window.matchMedia('(orientation: portrait)');
+    const followTurn = () => buildPanelFolded.set(upright.matches);
+    followTurn();
+    upright.addEventListener('change', followTurn);
     // Local agent bridge (dev server only): agents read and edit this project; see docs/agent-bridge.md.
     const stopAgentBridge = startAgentBridge();
     // Imports can replace the active project from either sidebar or toolbar.
@@ -205,6 +212,7 @@
     window.addEventListener('beforeunload', onBeforeUnload);
     document.addEventListener('visibilitychange', onVisibilityChange);
     return () => {
+      upright.removeEventListener('change', followTurn);
       stopAgentBridge();
       stopSyncProjectUrl();
       window.removeEventListener('beforeunload', onBeforeUnload);
@@ -242,8 +250,23 @@
             aria-hidden="true"
           ></div>
         {/if}
-        <div class="h-full max-md:fixed max-md:left-0 max-md:top-12 max-md:bottom-0 max-md:h-auto max-md:z-50 max-md:shadow-2xl max-md:transition-transform max-md:duration-200 {buildPanelOpen ? '' : 'max-md:-translate-x-full'}">
+        {#if $coarsePointer && $buildPanelFolded}
+          <div class="max-md:hidden h-full w-12 shrink-0 bg-white border-r border-gray-200 flex flex-col items-center pt-2">
+            <button class="w-11 min-h-[44px] flex flex-col items-center justify-center rounded-lg text-gray-700 active:bg-gray-100" onclick={() => buildPanelFolded.set(false)}>
+              <span class="text-lg leading-none" aria-hidden="true">＋</span><span class="text-[11px] leading-tight">{$t('panels.add')}</span>
+            </button>
+          </div>
+        {/if}
+        <!-- On a touch screen the list folds away; CSS hides it so it keeps its search text. -->
+        <div class="h-full max-md:fixed max-md:left-0 max-md:top-12 max-md:bottom-0 max-md:h-auto max-md:z-50 max-md:shadow-2xl max-md:transition-transform max-md:duration-200 {buildPanelOpen ? '' : 'max-md:-translate-x-full'} {$coarsePointer ? 'relative' : ''} {$coarsePointer && $buildPanelFolded ? 'md:hidden' : ''}">
           <BuildPanel />
+          {#if $coarsePointer}
+            <button
+              class="max-md:hidden absolute right-0 top-1/2 -translate-y-1/2 z-10 w-7 h-11 rounded-l-lg bg-white border border-r-0 border-gray-200 shadow text-xl leading-none text-gray-600 active:bg-gray-100"
+              aria-label={$t('panels.hideList')} title={$t('panels.hideList')}
+              onclick={() => buildPanelFolded.set(true)}
+            >‹</button>
+          {/if}
         </div>
       {/if}
       <div class="flex-1 min-w-0 relative">
@@ -282,46 +305,69 @@
     </button>
   {/if}
 
-  <!-- Layers toggle button -->
-  {#if mode === '2d'}
+  <!-- Help, layers and history, side by side so they keep clear of each other; a column within the rail on a touch screen -->
+  <div class="max-md:hidden pointer-events-none fixed bottom-4 z-50 flex {$coarsePointer ? 'flex-col left-0.5' : 'items-center left-4'} gap-2">
     <button
-      class="max-md:hidden fixed bottom-4 left-14 w-8 h-8 rounded-full shadow-lg hover:bg-slate-600 transition-colors z-50 text-sm"
-      class:bg-blue-600={showLayers}
-      class:text-white={showLayers}
-      class:bg-slate-700={!showLayers}
-      class:text-gray-300={!showLayers}
-      onclick={() => showLayers = !showLayers}
-      title={$t('editorPanels.layersTitle')}
-      aria-label={$t('editorPanels.layers')}
-      aria-expanded={showLayers}
-    >🗂</button>
-  {/if}
-
-  <!-- Undo History toggle button -->
-  <button
-    class="max-md:hidden fixed bottom-4 left-24 w-8 h-8 rounded-full shadow-lg hover:bg-slate-600 transition-colors z-50 text-sm"
-    class:bg-blue-600={showUndoHistory}
-    class:text-white={showUndoHistory}
-    class:bg-slate-700={!showUndoHistory}
-    class:text-gray-300={!showUndoHistory}
-    onclick={(event) => toggleHistory(event.currentTarget)}
-    title={$t('undoHistory.title')}
-    aria-label={$t('editorPanels.history')}
+      class="pointer-events-auto w-8 h-8 rounded-full bg-slate-700 text-white text-sm font-bold shadow-lg hover:bg-slate-600 transition-colors z-50"
+      onclick={() => showHelp = !showHelp}
+      title={$coarsePointer ? $t('panels.help') : `${$t('shortcuts.title')} (?)`}
+      aria-label={$coarsePointer ? $t('panels.help') : $t('shortcuts.title')}
+    >?</button>
+    {#if mode === '2d'}
+      <button
+        class="pointer-events-auto w-8 h-8 rounded-full shadow-lg hover:bg-slate-600 transition-colors z-50 text-sm"
+        class:bg-blue-600={showLayers}
+        class:text-white={showLayers}
+        class:bg-slate-700={!showLayers}
+        class:text-gray-300={!showLayers}
+        onclick={() => showLayers = !showLayers}
+        title={$t('editorPanels.layersTitle')}
+        aria-label={$t('editorPanels.layers')}
+        aria-expanded={showLayers}
+      >🗂</button>
+    {:else if !$coarsePointer}
+      <!-- Keep History and Notes in their places, clear of the 3D view's Lighting button under the empty one -->
+      <span class="w-8 h-8" aria-hidden="true"></span>
+    {/if}
+    <button
+      class="pointer-events-auto w-8 h-8 rounded-full shadow-lg hover:bg-slate-600 transition-colors z-50 text-sm"
+      class:bg-blue-600={showUndoHistory}
+      class:text-white={showUndoHistory}
+      class:bg-slate-700={!showUndoHistory}
+      class:text-gray-300={!showUndoHistory}
+      onclick={(event) => toggleHistory(event.currentTarget)}
+      title={$t('undoHistory.title')}
+      aria-label={$t('editorPanels.history')}
       aria-expanded={showUndoHistory}
-  >⟲</button>
+    >⟲</button>
+    <NotesList />
+  </div>
 
   <UndoHistoryPanel bind:visible={showUndoHistory} returnFocusTo={historyTrigger} />
 
-  <!-- Help button (desktop only — keyboard shortcuts are meaningless on touch) -->
-  <button
-    class="max-md:hidden fixed bottom-4 left-4 w-8 h-8 rounded-full bg-slate-700 text-white text-sm font-bold shadow-lg hover:bg-slate-600 transition-colors z-50"
-    onclick={() => showHelp = !showHelp}
-    title={`${$t('shortcuts.title')} (?)`}
-    aria-label={$t('shortcuts.title')}
-  >?</button>
+  <!-- On a touch screen, help speaks of fingers -->
+  {#if showHelp && $coarsePointer}
+    <dialog use:modalDialog class="modal-overlay fixed inset-0 bg-black/50 flex items-center justify-center z-50" onclick={(e) => { if (e.target === e.currentTarget) showHelp = false; }} oncancel={(e) => { e.preventDefault(); showHelp = false; }} aria-label={$t('panels.touchHelpTitle')}>
+      <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full mx-4 p-5 flex flex-col gap-4">
+        <h2 class="text-lg font-bold text-slate-800">{$t('panels.touchHelpTitle')}</h2>
+        <ul class="flex flex-col gap-2.5 text-base text-gray-700 list-disc pl-5">
+          <li>{$t('panels.touchHelp1')}</li>
+          <li>{$t('panels.touchHelp2')}</li>
+          <li>{$t('panels.touchHelp3')}</li>
+          <li>{$t('panels.touchHelp4')}</li>
+          <li>{$t('panels.touchHelp5')}</li>
+          <li>{$t('panels.touchHelp6')}</li>
+        </ul>
+        <div class="flex items-center gap-2">
+          <a href={USER_GUIDE_URL} target="_blank" rel="noopener" class="min-h-[44px] px-3 flex items-center rounded-lg text-sm text-slate-600 bg-slate-100">{$t('help.userGuide')}</a>
+          <button class="ml-auto min-h-[44px] px-6 rounded-lg bg-blue-600 text-white text-sm font-medium active:bg-blue-700" onclick={() => showHelp = false}>{$t('panels.done')}</button>
+        </div>
+      </div>
+    </dialog>
+  {/if}
 
   <!-- Shortcuts overlay -->
-  {#if showHelp}
+  {#if showHelp && !$coarsePointer}
     <dialog use:modalDialog class="modal-overlay fixed inset-0 bg-black/50 flex items-center justify-center z-50" onclick={(e) => { if (e.target === e.currentTarget) showHelp = false; }} oncancel={(e) => { e.preventDefault(); showHelp = false; }} onkeydown={(e) => { if (e.key === '?') { e.preventDefault(); showHelp = false; } }} aria-label={$t('shortcuts.title')}>
       <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[85vh] flex flex-col">
         <!-- Header -->
@@ -508,7 +554,6 @@
   <CommandPalette bind:open={commandPaletteOpen} />
   <PrintLayout bind:open={printOpen} />
   <NoteSheet />
-  <NotesList />
   <OnboardingTooltip />
 {:else}
   <div class="h-screen flex flex-col items-center justify-center gap-3">
