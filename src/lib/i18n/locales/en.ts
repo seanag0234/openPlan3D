@@ -613,7 +613,7 @@ export const en = {
   "doorJoin.sameRoom": "Pick a door that belongs to another room.",
   "buildTools.build": "Build",
   "buildTools.rooms": "Rooms",
-  "buildTools.objects": "Objects",
+  "buildTools.objects": "Things",
   "buildTools.tools": "Tools",
   "buildTools.select": "Select",
   "buildTools.selectHelp": "Pick things on the plan",

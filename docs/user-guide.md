@@ -81,7 +81,7 @@ them as copies. **Restore a library backup** also takes a project from
   save status ("Saved ✓", "Saving…" or "Unsaved •") and **Save**.
 - **Left sidebar** with three tabs: **Build** (tools, stairs, columns, text,
   dimensions, measure, import, doors and windows), **Rooms** (room presets and
-  templates) and **Objects** (furniture catalog, your own 3D models, 2D
+  templates) and **Things** (furniture catalog, your own 3D models, 2D
   entourage symbols).
 - **Canvas** in the middle. An empty project shows "Start building your floor
   plan — Draw walls with W or drag items from the sidebar". The status bar
@@ -272,7 +272,7 @@ Bay 200×150cm).
 
 ### The catalog
 
-**Objects** tab. Use **Search furniture...**, the **All** / **♥ Favorites** /
+**Things** tab. Use **Search furniture...**, the **All** / **♥ Favorites** /
 category chips (Living Room, Bedroom, Kitchen, Bathroom, Office, Dining, Decor,
 Lighting, Outdoor Furniture, Landscaping, Fencing, Structures, Pool & Spa,
 Garage, Paths & Lawns, Outdoor Lighting, Garden Structures, Electrical,
@@ -321,7 +321,7 @@ Properties** has Shape, Diameter or Side Length, and colours.
 
 ### Entourage (2D symbols)
 
-At the bottom of the Objects tab, **Entourage** holds flat symbols for plans:
+At the bottom of the Things tab, **Entourage** holds flat symbols for plans:
 People, Vehicles, Planting and Outdoor. Click one, then click the canvas to
 place it ("Shift-click to stamp several"). **+ Upload symbol (PNG, JPEG,
 WebP)** adds your own image (up to 2 MB); it appears under **Custom**. Symbols
@@ -329,7 +329,7 @@ have Rotation, Opacity and a lock; they show in 2D and in 2D exports.
 
 ### My 3D models (your own GLB files)
 
-At the top of the Objects tab, **My 3D models → Import GLB model** ("Static
+At the top of the Things tab, **My 3D models → Import GLB model** ("Static
 GLB files up to 16 MiB. Files stay in this project."):
 
 1. Choose a `.glb` file. A preview shows its size as "Width … × depth … ×

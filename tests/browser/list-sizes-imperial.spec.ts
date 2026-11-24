@@ -3,7 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 async function openObjects(page: Page) {
   await page.addInitScript(() => localStorage.setItem('hasSeenWelcome', 'true'));
   await page.goto('/editor');
-  await page.getByRole('button', { name: 'Objects', exact: true }).click();
+  await page.getByRole('button', { name: 'Things', exact: true }).click();
   await expect(page.getByRole('textbox', { name: 'Search furniture...', exact: true })).toBeVisible();
 }
 

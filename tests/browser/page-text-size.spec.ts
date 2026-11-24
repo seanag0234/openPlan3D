@@ -47,7 +47,7 @@ for (const [name, device] of devices) {
       // Each tab of the list of things to add; upright it opens from Add.
       const add = page.getByRole('button', { name: 'Add', exact: true });
       if (await add.isVisible()) await press(add);
-      for (const tab of ['Build', 'Rooms', 'Objects']) {
+      for (const tab of ['Build', 'Rooms', 'Things']) {
         await press(page.getByRole('button', { name: tab, exact: true }));
         await expectReadable(`the ${tab} tab of the list of things to add`);
       }

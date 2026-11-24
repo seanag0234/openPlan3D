@@ -122,7 +122,7 @@ test('catalog and 3D use bounded, cacheable assets with zero startup model downl
   }));
   await importJSON(page, fixture);
   await expect(page.getByRole('combobox', { name: 'Current floor' }).locator('option')).toHaveCount(3);
-  await page.getByRole('button', { name: 'Objects', exact: true }).click();
+  await page.getByRole('button', { name: 'Things', exact: true }).click();
   await expect.poll(() => assets.filter(x => x.url.endsWith('.glb')).length).toBeGreaterThan(0);
   await page.waitForLoadState('networkidle');
   await Promise.all(pending);

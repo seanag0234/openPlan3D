@@ -9,7 +9,7 @@ test('Add a box puts one plain 3 ft box on the plan, undone in one step', async 
   await openPlan(page, FIXTURE);
   const before = await pieces(page);
   await closeMenus(page);
-  await page.getByRole('button', { name: 'Objects', exact: true }).click();
+  await page.getByRole('button', { name: 'Things', exact: true }).click();
   await page.getByRole('button', { name: /^＋ Add a box\b/ }).click();
   // A mouse keeps the list open.
   await expect(page.locator('[data-build-folded]')).toHaveAttribute('data-build-folded', 'false');
@@ -24,7 +24,7 @@ test('Add a box puts one plain 3 ft box on the plan, undone in one step', async 
 
 test('a search with no match offers a plain box with that name', async ({ page }) => {
   await openPlan(page, FIXTURE);
-  await page.getByRole('button', { name: 'Objects', exact: true }).click();
+  await page.getByRole('button', { name: 'Things', exact: true }).click();
   const search = page.getByRole('textbox', { name: 'Search furniture...', exact: true });
   await search.fill('slide');
   await expect(page.getByText('Nothing in the list is called “slide”.', { exact: true })).toBeVisible();
@@ -41,7 +41,7 @@ test.describe('on an iPad held upright', () => {
     await openPlan(page, FIXTURE);
     // Held upright the list starts folded away; Add brings it back.
     await page.getByRole('button', { name: 'Add', exact: true }).click();
-    await page.getByRole('button', { name: 'Objects', exact: true }).click();
+    await page.getByRole('button', { name: 'Things', exact: true }).click();
     const search = page.getByRole('textbox', { name: 'Search furniture...', exact: true });
     await expect(search).toBeVisible();
     await expect(page.locator('[data-build-folded]')).toHaveAttribute('data-build-folded', 'false');

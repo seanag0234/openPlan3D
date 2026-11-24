@@ -9,7 +9,7 @@ test('imports, previews, places and retains a local custom model through undo an
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   const bytes = await readFile('tests/fixtures/local-model-textured-box.glb');
   await page.goto('/editor');
-  await page.getByRole('button', { name: 'Objects', exact: true }).click();
+  await page.getByRole('button', { name: 'Things', exact: true }).click();
   const panel = page.getByRole('region', { name: 'My 3D models', exact: true });
   const input = panel.locator('input[type=file]');
   await input.setInputFiles('tests/fixtures/local-model-textured-box.glb');

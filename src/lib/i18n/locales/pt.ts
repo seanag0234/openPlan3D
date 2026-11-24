@@ -613,7 +613,7 @@ export const pt = {
   "doorJoin.sameRoom": "Escolha uma porta que pertença a outro cômodo.",
   "buildTools.build": "Construir",
   "buildTools.rooms": "Ambientes",
-  "buildTools.objects": "Objetos",
+  "buildTools.objects": "Coisas",
   "buildTools.tools": "Ferramentas",
   "buildTools.select": "Selecionar",
   "buildTools.selectHelp": "Escolha coisas na planta",

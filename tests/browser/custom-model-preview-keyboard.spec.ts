@@ -7,7 +7,7 @@ test('model preview can rotate and zoom using keyboard-operated controls', async
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/editor');
-  await page.getByRole('button', { name: 'Objects', exact: true }).click();
+  await page.getByRole('button', { name: 'Things', exact: true }).click();
   await page.getByRole('region', { name: 'My 3D models', exact: true }).locator('input[type=file]').setInputFiles('tests/fixtures/local-model-textured-box.glb');
   const dialog = page.getByRole('dialog', { name: 'Add a 3D model (GLB file)', exact: true });
   const preview = dialog.getByRole('img', { name: '3D model preview', exact: true });
