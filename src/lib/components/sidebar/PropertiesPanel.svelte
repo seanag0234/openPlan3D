@@ -882,8 +882,7 @@
         <span class="text-xs text-gray-500">{$t('symbolProperties.symbol')}</span>
         <p class="text-sm text-gray-700">{entourageLabels[selectedEntourage.defId] ? $t(entourageLabels[selectedEntourage.defId]) : getEntourageDef(selectedEntourage.defId)?.name ?? $t('symbolProperties.custom')}</p>
       </div>
-      <!-- A single box in inches: tests/browser/property-drafts.spec.ts types a symbol's whole width into "Width (in)". -->
-      <LengthInput label={$t('openingProperties.width')} valueCm={selectedEntourage.width} units={settings.units} minCm={1} split={false}
+      <LengthInput label={$t('openingProperties.width')} valueCm={selectedEntourage.width} units={settings.units} minCm={1}
         oncommit={cm => updateEntourageItem(selectedEntourage!.id, { width: cm })} />
       <label class="block">
         <span class="text-xs text-gray-500">{$t('symbolProperties.rotation')}</span>
@@ -949,10 +948,9 @@
           <button aria-pressed={selectedColumn.shape === 'square'} onclick={() => updateColumn(selectedColumn!.id, { shape: 'square' })} class="flex-1 px-2 py-1.5 border rounded text-sm transition-colors {selectedColumn.shape === 'square' ? 'bg-blue-100 border-blue-400 text-blue-700' : 'border-gray-200 hover:bg-gray-50'}">⬜ {$t('columnProperties.square')}</button>
         </div>
       </div>
-      <!-- Single boxes in inches: tests/browser/structural-dimensions.spec.ts types a column's whole size into "(in)". -->
-      <LengthInput label={selectedColumn.shape === 'round' ? $t('columnProperties.diameter') : $t('columnProperties.side')} valueCm={selectedColumn.diameter} units={settings.units} minCm={10} maxCm={200} split={false}
+      <LengthInput label={selectedColumn.shape === 'round' ? $t('columnProperties.diameter') : $t('columnProperties.side')} valueCm={selectedColumn.diameter} units={settings.units} minCm={10} maxCm={200}
         oncommit={cm => updateColumn(selectedColumn!.id, { diameter: cm })} />
-      <LengthInput label={$t('openingProperties.height')} valueCm={selectedColumn.height} units={settings.units} minCm={50} maxCm={1000} split={false}
+      <LengthInput label={$t('openingProperties.height')} valueCm={selectedColumn.height} units={settings.units} minCm={50} maxCm={1000}
         oncommit={cm => updateColumn(selectedColumn!.id, { height: cm })} />
       <div>
         <span class="text-xs text-gray-500 mb-1.5 block">{$t('furnitureProperties.color')}</span>
