@@ -25,4 +25,24 @@ describe('where the bar over a selection goes', () => {
   it('takes a gap of its own', () => {
     expect(toolbarPosition({ left: 400, top: 300, right: 600, bottom: 400 }, bar, view, { above: 12, below: 12 }, 0).top).toBe(300 - 12 - 40);
   });
+
+  describe('preferring below, for a wall whose curve handle is drawn above it', () => {
+    it('puts the bar under the selection', () => {
+      expect(toolbarPosition({ left: 400, top: 300, right: 600, bottom: 400 }, bar, view, clearance, 8, 'below'))
+        .toEqual({ left: 400, top: 400 + 10 + 8 });
+    });
+    it('puts the bar above when there is no room under the selection', () => {
+      expect(toolbarPosition({ left: 400, top: 300, right: 600, bottom: 640 }, bar, view, clearance, 8, 'below'))
+        .toEqual({ left: 400, top: 300 - 30 - 8 - 40 });
+    });
+    it('keeps to the top edge when there is room neither below nor above', () => {
+      expect(toolbarPosition({ left: 400, top: 20, right: 600, bottom: 680 }, bar, view, clearance, 8, 'below'))
+        .toEqual({ left: 400, top: 8 });
+    });
+    it('changes nothing for a call that does not ask', () => {
+      const box = { left: 400, top: 300, right: 600, bottom: 400 };
+      expect(toolbarPosition(box, bar, view, clearance)).toEqual(toolbarPosition(box, bar, view, clearance, 8, 'above'));
+      expect(toolbarPosition(box, bar, view, clearance)).toEqual({ left: 400, top: 300 - 30 - 8 - 40 });
+    });
+  });
 });

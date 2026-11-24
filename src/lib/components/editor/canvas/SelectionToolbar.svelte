@@ -22,6 +22,7 @@
   let barWidth = $state(0), barHeight = $state(0);
   let g = $derived(handleGeometry($coarsePointer));
   let singlePiece = $derived(anchor?.type === 'furniture' && selectedIds.size <= 1);
+  let floor = $derived($currentProject?.floors.find(f => f.id === floorId) ?? null);
   let place = $derived.by(() => {
     const parent = barEl?.parentElement;
     if (!anchor) {
@@ -32,14 +33,16 @@
     }
     if (!box || !barWidth || !parent) return null;
     const clearance = singlePiece ? { above: 18 + 3 * g.outset + g.radius, below: g.outset + g.radius } : { above: 4, below: 4 };
-    return toolbarPosition(box, { width: barWidth, height: barHeight }, { width: parent.clientWidth, height: parent.clientHeight }, clearance);
+    // A wall that bows upward has its curve handle just above it: the bar goes under it, so the handle stays free to drag.
+    const wall = anchor.type === 'wall' ? floor?.walls.find(w => w.id === selectedId) : undefined;
+    const prefer = wall?.curvePoint && wall.curvePoint.y < (wall.start.y + wall.end.y) / 2 ? 'below' : 'above';
+    return toolbarPosition(box, { width: barWidth, height: barHeight }, { width: parent.clientWidth, height: parent.clientHeight }, clearance, 8, prefer);
   });
 
   const coarse = $derived($coarsePointer);
   /** The ids the bar acts on: the whole selection, or the one thing selected. */
   const ids = () => selectedIds.size ? selectedIds : new Set(selectedId ? [selectedId] : []);
   let single = $derived(!!selectedId && selectedIds.size <= 1);
-  let floor = $derived($currentProject?.floors.find(f => f.id === floorId) ?? null);
   let otherFloors = $derived(($currentProject?.floors.length ?? 0) > 1);
   // On a touch screen the bar starts with what is selected.
   let name = $derived.by(() => {
