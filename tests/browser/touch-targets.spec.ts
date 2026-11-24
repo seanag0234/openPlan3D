@@ -73,6 +73,22 @@ for (const [name, device] of [['iPad landscape', ipadLandscape], ['iPad portrait
       const row = (await bar.boundingBox())!;
       expect(zoom.y + zoom.height).toBeLessThanOrEqual(row.y);
     });
+
+    test('the top bar\'s picture buttons say what they are in words', async ({ page }) => {
+      await openPlan(page, PLAN);
+      const top = page.locator('[data-bar="top"]');
+      const pictures = [
+        top.getByRole('link', { name: 'Projects', exact: true }),
+        ...['Undo', 'Redo', 'More actions', 'Export'].map(name => top.getByRole('button', { name, exact: true })),
+      ];
+      for (const control of pictures) {
+        await expect(control).toBeVisible();
+        const words = await control.evaluate(element => [...element.querySelectorAll('span')]
+          .filter(span => span.checkVisibility() && span.getBoundingClientRect().height > 0)
+          .map(span => span.textContent?.trim()).filter(Boolean).join(' '));
+        expect(words, await control.getAttribute('aria-label') ?? 'Projects').not.toBe('');
+      }
+    });
   });
 }
 

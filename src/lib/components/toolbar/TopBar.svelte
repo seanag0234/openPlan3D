@@ -32,6 +32,10 @@
   import { saveState, saveError, lastSavedAt, manualSave, autoSave, initAutoSave } from '$lib/stores/saveStatus';
   import { initVersionHistory, stopVersionHistory, snapshotOnAction } from '$lib/stores/versionHistory';
   import VersionHistoryPanel from './VersionHistoryPanel.svelte';
+  import { coarsePointer } from '$lib/stores/pointer';
+
+  /** On a touch screen a picture button stacks its word under its picture; nothing hovers to explain it. */
+  const stacked = $derived($coarsePointer ? 'flex flex-col items-center justify-center gap-0.5' : '');
 
   const openingLifetime = new AbortController();
   onDestroy(() => openingLifetime.abort());
@@ -379,11 +383,16 @@
   <!-- Back to Projects -->
   <a
     href={base || '/'}
-    class="flex items-center gap-1 text-white/70 hover:text-white text-sm transition-colors"
+    class="flex items-center gap-1 text-white/70 hover:text-white text-sm transition-colors {stacked}"
     title={$t('projectToolbar.back')}
   >
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-    <span class="hidden sm:inline">{$t('projectToolbar.projects')}</span>
+    {#if $coarsePointer}
+      <span class="sr-only">{$t('projectToolbar.projects')}</span>
+      <span aria-hidden="true" class="block text-[10px] leading-none">{$t('bars.plans')}</span>
+    {:else}
+      <span class="hidden sm:inline">{$t('projectToolbar.projects')}</span>
+    {/if}
   </a>
 
   <div class="h-5 w-px bg-white/20 max-xl:hidden"></div>
@@ -477,11 +486,13 @@
 
   <div class="flex-1"></div>
 
-  <button onclick={undo} class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors" title={$t('projectToolbar.undoHint')} aria-label={$t('projectToolbar.undo')}>
+  <button onclick={undo} class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors {stacked}" title={$t('projectToolbar.undoHint')} aria-label={$t('projectToolbar.undo')}>
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+    {#if $coarsePointer}<span aria-hidden="true" class="block text-[10px] leading-none">{$t('projectToolbar.undo')}</span>{/if}
   </button>
-  <button onclick={redo} class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors" title={$t('projectToolbar.redoHint')} aria-label={$t('projectToolbar.redo')}>
+  <button onclick={redo} class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors {stacked}" title={$t('projectToolbar.redoHint')} aria-label={$t('projectToolbar.redo')}>
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10"/></svg>
+    {#if $coarsePointer}<span aria-hidden="true" class="block text-[10px] leading-none">{$t('projectToolbar.redo')}</span>{/if}
   </button>
 
   <div class="h-5 w-px bg-white/20 max-xl:hidden"></div>
@@ -609,11 +620,12 @@
     <button
       bind:this={moreButton}
       onclick={() => moreOpen = !moreOpen}
-      class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors"
+      class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors {stacked}"
       title={$t('toolbarView.more')}
       aria-label={$t('toolbarView.moreActions')}
     >
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      {#if $coarsePointer}<span aria-hidden="true" class="block text-[10px] leading-none">{$t('bars.more')}</span>{/if}
     </button>
     {#if moreOpen}
       <div data-popup="menu" class="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 w-56 z-50 max-h-[70vh] overflow-y-auto">
@@ -678,12 +690,16 @@
   <div class="relative" bind:this={exportRef}>
     <button
       onclick={() => { exportOpen = !exportOpen; if (exportOpen) triggerTip('first-export', 300, 60); }}
-      class="px-3 py-1.5 max-xl:px-2 text-sm text-white/90 hover:text-white hover:bg-white/10 rounded transition-colors flex items-center gap-1.5"
+      class="px-3 py-1.5 max-xl:px-2 text-sm text-white/90 hover:text-white hover:bg-white/10 rounded transition-colors {$coarsePointer ? stacked : 'flex items-center gap-1.5'}"
       title={$t('exportMenu.title')}
       aria-label={$t('exportMenu.title')}
     >
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      <span class="max-xl:hidden">{$t('exportMenu.title')}</span>
+      {#if $coarsePointer}
+        <span aria-hidden="true" class="block text-[10px] leading-none">{$t('exportMenu.title')}</span>
+      {:else}
+        <span class="max-xl:hidden">{$t('exportMenu.title')}</span>
+      {/if}
     </button>
     {#if exportOpen}
       <div data-popup="menu" class="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 w-56 z-50 max-h-[70vh] overflow-y-auto">
