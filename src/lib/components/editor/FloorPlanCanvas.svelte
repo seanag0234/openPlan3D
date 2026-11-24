@@ -10,7 +10,7 @@
   import { planContentBounds, hasPlanContent } from '$lib/utils/planContentBounds';
   import { connectedWallEndpoints } from '$lib/utils/wallEditing';
   import { createDrawScheduler } from '$lib/utils/drawScheduler';
-  import { activeFloor, selectedTool, selectedElementId, selectedElementIds, selectedRoomId, addWall, addDoor, addWindow, updateWall, moveWallEndpoint, moveWallGeometryDuringDrag, updateDoor, updateWindow, addFurniture, moveFurniture, transformFurnitureDuringDrag, rotateFurniture, rotateSelection, setFurnitureRotation, scaleFurniture, removeElement, placingFurnitureId, placingRotation, placingDoorType, placingWindowType, detectedRoomsStore, duplicateDoor, duplicateWindow, duplicateFurniture, duplicateSelection, pasteSelection, moveWallParallel, splitWall, wallSplitIntersectsOpening, snapEnabled, placingStair, addStair, moveStair, updateStair, placingColumn, placingColumnShape, addColumn, moveColumn, updateColumn, calibrationMode, calibrationPoints, updateBackgroundImage, setBackgroundImage, canvasZoom, canvasMinimumZoom, canvasCamX, canvasCamY, panMode, showFurnitureStore, addGuide, moveGuide, removeGuide, beginUndoGroup, endUndoGroup, layerVisibility, updateRoom, addMeasurement, updateMeasurement, removeMeasurement, addAnnotation, removeAnnotation, updateAnnotation, addTextAnnotation, removeTextAnnotation, updateTextAnnotation, moveTextAnnotation, toggleFurnitureLock, toggleSelectionLock, createGroup, ungroupElements, findGroupForElement, placingEntourageId, addEntourageItem, moveEntourage, resizeEntourage, currentProject, elevationWallId, elevationPickMode, doorJoinMode, joinScanDoors } from '$lib/stores/project';
+  import { activeFloor, selectedTool, selectedElementId, selectedElementIds, selectedRoomId, addWall, addDoor, addWindow, updateWall, moveWallEndpoint, moveWallGeometryDuringDrag, updateDoor, updateWindow, addFurniture, moveFurniture, transformFurnitureDuringDrag, rotateFurniture, rotateSelection, setFurnitureRotation, scaleFurniture, removeElement, placingFurnitureId, placingRotation, placingDoorType, placingWindowType, detectedRoomsStore, duplicateDoor, duplicateWindow, duplicateFurniture, pasteSelection, moveWallParallel, splitWall, wallSplitIntersectsOpening, snapEnabled, placingStair, addStair, moveStair, updateStair, placingColumn, placingColumnShape, addColumn, moveColumn, updateColumn, calibrationMode, calibrationPoints, updateBackgroundImage, setBackgroundImage, canvasZoom, canvasMinimumZoom, canvasCamX, canvasCamY, panMode, showFurnitureStore, addGuide, moveGuide, removeGuide, beginUndoGroup, endUndoGroup, layerVisibility, updateRoom, addMeasurement, updateMeasurement, removeMeasurement, addAnnotation, removeAnnotation, updateAnnotation, addTextAnnotation, removeTextAnnotation, updateTextAnnotation, moveTextAnnotation, toggleFurnitureLock, toggleSelectionLock, createGroup, ungroupElements, findGroupForElement, placingEntourageId, addEntourageItem, moveEntourage, resizeEntourage, currentProject, elevationWallId, elevationPickMode, doorJoinMode, joinScanDoors } from '$lib/stores/project';
   import { allLocked, interactiveFloor, isLocked, unlockedOnly } from '$lib/utils/editPolicy';
   import type { Point, Wall, Door, Window as Win, FurnitureItem, Stair, Column, GuideLine, Measurement, Annotation, TextAnnotation, CustomEntourageDef } from '$lib/models/types';
   import type { Floor, Room } from '$lib/models/types';
@@ -28,8 +28,8 @@
   import StatusBar from './canvas/StatusBar.svelte';
   import ZoomControls from './canvas/ZoomControls.svelte';
   import ToolHints from './canvas/ToolHints.svelte';
+  import SelectionToolbar from './canvas/SelectionToolbar.svelte';
   import ContextMenu from './ContextMenu.svelte';
-  import MoveToFloorMenu from './MoveToFloorMenu.svelte';
   import { roomPresets, placePreset } from '$lib/utils/roomPresets';
   import { roomTemplates, placeRoomTemplate } from '$lib/utils/roomTemplates';
   import { openingDropTarget } from '$lib/utils/openingDrop';
@@ -2116,6 +2116,57 @@
     return ids;
   }
 
+  /** Where the bar over the selection sits: the selected item's middle, in canvas px. */
+  function selectionAnchor(): { type: string; pos: { x: number; y: number }; door?: Door } | null {
+    const f = currentFloor;
+    if (!f) return null;
+    const wall = f.walls.find(w => w.id === currentSelectedId);
+    if (wall) {
+      const s = worldToScreen((wall.start.x + wall.end.x) / 2, (wall.start.y + wall.end.y) / 2);
+      return { type: 'wall', pos: s };
+    }
+    const door = f.doors.find(d => d.id === currentSelectedId);
+    if (door) {
+      const w = f.walls.find(w => w.id === door.wallId);
+      if (w) {
+        const s = worldToScreen(w.start.x + (w.end.x - w.start.x) * door.position, w.start.y + (w.end.y - w.start.y) * door.position);
+        return { type: 'door', pos: s, door };
+      }
+    }
+    const win = f.windows.find(w => w.id === currentSelectedId);
+    if (win) {
+      const w = f.walls.find(w => w.id === win.wallId);
+      if (w) {
+        const s = worldToScreen(w.start.x + (w.end.x - w.start.x) * win.position, w.start.y + (w.end.y - w.start.y) * win.position);
+        return { type: 'window', pos: s };
+      }
+    }
+    const furn = f.furniture.find(fi => fi.id === currentSelectedId);
+    if (furn) {
+      const s = worldToScreen(furn.position.x, furn.position.y);
+      return { type: 'furniture', pos: s };
+    }
+    const positioned = [...f.stairs ?? [], ...f.columns ?? [], ...f.entourage ?? []].find(item => item.id === currentSelectedId);
+    if (positioned) return { type: 'object', pos: worldToScreen(positioned.position.x, positioned.position.y) };
+    return null;
+  }
+
+  /** The selection's bounds on screen, in canvas px, or null when nothing is selected. */
+  function selectionScreenBox(): { left: number; top: number; right: number; bottom: number } | null {
+    if (!currentFloor) return null;
+    const bounds = boundsForFloor(currentFloor, zoom, fitSelectionIds());
+    if (!bounds) return null;
+    const a = worldToScreen(bounds.minX, bounds.minY), b = worldToScreen(bounds.maxX, bounds.maxY);
+    return { left: a.x, top: a.y, right: b.x, bottom: b.y };
+  }
+
+  function deleteAuxiliary(kind: 'measurement' | 'annotation' | 'text', id: string) {
+    if (kind === 'measurement') removeMeasurement(id);
+    else if (kind === 'annotation') removeAnnotation(id);
+    else removeTextAnnotation(id);
+    clearAuxiliarySelection();
+  }
+
   function zoomToFit(selectionOnly = false) {
     const ids = fitSelectionIds();
     const boundsAt = (scale = 1) => selectionOnly
@@ -4107,111 +4158,15 @@
 
   <!-- Contextual Toolbar (hidden while the integrated elevation view covers the canvas) -->
   {#if (currentSelectedId || currentSelectedIds.size > 0) && currentFloor && currentTool === 'select' && !elevationOpen}
-    {@const el = (() => {
-      const f = currentFloor;
-      const wall = f.walls.find(w => w.id === currentSelectedId);
-      if (wall) {
-        const s = worldToScreen((wall.start.x + wall.end.x) / 2, (wall.start.y + wall.end.y) / 2);
-        return { type: 'wall', pos: s };
-      }
-      const door = f.doors.find(d => d.id === currentSelectedId);
-      if (door) {
-        const w = f.walls.find(w => w.id === door.wallId);
-        if (w) {
-          const s = worldToScreen(w.start.x + (w.end.x - w.start.x) * door.position, w.start.y + (w.end.y - w.start.y) * door.position);
-          return { type: 'door', pos: s, door };
+    <SelectionToolbar anchor={selectionAnchor()} box={selectionScreenBox()} selectedId={currentSelectedId} selectedIds={currentSelectedIds}
+      floorId={currentFloor.id} locked={allLocked(currentFloor, deleteTargetIds())} extra={null}
+      onsplit={() => {
+        if (currentSelectedId) {
+          const newId = trySplitWall(currentSelectedId, 0.5);
+          if (newId) selectedElementId.set(null);
         }
-      }
-      const win = f.windows.find(w => w.id === currentSelectedId);
-      if (win) {
-        const w = f.walls.find(w => w.id === win.wallId);
-        if (w) {
-          const s = worldToScreen(w.start.x + (w.end.x - w.start.x) * win.position, w.start.y + (w.end.y - w.start.y) * win.position);
-          return { type: 'window', pos: s };
-        }
-      }
-      const furn = f.furniture.find(fi => fi.id === currentSelectedId);
-      if (furn) {
-        const s = worldToScreen(furn.position.x, furn.position.y);
-        return { type: 'furniture', pos: s };
-      }
-      const positioned = [...f.stairs ?? [], ...f.columns ?? [], ...f.entourage ?? []].find(item => item.id === currentSelectedId);
-      if (positioned) return { type: 'object', pos: worldToScreen(positioned.position.x, positioned.position.y) };
-      return null;
-    })()}
-    {#if el}
-      <div
-        class="absolute z-40 flex items-center gap-0.5 bg-white rounded-lg shadow-lg border border-gray-200 px-1 py-0.5"
-        style="left: {el.pos.x}px; top: {el.pos.y - 44}px; transform: translateX(-50%);"
-      >
-        <button
-          class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
-          title={$t('contextMenu.duplicate')}
-          aria-label={$t('contextMenu.duplicate')}
-          onclick={() => {
-            if (!currentSelectedId || !currentFloor) return;
-            const ids = currentSelectedIds.size ? currentSelectedIds : new Set([currentSelectedId]);
-            const newIds = duplicateSelection(ids);
-            if (newIds.length) {
-              selectedElementIds.set(new Set(newIds));
-              selectedElementId.set(newIds[0]);
-            }
-          }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-        </button>
-        {#if el.type === 'door' && el.door}
-          <button
-            class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
-            title={$t('canvasActions.flipSwing')}
-            aria-label={$t('canvasActions.flipSwing')}
-            onclick={() => { if (el.door) updateDoor(el.door.id, { swingDirection: el.door.swingDirection === 'left' ? 'right' : 'left' }); }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
-          </button>
-        {/if}
-        {#if el.type === 'wall' && currentSelectedId && currentSelectedIds.size === 0}
-          <button
-            class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
-            title={$t('canvasActions.splitMidpoint')}
-            aria-label={$t('canvasActions.splitMidpoint')}
-            onclick={() => {
-              if (currentSelectedId) {
-                const newId = trySplitWall(currentSelectedId, 0.5);
-                if (newId) selectedElementId.set(null);
-              }
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 12h4M16 12h4"/></svg>
-          </button>
-        {/if}
-        {#if currentSelectedId && currentSelectedIds.size === 0}
-          <MoveToFloorMenu ids={new Set([currentSelectedId])} />
-        {/if}
-        {#if !currentFloor || !allLocked(currentFloor, deleteTargetIds())}
-        <div class="w-px h-5 bg-gray-200 mx-0.5"></div>
-        <button
-          class="w-7 h-7 flex items-center justify-center rounded hover:bg-red-50 text-gray-400 hover:text-red-600"
-          title={$t('contextMenu.delete')}
-          aria-label={$t('contextMenu.delete')}
-          onclick={() => {
-            if (currentSelectedIds.size > 0) {
-              beginUndoGroup();
-              for (const id of currentSelectedIds) removeElement(id);
-              endUndoGroup();
-              selectedElementIds.set(new Set());
-              selectedElementId.set(null);
-            } else if (currentSelectedId) {
-              removeElement(currentSelectedId);
-              selectedElementId.set(null);
-            }
-          }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14"/></svg>
-        </button>
-        {/if}
-      </div>
-    {/if}
+      }}
+      ondeleteextra={deleteAuxiliary} />
   {/if}
   <ToolHints wallStarted={currentTool === 'wall' && !!wallStart}
     placingRotation={currentPlacingId && currentTool === 'furniture' ? currentPlacingRotation : null}
