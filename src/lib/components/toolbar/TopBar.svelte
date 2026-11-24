@@ -33,7 +33,7 @@
   import { initVersionHistory, stopVersionHistory, snapshotOnAction } from '$lib/stores/versionHistory';
   import VersionHistoryPanel from './VersionHistoryPanel.svelte';
   import { coarsePointer } from '$lib/stores/pointer';
-  import { feedbackOpen } from '$lib/stores/ui';
+  import { feedbackOpen, notesListOpen } from '$lib/stores/ui';
 
   /** On a touch screen a picture button stacks its word under its picture; nothing hovers to explain it. */
   const stacked = $derived($coarsePointer ? 'flex flex-col items-center justify-center gap-0.5' : '');
@@ -710,8 +710,10 @@
           <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" aria-pressed={$snapEnabled} onclick={() => snapEnabled.update(v => !v)}>{$snapEnabled ? '✓ ' : ''}{$t('toolbarView.snap')}</button>
           <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={() => layerVisibility.update(v => ({ ...v, furniture: !v.furniture }))}>{$showFurnitureStore ? '✓ ' : ''}{$t('toolbarView.showFurniture')}</button>
           {#if onToggleLayers}
-            <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" aria-pressed={layersOpen} onclick={() => { onToggleLayers?.(); moreOpen = false; }}>{$t('layers.title')}</button>
+            <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" aria-pressed={layersOpen} onclick={() => { onToggleLayers?.(); moreOpen = false; }}>{$t('words.listTitle')}</button>
           {/if}
+          <!-- Below 768 px the plan's corner buttons are hidden: the notes are reached from here. -->
+          <button class="md:hidden w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={() => { notesListOpen.set(true); moreOpen = false; }}>{$t('panels.notes')}</button>
           <div class="h-px bg-gray-100 my-1"></div>
         {/if}
         <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={toggleElevationView}>{$elevationWallId ? '✓ ' : ''}{$t('toolbarView.elevationView')}</button>
