@@ -11,7 +11,7 @@
   let { open = $bindable(false) } = $props();
   let pageSize = $state<PrintOptions['pageSize']>('letter');
   let orientation = $state<PrintOptions['orientation']>('landscape');
-  let scale = $state<PrintOptions['scale']>(50);
+  let scale = $state<PrintOptions['scale']>('fit');
   let canvas = $state<HTMLCanvasElement>();
   let layout = $state<ReturnType<typeof calculatePrintLayout> | null>(null);
   let error = $state('');
