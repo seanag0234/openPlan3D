@@ -903,7 +903,7 @@ export const pt = {
   "columnColor.Bronze": "Bronze",
   "columnColor.Silver": "Prata",
   "columnColor.Navy": "Azul-marinho",
-  "annotationProperties.heading": "Anotação de texto",
+  "annotationProperties.heading": "Rótulo de texto",
   "annotationProperties.text": "Texto",
   "annotationProperties.fontSize": "Tamanho da fonte",
   "backgroundProperties.heading": "Imagem de fundo",
