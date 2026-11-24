@@ -15,11 +15,13 @@
     clipboard?: any;
     /** False when Delete would do nothing, so it is not offered. */
     deletable?: boolean;
+    /** The house is fixed: a wall or room offers only its note. */
+    houseFixed?: boolean;
     onclose: () => void;
     onaction: (action: string, data?: any) => void;
   }
 
-  let { x, y, visible, targetType, targetId, targetWall, targetFurniture, targetRoom, clipboard, deletable = true, onclose, onaction }: Props = $props();
+  let { x, y, visible, targetType, targetId, targetWall, targetFurniture, targetRoom, clipboard, deletable = true, houseFixed = false, onclose, onaction }: Props = $props();
 
   let menuEl = $state<HTMLDivElement>();
 
@@ -140,6 +142,12 @@
           <span class="ctx-icon">🗑️</span> {$t('contextMenu.delete')}
         </button>
       {/if}
+
+    {:else if (targetType === 'wall' || targetType === 'room') && houseFixed}
+      <button class="ctx-item" role="menuitem" data-note onclick={() => clickItem('note')}>
+        <span class="ctx-icon">📝</span> {$t('touch.note')}
+      </button>
+      <div class="ctx-muted">{$t('touch.houseFixed')}</div>
 
     {:else if targetType === 'wall'}
       <button class="ctx-item" role="menuitem" data-note onclick={() => clickItem('note')}>
@@ -263,6 +271,12 @@
     height: 1px;
     background: #e5e7eb;
     margin: 4px 0;
+  }
+  .ctx-muted {
+    padding: 6px 14px;
+    color: #6b7280;
+    font-size: 12px;
+    white-space: nowrap;
   }
   @media (pointer: coarse) {
     .ctx-item {

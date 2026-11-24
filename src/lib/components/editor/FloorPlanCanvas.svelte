@@ -361,13 +361,20 @@
     return currentSelectedIds.size ? [...currentSelectedIds] : currentSelectedId ? [currentSelectedId] : [];
   }
 
+  /** The floor as selecting sees it: with the house fixed, without its walls, doors, windows, columns and stairs. */
+  function movableFloor(): Floor | null {
+    if (!currentFloor) return null;
+    return currentHouseFixed ? { ...currentFloor, walls: [], doors: [], windows: [], columns: [], stairs: [] } : currentFloor;
+  }
+
   function selectAllPlanElements() {
-    if (!currentFloor) return;
+    const floor = movableFloor();
+    if (!floor) return;
     const ids = new Set<string>();
-    for (const items of [currentFloor.walls, currentFloor.furniture, currentFloor.doors,
-      currentFloor.windows, currentFloor.stairs, currentFloor.columns, currentFloor.entourage,
-      layerVis.textAnnotations ? currentFloor.textAnnotations : [],
-      layerVis.measurements ? currentFloor.measurements : [], layerVis.annotations ? currentFloor.annotations : []]) {
+    for (const items of [floor.walls, floor.furniture, floor.doors,
+      floor.windows, floor.stairs, floor.columns, floor.entourage,
+      layerVis.textAnnotations ? floor.textAnnotations : [],
+      layerVis.measurements ? floor.measurements : [], layerVis.annotations ? floor.annotations : []]) {
       for (const item of items ?? []) ids.add(item.id);
     }
     clearAuxiliarySelection();
@@ -2336,6 +2343,8 @@
   function onMouseDown(e: MouseEvent) {
     markDirty();
     const touchPan = touchPanNext; touchPanNext = false;
+    // With the house fixed, walls, doors, windows, columns, stairs and rooms do not answer to a press.
+    const fixed = currentHouseFixed;
     if (e.button !== 0 && e.button !== 1) return;
     finishCanvasGesture();
     // Native double-clicks belong to the original press even if selection opened
@@ -2356,9 +2365,9 @@
         selectAnnotationTarget(measurement ? 'measurement' : note ? 'text' : 'annotation', id, e, wp);
         return;
       }
-      const object = findColumnAt(wp) || findStairAt(wp) || findFurnitureAt(wp) ||
-        findEntourageAt(wp, currentFloor.entourage, d => entourageAspect(d, customEntourageDefs)) ||
-        findDoorAt(wp) || findWindowAt(wp) || findWallAt(wp);
+      const entourage = () => findEntourageAt(wp, currentFloor!.entourage, d => entourageAspect(d, customEntourageDefs));
+      const object = fixed ? findFurnitureAt(wp) || entourage() : findColumnAt(wp) || findStairAt(wp) || findFurnitureAt(wp) ||
+        entourage() || findDoorAt(wp) || findWindowAt(wp) || findWallAt(wp);
       if (object) {
         toggleSelectionTarget(object.id);
         return;
@@ -2376,7 +2385,7 @@
     const wp = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
     const tool = currentTool;
     // A plain press passes through locked items; Layers, Select All, modifier clicks and the context menu still reach them.
-    const hitFloor = currentFloor && !e.shiftKey && !e.ctrlKey && !e.metaKey ? interactiveFloor(currentFloor, false) : currentFloor;
+    const hitFloor = currentFloor && !e.shiftKey && !e.ctrlKey && !e.metaKey ? interactiveFloor(currentFloor, fixed) : currentFloor;
     if (tool === 'select' && currentFloor && e.detail === 1) {
       selectionPress = { floorId: currentFloor.id, x: e.clientX, y: e.clientY, world: wp };
     }
@@ -2612,7 +2621,7 @@
     } else if (tool === 'select') {
       if (!e.ctrlKey && !e.metaKey && startMultiSelectionDrag(wp)) return;
       // Check wall endpoint handles first (drag-to-resize walls)
-      if (!e.ctrlKey && !e.metaKey && currentSelectedId && currentFloor) {
+      if (!fixed && !e.ctrlKey && !e.metaKey && currentSelectedId && currentFloor) {
         const selWall = currentFloor.walls.find(w => w.id === currentSelectedId);
         if (selWall) {
           const epThreshold = 15 / zoom;
@@ -2705,7 +2714,7 @@
       }
 
       // Check columns
-      const col = findColumnAt(wp);
+      const col = fixed ? null : findColumnAt(wp);
       if (col) {
         if (selectElement(col.id, e.shiftKey)) return;
         if (!e.shiftKey) {
@@ -2715,7 +2724,7 @@
         return;
       }
       // Check stairs
-      const stair = findStairAt(wp);
+      const stair = fixed ? null : findStairAt(wp);
       if (stair) {
         if (selectElement(stair.id, e.shiftKey)) return;
         if (!e.shiftKey) {
@@ -2749,19 +2758,19 @@
       }
       // Doors and windows sit on walls, so they come after the objects standing in the room
       // and before the walls themselves.
-      const door = findDoorAt(wp);
+      const door = fixed ? null : findDoorAt(wp);
       if (door) {
         if (selectElement(door.id, e.shiftKey)) return;
         if (!e.shiftKey) draggingDoorId = door.id;
         return;
       }
-      const win = findWindowAt(wp);
+      const win = fixed ? null : findWindowAt(wp);
       if (win) {
         if (selectElement(win.id, e.shiftKey)) return;
         if (!e.shiftKey) draggingWindowId = win.id;
         return;
       }
-      const wall = findWallAt(wp);
+      const wall = fixed ? null : findWallAt(wp);
       if (wall) {
         if (selectElement(wall.id, e.shiftKey)) return;
       } else {
@@ -2774,7 +2783,7 @@
           if (piece) { selectElement(piece.id, false); return; }
         }
         // Check if clicking on a room label (for dragging)
-        const labelRoom = findRoomLabelAt(wp);
+        const labelRoom = fixed ? null : findRoomLabelAt(wp);
         if (labelRoom) {
           draggingRoomLabelId = labelRoom.id;
           roomLabelDragStart = { x: e.clientX, y: e.clientY };
@@ -2789,7 +2798,7 @@
           selectedElementIds.set(new Set());
           return;
         }
-        const room = findRoomLabelAt(wp) ?? findRoomAt(wp);
+        const room = fixed ? null : findRoomLabelAt(wp) ?? findRoomAt(wp);
         if (room) {
           selectedRoomId.set(room.id);
           selectedElementId.set(null);
@@ -2872,8 +2881,11 @@
       }
     }
 
+    // With the house fixed, a double-click neither renames a room nor splits a wall.
+    const fixed = currentHouseFixed;
+
     // Double-click on a room to edit its name inline
-    if (currentTool === 'select') {
+    if (currentTool === 'select' && !fixed) {
       const wp = selectionPoint;
       const room = findRoomLabelAt(wp) ?? findRoomAt(wp);
       if (room) {
@@ -2889,7 +2901,7 @@
     }
 
     // Double-click on a wall in select mode to split it
-    if (currentTool === 'select') {
+    if (currentTool === 'select' && !fixed) {
       const wp = selectionPoint;
       const wall = findWallAt(wp);
       if (wall) {
@@ -3237,7 +3249,7 @@
       // Only treat as marquee if dragged at least a small distance
       if (marqueeW > 5 || marqueeH > 5) {
         const ids = new Set<string>(e.shiftKey ? currentSelectedIds : []);
-        for (const id of marqueeSelectionIds(currentFloor, { minX, maxX, minY, maxY }, layerVis)) ids.add(id);
+        for (const id of marqueeSelectionIds(movableFloor() ?? currentFloor, { minX, maxX, minY, maxY }, layerVis)) ids.add(id);
 
         if (ids.size > 0) {
           clearAuxiliarySelection();
@@ -3803,7 +3815,10 @@
     const rect = canvas.getBoundingClientRect();
     const wp = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
 
-    // Hit-test in priority order: furniture > door > window > wall > room > canvas
+    // Hit-test in priority order: furniture > door > window > wall > room > canvas.
+    // With the house fixed, doors and windows are passed over, and a wall or room is the menu's
+    // target without being selected.
+    const fixed = currentHouseFixed;
     const fi = findFurnitureAt(wp);
     if (fi) {
       selectedElementId.set(fi.id);
@@ -3813,7 +3828,7 @@
       ctxMenuWall = null;
       ctxMenuRoom = null;
     } else {
-      const door = findDoorAt(wp);
+      const door = fixed ? null : findDoorAt(wp);
       if (door) {
         selectedElementId.set(door.id);
         ctxMenuTargetType = 'door';
@@ -3822,7 +3837,7 @@
         ctxMenuWall = null;
         ctxMenuRoom = null;
       } else {
-        const win = findWindowAt(wp);
+        const win = fixed ? null : findWindowAt(wp);
         if (win) {
           selectedElementId.set(win.id);
           ctxMenuTargetType = 'window';
@@ -3833,7 +3848,7 @@
         } else {
           const wall = findWallAt(wp);
           if (wall) {
-            selectedElementId.set(wall.id);
+            if (!fixed) selectedElementId.set(wall.id);
             ctxMenuTargetType = 'wall';
             ctxMenuTargetId = wall.id;
             ctxMenuWall = wall;
@@ -3842,7 +3857,7 @@
           } else {
             const room = findRoomLabelAt(wp) ?? findRoomAt(wp);
             if (room) {
-              selectedRoomId.set(room.id);
+              if (!fixed) selectedRoomId.set(room.id);
               ctxMenuTargetType = 'room';
               ctxMenuTargetId = room.id;
               ctxMenuRoom = room;
@@ -4250,6 +4265,7 @@
     targetFurniture={ctxMenuFurniture}
     targetRoom={ctxMenuRoom}
     deletable={!currentFloor || !ctxMenuTargetId || !isLocked(currentFloor, ctxMenuTargetId)}
+    houseFixed={currentHouseFixed}
     clipboard={clipboard}
     onclose={() => { ctxMenuVisible = false; }}
     onaction={handleContextMenuAction}
