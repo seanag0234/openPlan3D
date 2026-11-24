@@ -1389,7 +1389,7 @@ export const en = {
   "undoAction.moveToFloor": "Moved to floor",
   "undoAction.describeProject": "Changed project description",
   "customModel.heading": "My 3D models",
-  "customModel.import": "Import GLB model",
+  "customModel.import": "Add a 3D model (GLB file)",
   "customModel.help": "Static GLB files up to 16 MiB. Files stay in this project.",
   "customModel.previewUnavailable": "The 3D preview is unavailable on this device.",
   "customModel.previewLabel": "3D model preview",

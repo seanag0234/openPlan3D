@@ -1389,7 +1389,7 @@ export const pt = {
   "undoAction.moveToFloor": "Movido para outro pavimento",
   "undoAction.describeProject": "Descrição do projeto alterada",
   "customModel.heading": "Meus modelos 3D",
-  "customModel.import": "Importar modelo GLB",
+  "customModel.import": "Adicionar um modelo 3D (arquivo GLB)",
   "customModel.help": "Arquivos GLB estáticos de até 16 MiB. Os arquivos ficam neste projeto.",
   "customModel.previewUnavailable": "A prévia 3D não está disponível neste dispositivo.",
   "customModel.previewLabel": "Prévia do modelo 3D",

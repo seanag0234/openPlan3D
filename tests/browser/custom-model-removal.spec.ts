@@ -15,12 +15,12 @@ test('cancel and invalid imports preserve the project and restore focus', async 
   const before = await exported(page);
   await page.getByRole('button', { name: 'Objects', exact: true }).click();
   const panel = page.getByRole('region', { name: 'My 3D models', exact: true });
-  const opener = panel.getByRole('button', { name: 'Import GLB model', exact: true });
+  const opener = panel.getByRole('button', { name: 'Add a 3D model (GLB file)', exact: true });
   async function choose() {
     const pending = page.waitForEvent('filechooser'); await opener.click();
     await (await pending).setFiles('tests/fixtures/local-model-textured-box.glb');
   }
-  const dialog = page.getByRole('dialog', { name: 'Import GLB model', exact: true });
+  const dialog = page.getByRole('dialog', { name: 'Add a 3D model (GLB file)', exact: true });
   await choose(); await expect(dialog.locator('canvas')).toBeVisible();
   await dialog.press('Escape'); await expect(dialog).toBeHidden(); await expect(opener).toBeFocused();
   expect(await exported(page)).toEqual(before);
@@ -39,7 +39,7 @@ test('unused model removal restores source bytes and metadata through undo and r
   await page.getByRole('button', { name: 'Objects', exact: true }).click();
   const panel = page.getByRole('region', { name: 'My 3D models', exact: true });
   await panel.locator('input[type=file]').setInputFiles('tests/fixtures/local-model-textured-box.glb');
-  const dialog = page.getByRole('dialog', { name: 'Import GLB model', exact: true });
+  const dialog = page.getByRole('dialog', { name: 'Add a 3D model (GLB file)', exact: true });
   await expect(dialog.locator('canvas')).toBeVisible();
   await dialog.getByRole('textbox', { name: 'Model name', exact: true }).fill('Removable box');
   await dialog.getByRole('button', { name: 'Add to project', exact: true }).click();
