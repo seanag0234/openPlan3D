@@ -73,6 +73,8 @@
 
   let currentTool = $state<Tool>('select');
   onDestroy(selectedTool.subscribe((t) => { currentTool = t; }));
+  // A house tool already in hand is put down once the house is fixed.
+  $effect(() => { if ($houseFixed && ['wall', 'door', 'window'].includes(currentTool)) selectedTool.set('select'); });
 
   let currentPlacing = $state<string | null>(null);
   onDestroy(placingFurnitureId.subscribe((id) => { currentPlacing = id; }));
