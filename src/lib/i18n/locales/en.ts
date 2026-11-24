@@ -826,7 +826,7 @@ export const en = {
   "roomProperties.category": "Category",
   "roomProperties.area": "Area",
   "roomProperties.opening": "Open to floor below",
-  "roomProperties.openingHelp": "Removes the floor slab inside these walls and excludes it from floor area.",
+  "roomProperties.openingHelp": "Removes the floor inside these walls and leaves it out of the floor area.",
   "roomProperties.color": "Room Color",
   "roomProperties.floorColor": " (used as floor color)",
   "roomProperties.floorMaterial": "Floor Material",

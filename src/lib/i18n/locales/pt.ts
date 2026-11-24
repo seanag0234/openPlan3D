@@ -826,7 +826,7 @@ export const pt = {
   "roomProperties.category": "Categoria",
   "roomProperties.area": "Área",
   "roomProperties.opening": "Aberto para o andar inferior",
-  "roomProperties.openingHelp": "Remove a laje dentro destas paredes e exclui essa superfície da área de piso.",
+  "roomProperties.openingHelp": "Remove o piso dentro destas paredes e o deixa fora da área de piso.",
   "roomProperties.color": "Cor do ambiente",
   "roomProperties.floorColor": " (usada como cor do piso)",
   "roomProperties.floorMaterial": "Material do piso",
