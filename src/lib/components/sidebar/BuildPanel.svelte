@@ -2,7 +2,7 @@
   import { furnitureName } from '$lib/i18n/furnitureNames';
   import { t, locale } from '$lib/i18n';
   import { entourageLabels } from '$lib/i18n/entourageLabels';
-  import { catalogCategoryLabels } from '$lib/i18n/catalogCategories';
+  import { catalogCategoryLabels, normalizeCatalogSearch } from '$lib/i18n/catalogCategories';
   import { roomPresetLabels, roomTemplateLabels } from '$lib/i18n/roomLabels';
   import { modalDialog } from '$lib/utils/modalDialog';
   import { openProject } from '$lib/services/projectOpening';
@@ -138,6 +138,11 @@
     })()
   );
 
+  /** Symbols the search finds; every symbol when the search is empty. */
+  let symbolMatches = $derived(entourageCatalog.filter(d => matchesCatalogSearch(search, d.id,
+    [d.name, entourageLabels[d.id] ? $t(entourageLabels[d.id]) : d.name, $t(`entourageLabels.${d.category}`)])));
+  let searching = $derived(search.trim().length > 0);
+
   const doorCatalog: { type: Door['type']; name: string; desc: string; icon: string }[] = $derived([
     { type: 'single', name: $t('openingCatalog.single'), desc: $t('openingCatalog.singleDescription'), icon: 'M6 3h12v18H6z' },
     { type: 'double', name: $t('openingCatalog.double'), desc: $t('openingCatalog.doubleDescription'), icon: 'M3 3h8v18H3zM13 3h8v18h-8z' },
@@ -180,6 +185,10 @@
   onDestroy(placingEntourageId.subscribe(v => { placingEntId = v; }));
   let customEntDefs = $state<CustomEntourageDef[]>([]);
   onDestroy(currentProject.subscribe(p => { customEntDefs = p?.customEntourage ?? []; }));
+  /** Uploaded symbols whose name holds the search; all of them when the search is empty. */
+  let customSymbolMatches = $derived(search.trim()
+    ? customEntDefs.filter(d => normalizeCatalogSearch(d.name).includes(normalizeCatalogSearch(search.trim())))
+    : customEntDefs);
   let entourageFileInput = $state<HTMLInputElement | null>(null);
 
   function armEntourage(id: string) {
@@ -765,10 +774,12 @@
         </div>
 
         <!-- Entourage: 2D presentation symbols (people, cars, planting) -->
+        {#if !searching || symbolMatches.length || customSymbolMatches.length}
         <div class="pt-3 mt-2 border-t border-gray-100">
           <h3 class="text-xs font-semibold text-gray-400 uppercase mb-2">{$t('entourageLabels.title')}</h3>
           {#each entourageCategories as cat}
-            {@const defs = entourageCatalog.filter(d => d.category === cat.key)}
+            {@const defs = symbolMatches.filter(d => d.category === cat.key)}
+            {#if !searching || defs.length}
             <div class="mb-2">
               <span class="text-[10px] font-medium text-gray-500">{cat.icon} {$t(`entourageLabels.${cat.key}`)}</span>
               <div class="grid grid-cols-3 gap-1.5 mt-1">
@@ -787,12 +798,13 @@
                 {/each}
               </div>
             </div>
+            {/if}
           {/each}
-          {#if customEntDefs.length}
+          {#if customSymbolMatches.length}
             <div class="mb-2">
               <span class="text-[10px] font-medium text-gray-500">🖼️ {$t('entourageLabels.custom')}</span>
               <div class="grid grid-cols-3 gap-1.5 mt-1">
-                {#each customEntDefs as def}
+                {#each customSymbolMatches as def}
                   <button
                     class="p-1.5 rounded-lg border text-center hover:border-blue-300 hover:bg-blue-50 transition-colors {placingEntId === def.id ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-200' : 'border-gray-200'}"
                     title={def.name}
@@ -805,13 +817,16 @@
               </div>
             </div>
           {/if}
+          {#if !searching}
           <button
             class="w-full py-1.5 border border-dashed border-gray-300 rounded-lg text-xs text-gray-500 hover:border-blue-300 hover:text-blue-600 transition-colors"
             onclick={() => entourageFileInput?.click()}
           >+ {$t('entourageLabels.upload')}</button>
+          {/if}
           {#if symbolUploadError}<p role="alert" class="text-xs text-red-700">{$t(`entourageLabels.${symbolUploadError}`)}</p>{/if}
           <input type="file" accept="image/png,image/jpeg,image/webp" class="hidden" bind:this={entourageFileInput} onchange={onEntourageUpload} />
         </div>
+        {/if}
       </div>
     {/if}
   </div>
