@@ -27,6 +27,7 @@
   import { focusInlineEditor } from '$lib/utils/inlineEditorFocus';
   import StatusBar from './canvas/StatusBar.svelte';
   import ZoomControls from './canvas/ZoomControls.svelte';
+  import ToolHints from './canvas/ToolHints.svelte';
   import ContextMenu from './ContextMenu.svelte';
   import MoveToFloorMenu from './MoveToFloorMenu.svelte';
   import { roomPresets, placePreset } from '$lib/utils/roomPresets';
@@ -3359,6 +3360,31 @@
     return { x: wallStart.x + (dx / d) * lenCm, y: wallStart.y + (dy / d) * lenCm };
   }
 
+  /** What Escape does on the plan: drop the gesture in progress and any tool's half-made item. */
+  function cancelTool() {
+    splitBlocked = false;
+    calibrationMode.set(false);
+    calibrationPoints.set([]);
+    doorJoinMode.set(null);
+    finishCanvasGesture();
+    clearAuxiliarySelection();
+    selectedRoomId.set(null);
+    elevationPickMode.set(false);
+    wallStart = null; wallSequenceFirst = null; typedWallLength = '';
+    placingFurnitureId.set(null);
+    placingEntourageId.set(null);
+    placingStair.set(false);
+    placingColumn.set(false);
+    placingRotation.set(0);
+    editingTextAnnotationId = null;
+    textAnnotationMode = false;
+    measureStart = null;
+    measureEnd = null;
+    annotationStart = null;
+    marqueeStart = null;
+    marqueeEnd = null;
+  }
+
   function onKeyDown(e: KeyboardEvent) {
     if (hasOpenModal()) return;
     if (e.target === canvas && (e.key === 'ContextMenu' || (e.key === 'F10' && e.shiftKey))) {
@@ -3445,27 +3471,7 @@
 
     // Canvas-specific Escape handling (before global shortcut eats it)
     if (e.code === 'Escape') {
-      splitBlocked = false;
-      calibrationMode.set(false);
-      calibrationPoints.set([]);
-      doorJoinMode.set(null);
-      finishCanvasGesture();
-      clearAuxiliarySelection();
-      selectedRoomId.set(null);
-      elevationPickMode.set(false);
-      wallStart = null; wallSequenceFirst = null; typedWallLength = '';
-      placingFurnitureId.set(null);
-      placingEntourageId.set(null);
-      placingStair.set(false);
-      placingColumn.set(false);
-      placingRotation.set(0);
-      editingTextAnnotationId = null;
-      textAnnotationMode = false;
-      measureStart = null;
-      measureEnd = null;
-      annotationStart = null;
-      marqueeStart = null;
-      marqueeEnd = null;
+      cancelTool();
     }
 
     // Select All (Ctrl+A / Cmd+A)
@@ -4207,31 +4213,10 @@
       </div>
     {/if}
   {/if}
-  {#if currentTool === 'wall' && wallStart}
-    <div class="absolute top-2 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-3 py-1 rounded-full text-xs shadow">
-      {$t('canvasHints.wall')}
-    </div>
-  {/if}
-  {#if currentPlacingId && currentTool === 'furniture'}
-    <div class="absolute top-2 left-1/2 -translate-x-1/2 bg-purple-600 text-white px-3 py-1 rounded-full text-xs shadow">
-      {$t('canvasHints.furniture', { angle: currentPlacingRotation })}
-    </div>
-  {/if}
-  {#if measuring}
-    <div class="absolute top-2 left-1/2 -translate-x-1/2 bg-red-600 text-white px-3 py-1 rounded-full text-xs shadow">
-      {$t('canvasHints.measure')}
-    </div>
-  {/if}
-  {#if textAnnotationMode}
-    <div class="absolute top-2 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-3 py-1 rounded-full text-xs shadow">
-      {$t('canvasHints.text')}
-    </div>
-  {/if}
-  {#if annotating}
-    <div class="absolute top-2 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-3 py-1 rounded-full text-xs shadow">
-      {$t(annotationStart ? 'canvasHints.annotateEnd' : 'canvasHints.annotateStart')}
-    </div>
-  {/if}
+  <ToolHints wallStarted={currentTool === 'wall' && !!wallStart}
+    placingRotation={currentPlacingId && currentTool === 'furniture' ? currentPlacingRotation : null}
+    {measuring} textMode={textAnnotationMode} {annotating} annotationStarted={!!annotationStart}
+    ondone={() => { cancelTool(); selectedTool.set('select'); }} />
 
   <ZoomControls {zoom} {minimumZoom} bottom={zoomControlsBottom} canFitSelection={fitSelectionIds().size > 0}
     onzoomout={() => {
