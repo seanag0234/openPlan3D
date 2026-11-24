@@ -22,7 +22,8 @@ const broken = [
 
 /** The editor's own sentences, some of which only mention JSON. */
 const ours = [
-  'Your current plan could not be saved. Retry saving or download a JSON backup before opening another plan.',
+  'Your current plan could not be saved. Retry saving, or download a copy of this plan, before opening another plan.',
+  'Project images must be embedded raster images. Download a JSON backup to preserve external image references.',
   'Could not open the imported project.',
   'This project changed in another tab.',
 ];

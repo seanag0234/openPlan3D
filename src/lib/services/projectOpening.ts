@@ -36,7 +36,7 @@ export async function openProject(
     const previous = get(currentProject);
     if (!await prepareToLeave()) {
       if (superseded()) return null;
-      throw new Error(`Your current plan could not be saved. ${get(saveError) ?? 'Retry saving or download a JSON backup before opening another plan.'}`);
+      throw new Error(`Your current plan could not be saved. ${get(saveError) ?? 'Retry saving, or download a copy of this plan, before opening another plan.'}`);
     }
     if (superseded()) return null;
     // Test existence without decoding a damaged entry: importing a recovery file
@@ -85,7 +85,7 @@ export async function openStoredProject(id: string, signal?: AbortSignal): Promi
     if (!project) throw new Error('This project is no longer in your library.');
     if (!await prepareToLeave()) {
       if (superseded()) return null;
-      throw new Error(`Your current plan could not be saved. ${get(saveError) ?? 'Retry saving or download a JSON backup before opening another plan.'}`);
+      throw new Error(`Your current plan could not be saved. ${get(saveError) ?? 'Retry saving, or download a copy of this plan, before opening another plan.'}`);
     }
     if (superseded()) return null;
     if (get(saveState) !== 'saved') throw new Error('Your plan changed while preparing to open another one. Try again so the latest edits can be saved first.');
@@ -136,7 +136,7 @@ export async function openPlanFile(readCandidate: () => unknown | Promise<unknow
   if (signal?.aborted) return null;
   if (!await prepareToLeave()) {
     if (signal?.aborted) return null;
-    throw new Error(`Your current plan could not be saved. ${get(saveError) ?? 'Retry saving or download a JSON backup before opening another plan.'}`);
+    throw new Error(`Your current plan could not be saved. ${get(saveError) ?? 'Retry saving, or download a copy of this plan, before opening another plan.'}`);
   }
   if (signal?.aborted) return null;
   if (!(await localStore.has(candidate.id))) return openProject(() => candidate, 'import', signal);

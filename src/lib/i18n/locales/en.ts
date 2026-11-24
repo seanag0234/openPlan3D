@@ -1225,7 +1225,7 @@ export const en = {
   "projectService.storageFailed": "Could not save to browser storage. Download your project as JSON to keep a copy.",
   "projectService.conflict": "This plan changed or was deleted in another tab. Save your version as a copy, or download a copy of it, to keep both.",
   "projectService.openUnsaved": "Your current plan could not be saved.",
-  "projectService.openRetry": "Retry saving or download a JSON backup before opening another plan.",
+  "projectService.openRetry": "Retry saving, or download a copy of this plan, before opening another plan.",
   "projectService.newId": "Could not choose a new project ID. Try opening the file again.",
   "projectService.changed": "Your plan changed while preparing to open another one. Try again so the latest edits can be saved first.",
   "projectService.newFailed": "Could not open a new project.",

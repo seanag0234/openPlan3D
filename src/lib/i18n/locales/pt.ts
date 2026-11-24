@@ -1225,7 +1225,7 @@ export const pt = {
   "projectService.storageFailed": "Não foi possível salvar no armazenamento do navegador. Baixe seu projeto em JSON para manter uma cópia.",
   "projectService.conflict": "Esta planta foi alterada ou excluída em outra aba. Salve sua versão como uma cópia, ou baixe uma cópia dela, para manter as duas.",
   "projectService.openUnsaved": "Não foi possível salvar sua planta atual.",
-  "projectService.openRetry": "Tente salvar novamente ou baixe um backup JSON antes de abrir outra planta.",
+  "projectService.openRetry": "Tente salvar novamente, ou baixe uma cópia desta planta, antes de abrir outra planta.",
   "projectService.newId": "Não foi possível escolher um novo identificador para o projeto. Tente abrir o arquivo novamente.",
   "projectService.changed": "Sua planta mudou durante a preparação para abrir outra. Tente novamente para salvar primeiro as alterações mais recentes.",
   "projectService.newFailed": "Não foi possível abrir um novo projeto.",
