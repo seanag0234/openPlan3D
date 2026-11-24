@@ -30,7 +30,7 @@ for (const split of [false, true]) test(`curved openings and trim follow the cur
   await page.getByRole('button', { name: 'Import JSON', exact: true }).click();
   await (await chooser).setFiles(resolve('tests/fixtures/curved-openings.openplan.json'));
   if (split) {
-    await page.getByRole('button', { name: 'Toggle Layers Panel', exact: true }).click();
+    await page.getByRole('button', { name: 'Show or hide the list of everything on the plan', exact: true }).click();
     await page.getByRole('button', { name: '─ Wall 1', exact: true }).click();
     await page.getByRole('button', { name: 'Split wall at midpoint', exact: true }).click();
     await expect(page.getByText('2 walls', { exact: true })).toBeVisible();

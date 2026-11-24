@@ -45,7 +45,7 @@ test('3D view explains missing WebGL, offers no dead controls and leaves 2D edit
     await expect(page.getByRole('application')).toContainText('4 walls');
   }
 
-  await page.getByRole('button', { name: 'Toggle Layers Panel', exact: true }).click();
+  await page.getByRole('button', { name: 'Show or hide the list of everything on the plan', exact: true }).click();
   await page.getByRole('button', { name: '─ Wall 1', exact: true }).click();
   const thickness = page.getByRole('spinbutton', { name: 'Thickness (cm)', exact: true });
   await expect(thickness).toHaveValue('20');

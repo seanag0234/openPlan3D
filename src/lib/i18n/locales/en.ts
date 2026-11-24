@@ -1088,7 +1088,7 @@ export const en = {
   "captureImport.fallback": "Failed to import capture.",
   "captureImport.code": "Invalid import code in URL.",
   "editorPanels.tools": "Toggle tools panel",
-  "editorPanels.layers": "Toggle Layers Panel",
+  "editorPanels.layers": "Show or hide the list of everything on the plan",
   "editorPanels.history": "Toggle Undo History",
   "editorPanels.layersTitle": "Everything on the plan (L)",
   "viewerNav.region": "3D floor plan viewer",

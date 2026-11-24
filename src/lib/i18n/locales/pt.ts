@@ -1088,7 +1088,7 @@ export const pt = {
   "captureImport.fallback": "Não foi possível importar a captura.",
   "captureImport.code": "Código de importação inválido na URL.",
   "editorPanels.tools": "Alternar painel de ferramentas",
-  "editorPanels.layers": "Alternar painel de camadas",
+  "editorPanels.layers": "Mostrar ou ocultar a lista de tudo na planta",
   "editorPanels.history": "Alternar histórico de ações",
   "editorPanels.layersTitle": "Tudo na planta (L)",
   "viewerNav.region": "Visualizador 3D da planta",
