@@ -78,3 +78,17 @@ export function noteMarkAt(screen: { x: number; y: number }, cs: CanvasState, pr
   }
   return best?.target ?? null;
 }
+
+/** What a note is about, as the note sheet and the list of notes name it. */
+export function noteTitle(project: Project, target: DetailTarget | 'plan', rooms: readonly Room[], words: {
+  plan: string; wall: string; room: string; piece: (catalogId: string) => string }): string {
+  if (target === 'plan') return words.plan;
+  const floor = project.floors.find(f => f.id === target.floorId);
+  if (target.kind === 'furniture') {
+    const piece = floor?.furniture.find(item => item.id === target.id);
+    return piece?.name?.trim() || (piece ? words.piece(piece.catalogId) : words.room);
+  }
+  if (target.kind === 'walls') return words.wall;
+  if (target.kind === 'rooms') return (rooms.find(r => r.id === target.id) ?? floor?.rooms.find(r => r.id === target.id))?.name || words.room;
+  return words.wall;
+}
