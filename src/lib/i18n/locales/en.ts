@@ -343,7 +343,7 @@ export const en = {
   "print.download": "Download PDF",
   "print.print": "Print",
   "print.close": "Close",
-  "print.help": "Print at 100% / Actual size on the selected paper size. The PDF includes the room schedule.",
+  "print.help": "Print at 100% / Actual size on the selected paper size. A scale of 1:50 means 1 cm on paper is 50 cm in the room. The PDF includes the room schedule.",
   "print.empty": "Add a wall or object before printing.",
   "print.hidden": "Everything on this floor is on a hidden layer. Turn its layers back on under Layers to print it.",
   "print.overflow": "The plan does not fit at this scale. Choose a smaller scale, another orientation, or Fit to page.",

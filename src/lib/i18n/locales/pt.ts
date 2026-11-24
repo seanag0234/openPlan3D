@@ -343,7 +343,7 @@ export const pt = {
   "print.download": "Baixar PDF",
   "print.print": "Imprimir",
   "print.close": "Fechar",
-  "print.help": "Imprima em 100% / Tamanho real no tamanho de papel selecionado. O PDF inclui a tabela de ambientes.",
+  "print.help": "Imprima em 100% / Tamanho real no tamanho de papel selecionado. Uma escala de 1:50 significa que 1 cm no papel equivale a 50 cm no ambiente. O PDF inclui a tabela de ambientes.",
   "print.empty": "Adicione uma parede ou um objeto antes de imprimir.",
   "print.hidden": "Tudo neste piso está em uma camada oculta. Ative as camadas novamente em Camadas para imprimi-lo.",
   "print.overflow": "A planta não cabe nesta escala. Escolha uma escala menor, outra orientação ou Ajustar à página.",
