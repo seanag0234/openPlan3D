@@ -21,6 +21,7 @@
   import { wallLength as calcWallLength, MIN_WALL_LENGTH, type WallEndpoint } from '$lib/utils/wallEditing';
   import { openingOnWall } from '$lib/utils/wallProfiles';
   import { getEntourageDef } from '$lib/utils/entourageCatalog';
+  import { customSymbolName } from '$lib/utils/symbolName';
   import { floorMaterials, wallColors } from '$lib/utils/materials';
   import { colorInputValue, doorFrameColor, DOOR_FRAME_PRESETS } from '$lib/utils/doorStyle';
   import { getCatalogItem, getFurnitureSize } from '$lib/utils/furnitureCatalog';
@@ -881,7 +882,7 @@
     <div class="space-y-3">
       <div>
         <span class="text-xs text-gray-500">{$t('symbolProperties.symbol')}</span>
-        <p class="text-sm text-gray-700">{entourageLabels[selectedEntourage.defId] ? $t(entourageLabels[selectedEntourage.defId]) : getEntourageDef(selectedEntourage.defId)?.name ?? $t('symbolProperties.custom')}</p>
+        <p class="text-sm text-gray-700">{entourageLabels[selectedEntourage.defId] ? $t(entourageLabels[selectedEntourage.defId]) : getEntourageDef(selectedEntourage.defId)?.name ?? (customSymbolName(selectedEntourage.defId, $currentProject) || $t('symbolProperties.custom'))}</p>
       </div>
       <LengthInput label={$t('openingProperties.width')} valueCm={selectedEntourage.width} units={settings.units} minCm={1}
         oncommit={cm => updateEntourageItem(selectedEntourage!.id, { width: cm })} />
