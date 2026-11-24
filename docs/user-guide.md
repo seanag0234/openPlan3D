@@ -1008,7 +1008,7 @@ Press **?** in the editor to see this list on screen (**Copy All** copies it;
 | **M** | Measure tool |
 | **N** | Dimension (annotate) tool |
 | **T** | Text tool |
-| **S** | Switch snap step: 25 cm grid or 10 cm (status bar Snap) |
+| **S** | Switch the size of the steps: 25 cm grid or 10 cm (the steps button in the bottom bar) |
 | **G** | Toggle grid |
 | **F** / **Shift+F** | Zoom to fit / Fit selection |
 | **+** / **−** (also **=** / **_** and the numpad keys) | Zoom in / out, 25% steps between the minimum zoom and 1000% |

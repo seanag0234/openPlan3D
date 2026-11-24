@@ -46,7 +46,7 @@ test('the More actions Snap to Grid item shows the state the Command Palette set
 test('S and the status-bar Snap button switch the snap step and leave Snap to Grid alone', async ({ page }) => {
   await page.goto('/editor');
   const snapping = page.getByRole('button', { name: 'Move in steps', exact: true });
-  const step = page.getByTitle('Switch snap step: 25 cm grid or 10 cm (S)', { exact: true });
+  const step = page.getByTitle('Switch the size of the steps: 25 cm grid or 10 cm (S)', { exact: true });
   await expect(step).toHaveText('🧲 Steps of 25 cm');
   await expect(step).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Save', exact: true }).press('s');
@@ -61,7 +61,7 @@ test('S and the status-bar Snap button switch the snap step and leave Snap to Gr
 test('the status-bar Snap button reads Snap off while Snap to Grid is off, and S still picks the step', async ({ page }) => {
   await page.goto('/editor');
   const snapping = page.getByRole('button', { name: 'Move in steps', exact: true });
-  const step = page.getByTitle('Switch snap step: 25 cm grid or 10 cm (S)', { exact: true });
+  const step = page.getByTitle('Switch the size of the steps: 25 cm grid or 10 cm (S)', { exact: true });
   await expect(step).toHaveText('🧲 Steps of 25 cm');
   await snapping.click();
   await expect(snapping).toHaveAttribute('aria-pressed', 'false');
@@ -81,7 +81,7 @@ test('the status-bar Snap button reads Snap off while Snap to Grid is off, and S
 test('the snap step reads in inches when the plan uses feet and inches', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('o3d_settings', JSON.stringify({ units: 'imperial' })));
   await page.goto('/editor');
-  const step = page.getByTitle('Switch snap step: 6" grid or 1" (S)', { exact: true });
+  const step = page.getByTitle('Switch the size of the steps: 6" grid or 1" (S)', { exact: true });
   await expect(step).toHaveText('🧲 Steps of 6"');
   await page.getByRole('button', { name: 'Save', exact: true }).press('s');
   await expect(step).toHaveText('🧲 Steps of 1"');

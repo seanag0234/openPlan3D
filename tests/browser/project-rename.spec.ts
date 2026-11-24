@@ -10,7 +10,7 @@ test('clicking the project name sends typing to the rename field; Escape keeps t
   const field = page.getByRole('textbox', { name: 'Project name', exact: true });
   const canvas = page.getByLabel('Floor plan editor canvas', { exact: true });
   const layers = page.getByRole('button', { name: 'Show or hide the list of everything on the plan', exact: true });
-  const step = page.getByTitle('Switch snap step: 25 cm grid or 10 cm (S)', { exact: true });
+  const step = page.getByTitle('Switch the size of the steps: 25 cm grid or 10 cm (S)', { exact: true });
 
   await name.click();
   await expect(field).toBeFocused();
