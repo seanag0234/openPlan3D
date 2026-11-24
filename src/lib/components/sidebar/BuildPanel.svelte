@@ -677,6 +677,12 @@
       </div>
 
     {:else if activeTab === 'objects'}
+      {#snippet boxNamedButton()}
+        <button
+          class="w-full px-3 py-2 rounded-lg border-2 border-dashed border-blue-300 text-left text-sm font-medium text-blue-800 hover:bg-blue-50 transition-colors break-words [@media(pointer:coarse)]:min-h-11"
+          onclick={() => addPlainBox(search)}
+        >{$t('adding.boxNamed', { name: search.trim().slice(0, 60) })}</button>
+      {/snippet}
       <div class="space-y-2">
         <button
           class="w-full flex flex-col items-start gap-0.5 px-3 py-2 rounded-lg border-2 border-dashed border-blue-300 text-left text-blue-800 hover:bg-blue-50 transition-colors [@media(pointer:coarse)]:min-h-11"
@@ -709,6 +715,7 @@
           <div class="text-xs text-gray-600 px-1">{$t(found === 1 ? 'objectControls.result' : 'objectControls.results', { count: found, query: search })}</div>
           {#if found === 0}
             <p class="text-xs text-gray-600 px-1">{$t('adding.nothingCalled', { query: search.trim() })}</p>
+            {#if search.trim()}{@render boxNamedButton()}{/if}
           {/if}
         {/if}
         <!-- Category filter -->
@@ -850,6 +857,9 @@
           {#if symbolUploadError}<p role="alert" class="text-xs text-red-700">{$t(`entourageLabels.${symbolUploadError}`)}</p>{/if}
           <input type="file" accept="image/png,image/jpeg,image/webp" class="hidden" bind:this={entourageFileInput} onchange={onEntourageUpload} />
         </div>
+        {/if}
+        {#if search.trim() && filtered.length + symbolMatches.length > 0}
+          {@render boxNamedButton()}
         {/if}
       </div>
     {/if}

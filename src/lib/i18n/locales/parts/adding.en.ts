@@ -4,4 +4,5 @@ export const addingEn = {
   "adding.addBox": "＋ Add a box",
   "adding.addBoxHelp": "A plain box you can name and size",
   "adding.boxName": "Box",
+  "adding.boxNamed": "＋ Add a plain box named “{name}”",
 } as const;

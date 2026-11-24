@@ -4,4 +4,5 @@ export const addingPt = {
   "adding.addBox": "＋ Adicionar uma caixa",
   "adding.addBoxHelp": "Uma caixa simples para nomear e dimensionar",
   "adding.boxName": "Caixa",
+  "adding.boxNamed": "＋ Adicionar uma caixa simples chamada “{name}”",
 } as const;
