@@ -10,7 +10,7 @@
   import { planContentBounds, hasPlanContent } from '$lib/utils/planContentBounds';
   import { connectedWallEndpoints } from '$lib/utils/wallEditing';
   import { createDrawScheduler } from '$lib/utils/drawScheduler';
-  import { activeFloor, selectedTool, selectedElementId, selectedElementIds, selectedRoomId, addWall, addDoor, addWindow, updateWall, moveWallEndpoint, moveWallGeometryDuringDrag, updateDoor, updateWindow, addFurniture, moveFurniture, transformFurnitureDuringDrag, rotateFurniture, rotateSelection, setFurnitureRotation, scaleFurniture, removeElement, placingFurnitureId, placingRotation, placingDoorType, placingWindowType, detectedRoomsStore, duplicateDoor, duplicateWindow, duplicateFurniture, pasteSelection, moveWallParallel, splitWall, wallSplitIntersectsOpening, snapEnabled, placingStair, addStair, moveStair, updateStair, placingColumn, placingColumnShape, addColumn, moveColumn, updateColumn, calibrationMode, calibrationPoints, updateBackgroundImage, setBackgroundImage, canvasZoom, canvasMinimumZoom, canvasCamX, canvasCamY, panMode, showFurnitureStore, addGuide, moveGuide, removeGuide, beginUndoGroup, endUndoGroup, layerVisibility, updateRoom, addMeasurement, updateMeasurement, removeMeasurement, addAnnotation, removeAnnotation, updateAnnotation, addTextAnnotation, removeTextAnnotation, updateTextAnnotation, moveTextAnnotation, toggleFurnitureLock, toggleSelectionLock, createGroup, ungroupElements, findGroupForElement, placingEntourageId, addEntourageItem, moveEntourage, resizeEntourage, currentProject, elevationWallId, elevationPickMode, doorJoinMode, joinScanDoors } from '$lib/stores/project';
+  import { activeFloor, selectedTool, selectedElementId, selectedElementIds, selectedRoomId, addWall, addDoor, addWindow, updateWall, moveWallEndpoint, moveWallGeometryDuringDrag, updateDoor, updateWindow, addFurniture, moveFurniture, transformFurnitureDuringDrag, rotateFurniture, rotateSelection, setFurnitureRotation, scaleFurniture, removeElement, placingFurnitureId, placingRotation, placingDoorType, placingWindowType, detectedRoomsStore, duplicateDoor, duplicateWindow, duplicateFurniture, pasteSelection, moveWallParallel, splitWall, wallSplitIntersectsOpening, snapEnabled, placingStair, addStair, moveStair, updateStair, placingColumn, placingColumnShape, addColumn, moveColumn, updateColumn, calibrationMode, calibrationPoints, updateBackgroundImage, setBackgroundImage, canvasZoom, canvasMinimumZoom, canvasCamX, canvasCamY, panMode, showFurnitureStore, addGuide, moveGuide, removeGuide, beginUndoGroup, endUndoGroup, layerVisibility, updateRoom, addMeasurement, updateMeasurement, removeMeasurement, addAnnotation, removeAnnotation, updateAnnotation, addTextAnnotation, removeTextAnnotation, updateTextAnnotation, moveTextAnnotation, toggleFurnitureLock, toggleSelectionLock, createGroup, ungroupElements, findGroupForElement, placingEntourageId, addEntourageItem, moveEntourage, resizeEntourage, currentProject, elevationWallId, elevationPickMode, doorJoinMode, joinScanDoors, houseFixed } from '$lib/stores/project';
   import { allLocked, interactiveFloor, isLocked, unlockedOnly } from '$lib/utils/editPolicy';
   import type { Point, Wall, Door, Window as Win, FurnitureItem, Stair, Column, GuideLine, Measurement, Annotation, TextAnnotation, CustomEntourageDef } from '$lib/models/types';
   import type { Floor, Room } from '$lib/models/types';
@@ -39,6 +39,7 @@
   import { snapStatus } from '$lib/utils/snapStep';
   import { angleSnapWithin, cameraAfterResize, resizeFurnitureFromHandle, type CanvasState } from '$lib/utils/canvasInteraction';
   import { beginCaptions, drawCaptions } from '$lib/utils/captionPlan';
+  import { fitIds } from '$lib/utils/fitBounds';
   import { gridLineStepCm, resizeStep, snapPieceMove, snapValue, stopAtWalls, type SnapContext } from '$lib/utils/snapPolicy';
   import { furnitureSizeLabel } from '$lib/utils/furnitureCaption';
   import { drawWall as _drawWall, drawDoorOnWall as _drawDoorOnWall, drawWindowOnWall as _drawWindowOnWall, drawDoorDistanceDimensions as _drawDoorDistanceDimensions, drawWindowDistanceDimensions as _drawWindowDistanceDimensions, drawFurnitureItem, drawStair as _drawStair, drawColumn as _drawColumn, drawGuides as _drawGuides, drawPersistedMeasurements as _drawPersistedMeasurements, drawTextAnnotations as _drawTextAnnotations, drawAnnotation as _drawAnnotation, drawAnnotations as _drawAnnotations, drawRooms as _drawRooms, drawWallJoints as _drawWallJoints, drawSnapPoints as _drawSnapPoints, drawMinimap as _drawMinimap, drawEntourageItems as _drawEntourageItems, drawEntourageGhost as _drawEntourageGhost, drawFloorBelowGhost as _drawFloorBelowGhost, entourageAspect } from '$lib/utils/canvasRenderer';
@@ -136,6 +137,7 @@
   let dragOffset: Point = { x: 0, y: 0 };
   let dragStartRotation: number = 0;
   let dragStartPosition: Point = { x: 0, y: 0 };
+  let currentHouseFixed = $state(false);
   let dragWasWallSnapped: boolean = false;
   let draggingDoorId: string | null = $state(null);
   let draggingWindowId: string | null = $state(null);
@@ -1888,6 +1890,7 @@
     const unsub9 = placingWindowType.subscribe((t) => { currentWindowType = t; markDirty(); });
     const unsub10 = snapEnabled.subscribe((v) => { currentSnapEnabled = v; markDirty(); });
     const unsub_snapgrid = projectSettings.subscribe((s) => { currentSnapToGrid = s.snapToGrid; currentSnapToWalls = s.snapToWalls; currentGridSize = s.gridSize; markDirty(); });
+    const unsub_house = houseFixed.subscribe((value) => { currentHouseFixed = value; markDirty(); });
     const unsub11 = placingStair.subscribe((v) => { isPlacingStair = v; markDirty(); });
     const unsubEnt1 = placingEntourageId.subscribe((id) => { currentEntourageDefId = id; if (id) { placingStair.set(false); placingColumn.set(false); } markDirty(); });
     const unsubEnt2 = currentProject.subscribe((pr) => {
@@ -1980,7 +1983,7 @@
     canvas.addEventListener('touchend', onTouchEnd, { passive: false });
     canvas.addEventListener('touchcancel', onTouchEnd, { passive: false });
 
-    return () => { mounted = false; drawing?.stop(); stopTextures(); resizeObs.disconnect(); unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsub13(); unsub_multi(); unsub_elevopen(); unsub_elevpick(); unsub_join(); unsub14(); unsub_col(); unsub_cols(); unsub_layers(); unsub_snapgrid(); unsubEnt1(); unsubEnt2(); document.removeEventListener('paste', handlePaste); canvas.removeEventListener('touchstart', onTouchStart); canvas.removeEventListener('touchmove', onTouchMove); canvas.removeEventListener('touchend', onTouchEnd); canvas.removeEventListener('touchcancel', onTouchEnd); };
+    return () => { mounted = false; drawing?.stop(); stopTextures(); resizeObs.disconnect(); unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsub13(); unsub_multi(); unsub_elevopen(); unsub_elevpick(); unsub_join(); unsub14(); unsub_col(); unsub_cols(); unsub_layers(); unsub_snapgrid(); unsub_house(); unsubEnt1(); unsubEnt2(); document.removeEventListener('paste', handlePaste); canvas.removeEventListener('touchstart', onTouchStart); canvas.removeEventListener('touchmove', onTouchMove); canvas.removeEventListener('touchend', onTouchEnd); canvas.removeEventListener('touchcancel', onTouchEnd); };
   });
 
   /** Compute world bounding box of all elements */
@@ -2174,10 +2177,19 @@
     clearAuxiliarySelection();
   }
 
-  function zoomToFit(selectionOnly = false) {
-    const ids = fitSelectionIds();
-    const boundsAt = (scale = 1) => selectionOnly
-      ? (currentFloor ? boundsForFloor(currentFloor,scale,ids) : null) : getFitBounds(scale);
+  let lastFitPress = 0;
+  /** Fit frames what fitIds picks; a second press within 3 s frames everything. */
+  function onFitPressed() { const again = Date.now() - lastFitPress < 3000; lastFitPress = again ? 0 : Date.now(); zoomToFit(false, again); }
+
+  function zoomToFit(selectionOnly = false, everything = false) {
+    const scoped = selectionOnly ? fitSelectionIds() : currentFloor ? fitIds(currentFloor, currentHouseFixed, everything) : undefined;
+    const boundsAt = (scale = 1) => {
+      if (scoped) {
+        const scopedBounds = currentFloor ? boundsForFloor(currentFloor, scale, scoped) : null;
+        if (scopedBounds || selectionOnly) return scopedBounds;
+      }
+      return getFitBounds(scale);
+    };
     const bounds = boundsAt();
     if (!bounds && selectionOnly) return;
     if (!bounds) { camX = 0; camY = 0; zoom = 1; minimumZoom = 0.1; markDirty(); return; }
@@ -4163,7 +4175,7 @@
       onclick={onMinimapClick}
     ></canvas>
   {/if}
-  <StatusBar rooms={detectedRooms} floor={currentFloor} {floorBelow} selectedCount={currentSelectedIds.size} {zoom} {snapControl} snapEnabled={currentSnapEnabled} {layerVis} {showRoomLabels} {showDimensions} bottomInset={zoomControlsBottom} bind:showGrid bind:showRulers bind:showMinimap onfit={() => zoomToFit()} />
+  <StatusBar rooms={detectedRooms} floor={currentFloor} {floorBelow} selectedCount={currentSelectedIds.size} {zoom} {snapControl} snapEnabled={currentSnapEnabled} {layerVis} {showRoomLabels} {showDimensions} bottomInset={zoomControlsBottom} bind:showGrid bind:showRulers bind:showMinimap onfit={onFitPressed} />
 
   <!-- Contextual Toolbar (hidden while the integrated elevation view covers the canvas) -->
   {#if (currentSelectedId || currentSelectedIds.size > 0) && currentFloor && currentTool === 'select' && !elevationOpen}
@@ -4197,7 +4209,7 @@
       const newZoom = Math.min(10, zoom * 1.25);
       zoom = newZoom;
     }}
-    onfit={() => zoomToFit()}
+    onfit={onFitPressed}
     onfitselection={() => zoomToFit(true)} />
 
   {#if splitBlocked}
