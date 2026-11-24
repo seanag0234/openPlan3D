@@ -67,3 +67,11 @@ export async function reloadEditor(page: Page, name: string) {
   page.off('dialog', accept);
   await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
 }
+
+/** Open the list of versions, through "More actions" where the bar folds it away. */
+export async function openVersions(page: Page) {
+  const more = page.getByRole('button', { name: 'More actions', exact: true });
+  if (await more.isVisible()) await more.click();
+  await page.getByRole('button', { name: 'Version History', exact: true }).click();
+  return page.getByRole('dialog', { name: 'Version History', exact: true });
+}

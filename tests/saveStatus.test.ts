@@ -220,3 +220,11 @@ it('does not discard edits made while a recovery copy is being saved', async () 
   expect(get(saveError)).toContain('made more edits');
   expect(get(saveState)).toBe('unsaved'); expect(get(saveConflict)).toBe(true);
 });
+
+it('asks for a version on Save only when the plan differs from the newest one', async () => {
+  const { saveSnapshot } = await import('$lib/stores/versionHistory');
+  vi.mocked(saveSnapshot).mockClear();
+  updateProjectName('Saved by hand');
+  expect(await manualSave()).toBe(true);
+  expect(saveSnapshot).toHaveBeenCalledWith(get(currentProject), 'Manual save', true);
+});

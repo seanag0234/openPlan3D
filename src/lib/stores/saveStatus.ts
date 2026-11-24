@@ -155,7 +155,7 @@ async function persist(manual: boolean): Promise<boolean> {
       // Let reactive updates, zoom-to-fit and a paint finish before taking a preview.
       // Preview work must not delay the save or capture a newer revision/project.
       scheduleThumbnail(p);
-      if (manual) saveSnapshot(p, 'Manual save');
+      if (manual) saveSnapshot(p, 'Manual save', true);   // true: skip a plan equal to the newest version
       saveState.set('saved');
       saveError.set(null);
       saveConflict.set(false);
