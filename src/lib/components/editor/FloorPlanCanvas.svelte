@@ -40,6 +40,8 @@
   import { angleSnapWithin, cameraAfterResize, resizeFurnitureFromHandle, type CanvasState } from '$lib/utils/canvasInteraction';
   import { beginCaptions, drawCaptions } from '$lib/utils/captionPlan';
   import { fitIds } from '$lib/utils/fitBounds';
+  import { drawNoteMarks, noteMarkAt } from '$lib/utils/noteMarks';
+  import { noteTarget } from '$lib/stores/ui';
   import { gridLineStepCm, resizeStep, snapPieceMove, snapValue, stopAtWalls, type SnapContext } from '$lib/utils/snapPolicy';
   import { furnitureSizeLabel } from '$lib/utils/furnitureCaption';
   import { drawWall as _drawWall, drawDoorOnWall as _drawDoorOnWall, drawWindowOnWall as _drawWindowOnWall, drawDoorDistanceDimensions as _drawDoorDistanceDimensions, drawWindowDistanceDimensions as _drawWindowDistanceDimensions, drawFurnitureItem, drawStair as _drawStair, drawColumn as _drawColumn, drawGuides as _drawGuides, drawPersistedMeasurements as _drawPersistedMeasurements, drawTextAnnotations as _drawTextAnnotations, drawAnnotation as _drawAnnotation, drawAnnotations as _drawAnnotations, drawRooms as _drawRooms, drawWallJoints as _drawWallJoints, drawSnapPoints as _drawSnapPoints, drawMinimap as _drawMinimap, drawEntourageItems as _drawEntourageItems, drawEntourageGhost as _drawEntourageGhost, drawFloorBelowGhost as _drawFloorBelowGhost, entourageAspect } from '$lib/utils/canvasRenderer';
@@ -1744,6 +1746,7 @@
     // Text annotations
     if (layerVis.textAnnotations && floor) drawTextAnnotations(floor);
     drawCaptions(getCS());
+    const noted = get(currentProject); if (noted) drawNoteMarks(getCS(), noted, floor, detectedRooms);
 
     // Rotation angle tooltip while dragging rotation handle
     if (draggingHandle === 'rotate' && currentSelectedId && currentFloor) {
@@ -2492,6 +2495,11 @@
     }
 
     // Text annotation click detection (select + drag)
+    if (tool === 'select' && currentFloor) {
+      const noted = get(currentProject);
+      const mark = noted ? noteMarkAt({ x: e.clientX - rect.left, y: e.clientY - rect.top }, getCS(), noted, currentFloor, detectedRooms) : null;
+      if (mark) { noteTarget.set(mark); return; }
+    }
     if (tool === 'select' && currentFloor && hitFloor) {
       const textHitId = hitTestTextAnnotation(wp, hitFloor);
       if (textHitId && (e.ctrlKey || e.metaKey || !(currentSelectedIds.size >= 2 && currentSelectedIds.has(textHitId)))) {
