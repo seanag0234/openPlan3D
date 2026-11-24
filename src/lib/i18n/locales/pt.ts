@@ -114,7 +114,7 @@ export const pt = {
   "welcome.useTemplate": "Usar um Modelo",
   "welcome.useTemplateDesc": "Começar com um modelo de cômodo",
   "welcome.importPlan": "Importar uma Planta",
-  "welcome.importPlanDesc": "Carregar um arquivo JSON ou RoomPlan",
+  "welcome.importPlanDesc": "Abrir um arquivo de planta ou um escaneamento de cômodo do iPhone",
   "welcome.quickTour": "Tour Rápido",
   "welcome.quickTourDesc": "Aprenda o básico em 30 segundos",
   "welcome.unrecognizedFormat": "Formato de arquivo não reconhecido",

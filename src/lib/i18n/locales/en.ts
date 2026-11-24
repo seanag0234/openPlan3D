@@ -114,7 +114,7 @@ export const en = {
   "welcome.useTemplate": "Use a Template",
   "welcome.useTemplateDesc": "Start with a room preset",
   "welcome.importPlan": "Import a Plan",
-  "welcome.importPlanDesc": "Load a JSON or RoomPlan file",
+  "welcome.importPlanDesc": "Open a plan file or an iPhone room scan",
   "welcome.quickTour": "Quick Tour",
   "welcome.quickTourDesc": "Learn the basics in 30 seconds",
   "welcome.unrecognizedFormat": "Unrecognized file format",
