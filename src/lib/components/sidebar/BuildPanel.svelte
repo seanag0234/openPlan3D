@@ -64,6 +64,7 @@
   }
 
   function setTool(tool: Tool) {
+    if (get(houseFixed) && (tool === 'wall' || tool === 'door' || tool === 'window')) return;
     if (tool === 'measure' || tool === 'annotate') activateMeasurementTool(tool);
     else selectedTool.set(tool);
     placingFurnitureId.set(null);
@@ -77,6 +78,7 @@
   onDestroy(placingFurnitureId.subscribe((id) => { currentPlacing = id; }));
 
   function onPresetClick(presetId: string, templateName?: string) {
+    if (get(houseFixed)) return;
     const preset = roomPresets.find(p => p.id === presetId);
     if (preset) {
       let cx = 0, cy = 0;
@@ -189,6 +191,7 @@
   let selectedWindowType = $state<Win['type']>('standard');
 
   function setDoorType(type: Door['type']) {
+    if (get(houseFixed)) return;
     selectedDoorType = type;
     placingDoorType.set(type);
     setTool('door');
@@ -196,6 +199,7 @@
   }
 
   function setWindowType(type: Win['type']) {
+    if (get(houseFixed)) return;
     selectedWindowType = type;
     placingWindowType.set(type);
     setTool('window');
@@ -651,14 +655,18 @@
 
     {:else if activeTab === 'rooms'}
       <div class="space-y-2">
+        {#if $houseFixed}
+          <p role="note" data-house-fixed-note class="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">{$t('adding.houseFixed')}</p>
+        {/if}
         <h3 class="text-xs font-semibold text-gray-400 uppercase mb-2">{$t('roomChoices.presets')}</h3>
         <p class="text-xs text-gray-400 mb-3">{$t('roomChoices.presetsHelp')}</p>
         <div class="grid grid-cols-2 gap-2">
           {#each roomPresets as preset}
             <button
-              class="flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 border-gray-100 hover:border-blue-300 hover:bg-blue-50 transition-colors cursor-grab active:cursor-grabbing"
+              class="flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 border-gray-100 hover:border-blue-300 hover:bg-blue-50 transition-colors cursor-grab active:cursor-grabbing disabled:opacity-40 disabled:cursor-not-allowed"
               onclick={() => onPresetClick(preset.id)}
-              draggable="true"
+              disabled={$houseFixed}
+              draggable={!$houseFixed}
               ondragstart={(e) => { e.dataTransfer?.setData('application/o3d-type', 'room'); e.dataTransfer?.setData('application/o3d-id', preset.id); }}
             >
               <div class="w-12 h-12 rounded-lg bg-gray-50 flex items-center justify-center text-2xl font-mono">{preset.icon}</div>
@@ -674,9 +682,10 @@
         <div class="grid grid-cols-2 gap-2">
           {#each roomTemplates as tmpl}
             <button
-              class="flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 border-gray-100 hover:border-green-300 hover:bg-green-50 transition-colors cursor-grab active:cursor-grabbing"
+              class="flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 border-gray-100 hover:border-green-300 hover:bg-green-50 transition-colors cursor-grab active:cursor-grabbing disabled:opacity-40 disabled:cursor-not-allowed"
               onclick={() => onPresetClick(tmpl.presetId, tmpl.name)}
-              draggable="true"
+              disabled={$houseFixed}
+              draggable={!$houseFixed}
               ondragstart={(e) => { e.dataTransfer?.setData('application/o3d-type', 'room-template'); e.dataTransfer?.setData('application/o3d-id', tmpl.name); }}
             >
               <div class="w-12 h-12 rounded-lg bg-green-50 flex items-center justify-center text-lg">
