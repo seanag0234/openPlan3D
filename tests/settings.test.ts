@@ -93,4 +93,11 @@ describe('editor settings', () => {
     vi.resetModules();
     expect(get(await load())).toMatchObject({ snapToGrid: false, units: 'imperial' });
   });
+
+  it('starts a fresh store at the one list of defaults', async () => {
+    mockStorage();
+    const { projectSettings, DEFAULT_SETTINGS } = await import('../src/lib/stores/settings');
+    expect(get(projectSettings)).toEqual(DEFAULT_SETTINGS);
+    expect(DEFAULT_SETTINGS).toMatchObject({ units: 'metric', snapToGrid: true, gridSize: 25, showObjectSizes: true });
+  });
 });

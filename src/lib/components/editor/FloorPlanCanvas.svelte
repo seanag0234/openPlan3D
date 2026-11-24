@@ -31,7 +31,7 @@
   import { roomTemplates, placeRoomTemplate } from '$lib/utils/roomTemplates';
   import { openingDropTarget } from '$lib/utils/openingDrop';
   import { getWallTextureCanvas, getFloorTextureCanvas, setTextureLoadCallback } from '$lib/utils/textureGenerator';
-  import { projectSettings, formatLength, formatArea } from '$lib/stores/settings';
+  import { projectSettings, formatLength, formatArea, DEFAULT_SETTINGS } from '$lib/stores/settings';
   import type { ProjectSettings } from '$lib/stores/settings';
   import { snapStatus } from '$lib/utils/snapStep';
   import { angleSnapWithin, cameraAfterResize, resizeFurnitureFromHandle, snap as _snap, type CanvasState } from '$lib/utils/canvasInteraction';
@@ -185,12 +185,7 @@
   // Shared with the plan exports: Room Labels is a layer switch, Automatic dimensions is Settings → Dimensions → Dimensions.
   let showRoomLabels = $derived(layerVis.roomLabels);
   let showDimensions = $state(true);
-  let dimSettings: ProjectSettings = $state({
-    units: 'metric', showDimensions: true, showExternalDimensions: true,
-    showInternalDimensions: false, showExtensionLines: true,
-    showObjectDistance: true, showObjectSizes: true, dimensionLineColor: '#1e293b',
-    wallMeasureMode: 'centerline', snapToGrid: true, snapToWalls: true, gridSize: 25,
-  });
+  let dimSettings: ProjectSettings = $state({ ...DEFAULT_SETTINGS });
   onDestroy(projectSettings.subscribe((s) => {
     dimSettings = s;
     showDimensions = s.showDimensions;

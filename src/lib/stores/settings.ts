@@ -16,7 +16,8 @@ export interface ProjectSettings {
   gridSize: number;                      // grid snap size in cm (default 25)
 }
 
-const defaultSettings: ProjectSettings = {
+/** The settings a new browser starts with; copy before changing. */
+export const DEFAULT_SETTINGS: Readonly<ProjectSettings> = Object.freeze({
   units: 'metric',
   showDimensions: true,
   showExternalDimensions: true,
@@ -29,16 +30,16 @@ const defaultSettings: ProjectSettings = {
   snapToGrid: true,
   snapToWalls: true,
   gridSize: 25,
-};
+});
 
 // Load from localStorage if available
 function loadSettings(): ProjectSettings {
-  if (typeof window === 'undefined') return { ...defaultSettings };
+  if (typeof window === 'undefined') return { ...DEFAULT_SETTINGS };
   try {
     const saved = localStorage.getItem('o3d_settings');
-    if (saved) return { ...defaultSettings, ...JSON.parse(saved) };
+    if (saved) return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
   } catch {}
-  return { ...defaultSettings };
+  return { ...DEFAULT_SETTINGS };
 }
 
 // Called once the store holds the change, so blocked or full storage cannot cancel it; it then lasts until reload.
@@ -61,7 +62,7 @@ function createSettingsStore() {
       persist(get({ subscribe }));
     },
     reset() {
-      this.set({ ...defaultSettings });
+      this.set({ ...DEFAULT_SETTINGS });
     },
   };
 }
