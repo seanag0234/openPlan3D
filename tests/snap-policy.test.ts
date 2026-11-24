@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { gridLineStepCm, gridMajorStepCm, pieceStepCm, resizeStep, snapPieceMove, snapValue, stopAtWalls, type SnapContext } from '$lib/utils/snapPolicy';
+import { gridLineStepCm, gridLinesPx, gridMajorStepCm, pieceStepCm, resizeStep, snapPieceMove, snapValue, stopAtWalls, type SnapContext } from '$lib/utils/snapPolicy';
 import { snap } from '$lib/utils/canvasInteraction';
 import type { FurnitureItem, Wall } from '$lib/models/types';
 
@@ -67,5 +67,24 @@ describe('snap policy in feet and inches', () => {
     expect(gridLineStepCm({ ...imperial, snapToGrid: false }, 20)).toBe(30.48);
     expect(gridMajorStepCm(imperial)).toBe(91.44);
     expect(gridMajorStepCm({ ...imperial, units: 'metric' })).toBe(100);
+  });
+});
+
+describe('which grid lines are drawn', () => {
+  const close = (got: { minor: number | null; major: number | null }, minor: number | null, major: number | null) => {
+    if (minor === null) expect(got.minor).toBeNull(); else expect(got.minor).toBeCloseTo(minor, 6);
+    if (major === null) expect(got.major).toBeNull(); else expect(got.major).toBeCloseTo(major, 6);
+  };
+  const imperial: SnapContext = { ...grid, units: 'imperial' };
+
+  it('keeps the metric rule: lines at the grid step and heavier ones every metre, none when too close', () => {
+    close(gridLinesPx(grid, 1, 20), 25, 100);
+    close(gridLinesPx(grid, 0.1, 20), null, null);
+  });
+
+  it('draws heavier lines every 3 ft in feet and inches, and the foot lines only when far enough apart', () => {
+    close(gridLinesPx(imperial, 1, 20), 30.48, 91.44);
+    close(gridLinesPx(imperial, 0.5, 20), null, 45.72);
+    close(gridLinesPx(imperial, 0.2, 20), null, null);
   });
 });

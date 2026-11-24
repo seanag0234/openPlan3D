@@ -45,7 +45,7 @@
   import { shiftToReveal } from '$lib/utils/viewShift';
   import { coarsePointer } from '$lib/stores/pointer';
   import { handleGeometry } from '$lib/utils/handleGeometry';
-  import { gridLineStepCm, resizeStep, snapPieceMove, snapValue, stopAtWalls, type SnapContext } from '$lib/utils/snapPolicy';
+  import { gridLinesPx, resizeStep, snapPieceMove, snapValue, stopAtWalls, type SnapContext } from '$lib/utils/snapPolicy';
   import { furnitureSizeLabel } from '$lib/utils/furnitureCaption';
   import { createTouchGestures, type TouchSample } from '$lib/utils/touchGestures';
   import { drawWall as _drawWall, drawDoorOnWall as _drawDoorOnWall, drawWindowOnWall as _drawWindowOnWall, drawDoorDistanceDimensions as _drawDoorDistanceDimensions, drawWindowDistanceDimensions as _drawWindowDistanceDimensions, drawFurnitureItem, drawStair as _drawStair, drawColumn as _drawColumn, drawGuides as _drawGuides, drawPersistedMeasurements as _drawPersistedMeasurements, drawTextAnnotations as _drawTextAnnotations, drawAnnotation as _drawAnnotation, drawAnnotations as _drawAnnotations, drawRooms as _drawRooms, drawWallJoints as _drawWallJoints, drawSnapPoints as _drawSnapPoints, drawMinimap as _drawMinimap, drawEntourageItems as _drawEntourageItems, drawEntourageGhost as _drawEntourageGhost, drawFloorBelowGhost as _drawFloorBelowGhost, entourageAspect } from '$lib/utils/canvasRenderer';
@@ -498,24 +498,24 @@
 
   function drawGrid() {
     if (!ctx || !showGrid) return;
-    const step = gridLineStepCm(snapContext(), GRID) * zoom;
-    if (step < 4) return;
+    const { minor: step, major: majorStep } = gridLinesPx(snapContext(), zoom, GRID);
 
     // Minor grid
-    ctx.strokeStyle = '#e8eaed';
-    ctx.lineWidth = 0.5;
-    const offX = (width / 2 - camX * zoom) % step;
-    const offY = (height / 2 - camY * zoom) % step;
-    for (let x = offX; x < width; x += step) {
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
-    }
-    for (let y = offY; y < height; y += step) {
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+    if (step !== null) {
+      ctx.strokeStyle = '#e8eaed';
+      ctx.lineWidth = 0.5;
+      const offX = (width / 2 - camX * zoom) % step;
+      const offY = (height / 2 - camY * zoom) % step;
+      for (let x = offX; x < width; x += step) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
+      }
+      for (let y = offY; y < height; y += step) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+      }
     }
 
-    // Major grid (every 100cm / 1m)
-    const majorStep = 100 * zoom;
-    if (majorStep >= 20) {
+    // Major grid (every metre, or every 3 ft in feet and inches)
+    if (majorStep !== null) {
       ctx.strokeStyle = '#d1d5db';
       ctx.lineWidth = 0.8;
       const mOffX = (width / 2 - camX * zoom) % majorStep;

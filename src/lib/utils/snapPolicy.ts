@@ -18,6 +18,14 @@ export function gridLineStepCm(s: SnapContext, fallback: number): number {
 /** Spacing of the heavier grid lines, in cm: every metre, or every 3 ft. */
 export function gridMajorStepCm(s: SnapContext): number { return s.units === 'imperial' ? 3 * ONE_FOOT : 100; }
 
+/** Which grid lines to draw at this zoom, as their spacing in screen px; null means none of that kind. */
+export function gridLinesPx(s: SnapContext, zoom: number, fallback: number): { minor: number | null; major: number | null } {
+  const minor = gridLineStepCm(s, fallback) * zoom, major = gridMajorStepCm(s) * zoom;
+  // Metres keep today's rule exactly: nothing under 4 px, heavier lines from 20 px.
+  if (s.units !== 'imperial') return minor < 4 ? { minor: null, major: null } : { minor, major: major >= 20 ? major : null };
+  return { minor: minor >= 24 ? minor : null, major: major >= 20 ? major : null };
+}
+
 /** Step a dragged piece moves by, in cm: 6 in on the grid step and 1 in off it in feet and inches; the grid size or 10 cm in metres. */
 export function pieceStepCm(s: SnapContext): number {
   if (s.units === 'imperial') return s.snapToGrid ? SIX_INCHES : ONE_INCH;
