@@ -3,7 +3,7 @@ import { get } from 'svelte/store';
 import type { FurnitureItem, Point, Wall } from '$lib/models/types';
 import { getFurnitureSize } from '$lib/utils/furnitureCatalog';
 import { resizeFurnitureFromHandle, type HandleType } from '$lib/utils/canvasInteraction';
-import { snapFurnitureToWalls } from '$lib/utils/furnitureGeometry';
+import { pushFurnitureFlush, snapFurnitureToWalls } from '$lib/utils/furnitureGeometry';
 import { findFurnitureAt, findHandleAt } from '$lib/utils/hitTesting';
 import { beginUndoGroup, endUndoGroup, loadProject, currentProject, transformFurnitureDuringDrag, updateFurniture, undo, redo } from '$lib/stores/project';
 import { roomProject } from './fixtures/project';
@@ -141,6 +141,40 @@ it('does not force furniture onto a shorter wall, a curved wall, or a distant wa
   expect(snapFurnitureToWalls({ x: 100, y: 40 }, item({ width: 700 }), [wall])).toBeNull();
   expect(snapFurnitureToWalls({ x: 100, y: 40 }, item(), [{ ...wall, curvePoint: { x: 300, y: 60 } }])).toBeNull();
   expect(snapFurnitureToWalls({ x: 100, y: 80 }, item(), [wall])).toBeNull();
+});
+
+// The wall runs along x from 0 to 600 and is 20 thick, so its faces are at y = 10 and y = -10.
+it.each([1, -1])('a push flush to a wall keeps the way a piece faces and its place along it on side %s', side => {
+  const result = pushFurnitureFlush({ x: 253, y: side * 44 }, item(), [wall]);
+  expect(result?.rotation).toBe(0);
+  expect(result?.position.x).toBe(253);
+  expect(Math.abs(result!.position.y) - 10).toBeCloseTo(30, 8);
+  expect(Math.sign(result!.position.y)).toBe(side);
+  expect(result?.wallId).toBe('wall');
+  expect(result?.side).toBe(side === 1 ? 'normal' : 'anti');
+});
+
+it('a push flush to a wall uses half the width of a piece turned a quarter', () => {
+  const result = pushFurnitureFlush({ x: 253, y: 57 }, item({ rotation: 90 }), [wall]);
+  expect(result?.rotation).toBe(90);
+  expect(result?.position.x).toBe(253);
+  expect(result!.position.y - 10).toBeCloseTo(50, 8);
+});
+
+it('a push flush to a wall leaves a piece whose end reaches past the wall where it stands along it', () => {
+  const result = pushFurnitureFlush({ x: 580, y: 44 }, item(), [wall]);
+  expect(result?.position.x).toBe(580);
+  expect(result!.position.y - 10).toBeCloseTo(30, 8);
+});
+
+it('a push flush to a wall passes a piece whose middle is past the wall\'s end', () => {
+  expect(pushFurnitureFlush({ x: 610, y: 44 }, item(), [wall])).toBeNull();
+});
+
+it('a push flush to a wall passes a piece at an angle, a curved wall and a wall out of reach', () => {
+  expect(pushFurnitureFlush({ x: 253, y: 44 }, item({ rotation: 30 }), [wall])).toBeNull();
+  expect(pushFurnitureFlush({ x: 253, y: 44 }, item(), [{ ...wall, curvePoint: { x: 300, y: 60 } }])).toBeNull();
+  expect(pushFurnitureFlush({ x: 100, y: 80 }, item(), [wall])).toBeNull();
 });
 
 it('a multi-frame mirrored resize is one undo step and keeps its exact final footprint', () => {
