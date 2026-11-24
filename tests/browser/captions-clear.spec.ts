@@ -44,3 +44,23 @@ test('a piece standing alone keeps its name and size where they were', async ({ 
   expect(size).toBeDefined();
   expect(size!.y - name.y).toBeCloseTo(15, 3);
 });
+
+test('a turned piece reads its name upright', async ({ page }, testInfo) => {
+  await page.addInitScript(() => {
+    const fill = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function(text, x, y, maxWidth) {
+      if (this.canvas.getAttribute('aria-label') === 'Floor plan editor canvas' && text === 'Box A') {
+        const t = this.getTransform();
+        (window as any).__boxA = { b: t.b, c: t.c };
+      }
+      if (maxWidth === undefined) return fill.call(this, text, x, y);
+      return fill.call(this, text, x, y, maxWidth);
+    };
+  });
+  await openPlan(page, await planWith(testInfo, plan => { piece(plan, 'box-a').rotation = 90; }));
+  await page.keyboard.press('Escape');
+  await expect.poll(() => page.evaluate(() => (window as any).__boxA ?? null)).not.toBeNull();
+  const transform = await page.evaluate(() => (window as any).__boxA as { b: number; c: number });
+  expect(transform.b).toBe(0);
+  expect(transform.c).toBe(0);
+});
