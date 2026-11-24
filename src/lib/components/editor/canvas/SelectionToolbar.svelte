@@ -3,6 +3,8 @@
   import type { Door } from '$lib/models/types';
   import { duplicateSelection, selectedElementIds, selectedElementId, updateDoor, beginUndoGroup, endUndoGroup, removeElement } from '$lib/stores/project';
   import MoveToFloorMenu from '../MoveToFloorMenu.svelte';
+  import { coarsePointer } from '$lib/stores/pointer';
+  import { detailsOpen } from '$lib/stores/ui';
 
   type Extra = { kind: 'measurement' | 'annotation' | 'text'; id: string; x: number; y: number };
   let { anchor, box, selectedId, selectedIds, floorId, locked, extra, onsplit, ondeleteextra }: {
@@ -18,6 +20,9 @@
   class="absolute z-40 flex items-center gap-0.5 bg-white rounded-lg shadow-lg border border-gray-200 px-1 py-0.5"
   style="left: {anchor.pos.x}px; top: {anchor.pos.y - 44}px; transform: translateX(-50%);"
 >
+  {#if $coarsePointer}
+    <button class="h-7 px-2 text-xs rounded hover:bg-gray-100 text-gray-700" onclick={() => detailsOpen.set(true)}>{$t('panels.details')}</button>
+  {/if}
   <button
     class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
     title={$t('contextMenu.duplicate')}

@@ -7,7 +7,10 @@
   const furnitureFinishLabels: Record<string, TranslationKey> = {"Wood": "furnitureFinish.Wood", "Metal": "furnitureFinish.Metal", "Fabric": "furnitureFinish.Fabric", "Leather": "furnitureFinish.Leather", "Glass": "furnitureFinish.Glass", "Plastic": "furnitureFinish.Plastic", "Stone": "furnitureFinish.Stone", "Ceramic": "furnitureFinish.Ceramic"};
   import { furnitureFinishes } from '$lib/utils/furnitureFinishes';
   import { resolveRooms } from '$lib/utils/roomDetection';
-  import { onDestroy } from 'svelte';
+  import { onDestroy, tick } from 'svelte';
+  import { get } from 'svelte/store';
+  import { coarsePointer } from '$lib/stores/pointer';
+  import { detailsOpen, planObstruction, revealSelection } from '$lib/stores/ui';
   import ItemDetailsPanel from './ItemDetailsPanel.svelte';
   import type { DetailTarget } from '$lib/models/types';
   import { catalogAssetUrl } from '$lib/utils/catalogAssetUrl';
@@ -384,10 +387,64 @@
   $effect(() => { void selId; void selRoomId; panelEl?.scrollTo({ top: 0 }); });
 
   let hasSelection = $derived(!!selectedWall || !!selectedDoor || !!selectedWindow || !!selectedFurniture || !!selectedRoom || !!selectedStair || !!selectedColumn || !!selectedTextAnnotation || !!selectedEntourage || (!is3D && hasBgImage));
+
+  // On a touch screen the details open only when asked, as a sheet over the plan that leaves its size alone.
+  let sheet = $derived($coarsePointer && !is3D);
+  let portrait = $state(false);
+  $effect(() => {
+    const upright = matchMedia('(orientation: portrait)');
+    const follow = () => { portrait = upright.matches; };
+    follow();
+    upright.addEventListener('change', follow);
+    return () => upright.removeEventListener('change', follow);
+  });
+  const todayClass = $derived(`${is3D ? 'w-80' : 'w-64'} shrink-0 bg-white border-l border-gray-200 flex flex-col overflow-y-auto p-3 fixed md:static right-0 top-12 bottom-9 z-40 shadow-lg max-md:top-auto max-md:bottom-0 max-md:left-0 max-md:w-full max-md:max-h-[45vh] max-md:border-l-0 max-md:border-t max-md:rounded-t-xl max-md:shadow-2xl`);
+  const sheetClass = $derived(portrait
+    ? 'bg-white border-t border-gray-200 flex flex-col overflow-y-auto p-3 fixed inset-x-0 bottom-0 max-h-[45vh] z-40 rounded-t-xl shadow-2xl'
+    : 'w-80 bg-white border-l border-gray-200 flex flex-col overflow-y-auto p-3 fixed right-0 top-12 bottom-0 z-40 shadow-2xl');
+  let sheetShowing = $derived(sheet && hasSelection && $detailsOpen);
+  $effect(() => { if (!hasSelection) detailsOpen.set(false); });
+  // Tell the plan how much of it the sheet covers, so it can slide the selection clear.
+  $effect(() => {
+    void selId; void selRoomId;
+    if (!sheetShowing) {
+      const now = get(planObstruction);
+      if (now.right || now.bottom) planObstruction.set({ right: 0, bottom: 0 });
+      return;
+    }
+    const upright = portrait;
+    let live = true;
+    tick().then(() => {
+      if (!live || !panelEl) return;
+      const rect = panelEl.getBoundingClientRect();
+      planObstruction.set(upright ? { right: 0, bottom: rect.height } : { right: rect.width, bottom: 0 });
+      revealSelection.update(n => n + 1);
+    });
+    return () => { live = false; };
+  });
+  onDestroy(() => { const now = get(planObstruction); if (now.right || now.bottom) planObstruction.set({ right: 0, bottom: 0 }); });
+  let sheetTitle = $derived.by(() => {
+    if (selectedFurniture) return customModelName(selectedFurniture, $currentProject) ?? (getCatalogItem(selectedFurniture.catalogId) ? furnitureName(selectedFurniture.catalogId, $locale) : $t('furnitureProperties.fallback'));
+    if (selectedWall) return $t('wallProperties.heading');
+    if (selectedDoor) return $t('openingProperties.door');
+    if (selectedWindow) return $t('openingProperties.window');
+    if (selectedRoom) return selectedRoom.name || $t('roomProperties.heading');
+    if (selectedEntourage) return $t('entourageLabels.title');
+    if (selectedStair) return $t('stairProperties.heading');
+    if (selectedColumn) return $t('columnProperties.heading');
+    if (selectedTextAnnotation) return selectedTextAnnotation.text || $t('annotationProperties.heading');
+    return $t('backgroundProperties.heading');
+  });
 </script>
 
-<!-- Right sidebar on md+; slides up as a bottom sheet on phones -->
-<div data-plan-properties bind:this={panelEl} class="{is3D ? 'w-80' : 'w-64'} shrink-0 bg-white border-l border-gray-200 flex flex-col overflow-y-auto p-3 fixed md:static right-0 top-12 bottom-9 z-40 shadow-lg max-md:top-auto max-md:bottom-0 max-md:left-0 max-md:w-full max-md:max-h-[45vh] max-md:border-l-0 max-md:border-t max-md:rounded-t-xl max-md:shadow-2xl" class:hidden={!hasSelection}>
+<!-- Right sidebar on md+; slides up as a bottom sheet on phones; a sheet over the plan on a touch screen -->
+<div data-plan-properties bind:this={panelEl} class={sheet ? sheetClass : todayClass} class:hidden={!hasSelection || (sheet && !$detailsOpen)}>
+  {#if sheet}
+    <div class="sticky top-0 -mx-3 -mt-3 mb-3 px-3 py-1 bg-white border-b border-gray-200 flex items-center gap-2 z-10">
+      <span class="flex-1 min-w-0 truncate text-sm font-semibold text-gray-800">{sheetTitle}</span>
+      <button class="min-h-[44px] px-4 rounded-lg bg-blue-600 text-white text-sm font-medium active:bg-blue-700" onclick={() => detailsOpen.set(false)}>{$t('panels.done')}</button>
+    </div>
+  {/if}
   {#if selectedWall}
     <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
       <span class="w-6 h-6 bg-gray-200 rounded flex items-center justify-center text-xs">▭</span>
