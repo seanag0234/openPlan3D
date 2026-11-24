@@ -12,6 +12,7 @@
   import { coarsePointer } from '$lib/stores/pointer';
   import { detailsOpen, planObstruction, revealSelection } from '$lib/stores/ui';
   import ItemDetailsPanel from './ItemDetailsPanel.svelte';
+  import LengthInput from '../LengthInput.svelte';
   import type { DetailTarget } from '$lib/models/types';
   import { catalogAssetUrl } from '$lib/utils/catalogAssetUrl';
   import { canDeleteItem } from '$lib/utils/editPolicy';
@@ -205,26 +206,6 @@
   let furnitureSize = $derived(selectedFurniture ? getFurnitureSize(selectedFurniture) : null);
   function furnitureAxisScale(axis: 'x' | 'y' | 'z') {
     return Math.abs(selectedFurniture?.scale?.[axis] ?? 1) || 1;
-  }
-  function onFurnitureWidth(e: Event) {
-    if (!selectedFurniture || !furnitureSize) return;
-    dimensionInput(e, furnitureSize.width,
-      value => updateFurniture(selectedFurniture!.id, { width: value / furnitureAxisScale('x') }));
-  }
-  function onFurnitureDepth(e: Event) {
-    if (!selectedFurniture || !furnitureSize) return;
-    dimensionInput(e, furnitureSize.depth,
-      value => updateFurniture(selectedFurniture!.id, { depth: value / furnitureAxisScale('y') }));
-  }
-  function onFurnitureHeight(e: Event) {
-    if (!selectedFurniture || !furnitureSize) return;
-    dimensionInput(e, furnitureSize.height,
-      value => updateFurniture(selectedFurniture!.id, { height: value / furnitureAxisScale('z') }));
-  }
-  function onFurnitureElevation(e: Event) {
-    if (!selectedFurniture) return;
-    dimensionInput(e, furnitureElevation(selectedFurniture),
-      value => updateFurniture(selectedFurniture!.id, { elevation: storedFurnitureElevation(selectedFurniture!, value) }), true, MAX_FURNITURE_ELEVATION);
   }
   function onFurnitureMaterial(e: Event) {
     if (!selectedFurniture) return;
@@ -817,43 +798,15 @@
       </div>
       
       <!-- Dimensions -->
-      <label class="block">
-        <span class="text-xs text-gray-500">{$t('openingProperties.width')} ({unitLabel()})</span>
-        <input 
-          type="number" 
-          value={displayValue(furnitureSize?.width ?? 50)}
-          oninput={onFurnitureWidth} onblur={onFurnitureWidth} min={settings.units === 'imperial' ? 1 / 2.54 : 1} step="any"
-          class="w-full px-2 py-1 border border-gray-200 rounded text-sm" 
-        />
-      </label>
-      <label class="block">
-        <span class="text-xs text-gray-500">{$t('furnitureProperties.depth')} ({unitLabel()})</span>
-        <input 
-          type="number" 
-          value={displayValue(furnitureSize?.depth ?? 50)}
-          oninput={onFurnitureDepth} onblur={onFurnitureDepth} min={settings.units === 'imperial' ? 1 / 2.54 : 1} step="any"
-          class="w-full px-2 py-1 border border-gray-200 rounded text-sm" 
-        />
-      </label>
-      <label class="block">
-        <span class="text-xs text-gray-500">{$t('openingProperties.height')} ({unitLabel()})</span>
-        <input 
-          type="number" 
-          value={displayValue(furnitureSize?.height ?? 50)}
-          oninput={onFurnitureHeight} onblur={onFurnitureHeight} min={settings.units === 'imperial' ? 1 / 2.54 : 1} step="any"
-          class="w-full px-2 py-1 border border-gray-200 rounded text-sm" 
-        />
-      </label>
-      <label class="block">
-        <span class="text-xs text-gray-500">{$t('furnitureProperties.elevation')} ({unitLabel()})</span>
-        <input
-          type="number"
-          value={displayValue(furnitureElevation(selectedFurniture))}
-          oninput={onFurnitureElevation} onblur={onFurnitureElevation} min="0" step="any"
-          title={$t('furnitureProperties.elevationHelp')}
-          class="w-full px-2 py-1 border border-gray-200 rounded text-sm"
-        />
-      </label>
+      <LengthInput label={$t('openingProperties.width')} valueCm={furnitureSize?.width ?? 50} units={settings.units} minCm={1}
+        oncommit={cm => updateFurniture(selectedFurniture!.id, { width: cm / furnitureAxisScale('x') })} />
+      <LengthInput label={$t('furnitureProperties.depth')} valueCm={furnitureSize?.depth ?? 50} units={settings.units} minCm={1}
+        oncommit={cm => updateFurniture(selectedFurniture!.id, { depth: cm / furnitureAxisScale('y') })} />
+      <LengthInput label={$t('openingProperties.height')} valueCm={furnitureSize?.height ?? 50} units={settings.units} minCm={1}
+        oncommit={cm => updateFurniture(selectedFurniture!.id, { height: cm / furnitureAxisScale('z') })} />
+      <LengthInput label={$t('furnitureProperties.elevation')} valueCm={furnitureElevation(selectedFurniture)} units={settings.units}
+        zeroAllowed maxCm={MAX_FURNITURE_ELEVATION} title={$t('furnitureProperties.elevationHelp')}
+        oncommit={cm => updateFurniture(selectedFurniture!.id, { elevation: storedFurnitureElevation(selectedFurniture!, cm) })} />
       
       <!-- Material -->
       <label class="block">
@@ -1022,10 +975,9 @@
         <span class="text-xs text-gray-500">{$t('symbolProperties.symbol')}</span>
         <p class="text-sm text-gray-700">{entourageLabels[selectedEntourage.defId] ? $t(entourageLabels[selectedEntourage.defId]) : getEntourageDef(selectedEntourage.defId)?.name ?? $t('symbolProperties.custom')}</p>
       </div>
-      <label class="block">
-        <span class="text-xs text-gray-500">{$t('openingProperties.width')} ({unitLabel()})</span>
-        <input type="number" value={displayValue(selectedEntourage.width)} oninput={(e) => dimensionInput(e, selectedEntourage!.width, value => updateEntourageItem(selectedEntourage!.id, { width: value }))} onblur={(e) => dimensionInput(e, selectedEntourage!.width, value => updateEntourageItem(selectedEntourage!.id, { width: value }))} min={settings.units === 'imperial' ? 1 / 2.54 : 1} step="any" class="w-full px-2 py-1 border border-gray-200 rounded text-sm" />
-      </label>
+      <!-- A single box in inches: tests/browser/property-drafts.spec.ts types a symbol's whole width into "Width (in)". -->
+      <LengthInput label={$t('openingProperties.width')} valueCm={selectedEntourage.width} units={settings.units} minCm={1} split={false}
+        oncommit={cm => updateEntourageItem(selectedEntourage!.id, { width: cm })} />
       <label class="block">
         <span class="text-xs text-gray-500">{$t('symbolProperties.rotation')}</span>
         <input type="number" value={selectedEntourage.rotation} oninput={(e) => scalarInput(e, selectedEntourage!.rotation, value => updateEntourageItem(selectedEntourage!.id, { rotation: value }))} onblur={(e) => scalarInput(e, selectedEntourage!.rotation, value => updateEntourageItem(selectedEntourage!.id, { rotation: value }))} step="any" class="w-full px-2 py-1 border border-gray-200 rounded text-sm" />
