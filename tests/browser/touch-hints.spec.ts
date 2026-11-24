@@ -47,6 +47,8 @@ test.describe('moving the view', () => {
     const more = page.getByRole('button', { name: 'More actions', exact: true });
     await more.click();
     await page.getByRole('button', { name: 'Pan Mode', exact: true }).click();
+    // The menu stays open for its other toggles; a second press of More closes it.
+    await more.click();
     const moving = hint(page).filter({ hasText: 'Moving the view' });
     await expect(moving).toBeVisible();
     await moving.getByRole('button', { name: 'Done', exact: true }).click();
