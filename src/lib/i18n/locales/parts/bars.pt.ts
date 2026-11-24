@@ -7,4 +7,11 @@ export const barsPt = {
   "bars.openPlanFile": "Abrir um arquivo de planta",
   "bars.open": "Abrir",
   "bars.savePlanFile": "Salvar esta planta como arquivo",
+  "bars.done": "Concluir",
+  "bars.hintWall": "Toque onde a parede termina. Toque duas vezes para concluir.",
+  "bars.hintPlace": "Toque na planta para colocar.",
+  "bars.hintMeasure": "Toque em dois pontos para medir.",
+  "bars.hintText": "Toque onde o texto vai ficar.",
+  "bars.hintDimensionStart": "Toque onde a medida começa.",
+  "bars.hintDimensionEnd": "Toque onde ela termina.",
 } as const;

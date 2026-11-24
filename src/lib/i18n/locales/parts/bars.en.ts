@@ -7,4 +7,11 @@ export const barsEn = {
   "bars.openPlanFile": "Open a plan file",
   "bars.open": "Open",
   "bars.savePlanFile": "Save this plan as a file",
+  "bars.done": "Done",
+  "bars.hintWall": "Tap where the wall ends. Double-tap to finish.",
+  "bars.hintPlace": "Tap the plan to put it down.",
+  "bars.hintMeasure": "Tap two points to measure.",
+  "bars.hintText": "Tap where the words go.",
+  "bars.hintDimensionStart": "Tap where the size starts.",
+  "bars.hintDimensionEnd": "Tap where it ends.",
 } as const;
