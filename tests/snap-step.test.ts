@@ -58,7 +58,7 @@ describe('the status-bar Snap button', () => {
   const tFor = (language: Locale) => (key: TranslationKey, variables?: Record<string, string | number>) => translate(language, key, variables);
 
   it('names the step S picked while Snap to Grid is on, pressed on the grid step', () => {
-    const hint = 'Switch snap step: 25 cm grid or 10 cm (S)';
+    const hint = 'Switch the size of the steps: 25 cm grid or 10 cm (S)';
     expect(snapStatus(tFor('en'), on, 'metric')).toEqual({ label: 'Steps of 25 cm', title: hint, pressed: true });
     expect(snapStatus(tFor('en'), { ...on, snapToGrid: false }, 'metric')).toEqual({ label: 'Steps of 10 cm', title: hint, pressed: false });
   });
@@ -77,7 +77,7 @@ describe('the status-bar Snap button', () => {
   });
 
   it('says the same in Portuguese', () => {
-    expect(snapStatus(tFor('pt'), on, 'metric')).toEqual({ label: 'Passos de 25 cm', title: 'Alternar passo do ajuste: grade de 25 cm ou 10 cm (S)', pressed: true });
+    expect(snapStatus(tFor('pt'), on, 'metric')).toEqual({ label: 'Passos de 25 cm', title: 'Alternar o tamanho dos passos: grade de 25 cm ou 10 cm (S)', pressed: true });
     expect(snapStatus(tFor('pt'), { ...off, snapToGrid: false }, 'metric')).toEqual({
       label: 'Passos desativados',
       title: 'O botão Mover em passos da barra superior está desativado. S ainda escolhe o passo usado quando ele estiver ativado: grade de 25 cm ou 10 cm (agora 10 cm)',

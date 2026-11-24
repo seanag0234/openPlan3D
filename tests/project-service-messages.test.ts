@@ -199,6 +199,18 @@ describe('project service diagnostics', () => {
     expect(projectServiceMessage(original, 'en')).toBe(original);
   });
 
+  it('offers a copy of this plan when saving fails before another plan opens', () => {
+    const retry = 'Retry saving, or download a copy of this plan, before opening another plan.';
+    expect(translate('en', 'projectService.openRetry')).toBe(retry);
+    // The opening code throws the same sentence, character for character, at each place it refuses.
+    const source = readFileSync('src/lib/services/projectOpening.ts', 'utf8');
+    expect([...source.matchAll(/get\(saveError\) \?\? '([^']*)'/g)].map(match => match[1])).toEqual([retry, retry, retry]);
+    const original = `Your current plan could not be saved. ${retry}`;
+    expect(projectServiceMessage(original, 'en')).toBe(original);
+    expect(projectServiceMessage(original, 'pt'))
+      .toBe('Não foi possível salvar sua planta atual. Tente salvar novamente, ou baixe uma cópia desta planta, antes de abrir outra planta.');
+  });
+
   it('retains unknown details verbatim inside a translated opening wrapper', () => {
     const detail = 'Unknown database failure: {table} <unsafe> /tmp/plan';
     expect(projectServiceMessage(detail, 'pt')).toBe(detail);

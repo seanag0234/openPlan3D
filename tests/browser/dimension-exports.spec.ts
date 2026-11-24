@@ -112,10 +112,10 @@ test('a floor whose every item is hidden explains itself instead of exporting an
  await layers.press('Enter');await page.getByRole('checkbox',{name:'Text labels',exact:true}).uncheck();await layers.press('Enter');
  await page.getByRole('button',{name:'Export',exact:true}).click();await page.getByRole('button',{name:'Save the plan as a picture (PNG)',exact:true}).click();
  await expect(page.getByRole('alert')).toContainText("Couldn't export 2D PNG");
- await expect(page.getByRole('alert')).toContainText('Everything on the active floor is on a hidden layer.');
+ await expect(page.getByRole('alert')).toContainText('Everything on this floor is hidden. Exports show only what the 2D plan shows: turn it back on under "Show and hide" and export again.');
  await page.getByRole('button',{name:'Dismiss export notice',exact:true}).click();
  await page.getByRole('button',{name:'Export',exact:true}).click();await page.getByRole('button',{name:'Print Layout',exact:true}).click();
  const dialog=page.getByRole('dialog',{name:'Print Preview',exact:true});
- await expect(dialog.getByRole('status')).toContainText('Everything on this floor is on a hidden layer.');
+ await expect(dialog.getByRole('status')).toContainText('Everything on this floor is hidden. Turn it back on under "Show and hide" to print it.');
  await dialog.getByRole('button',{name:'Close',exact:true}).click();
 });

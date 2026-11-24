@@ -60,6 +60,12 @@ for (const width of [1440, 390]) test(`modal focus and keys preserve the selecte
       await expect(dialog).toContainText('Kitchen & Dining');
       await expect(dialog).toContainText('24.0 m²');
     }
+    if (name === 'Keyboard Shortcuts') {
+      // The help list names the list and the steps in plain words.
+      await expect(dialog.getByText('Show or hide the list of everything on the plan', { exact: true })).toBeVisible();
+      await expect(dialog.getByText('Switch the size of the steps (grid / fine)', { exact: true })).toBeVisible();
+      await expect(dialog.getByText('Dimension tool', { exact: true })).toBeVisible();
+    }
     // Playwright's role queries do not account for native modal inertness.
     // Test the browser's actual focus boundary instead of DOM accessibility heuristics.
     await page.getByLabel(/^(?:Floor plan editor canvas|Área de edição da planta baixa)$/, { exact: true }).evaluate((canvas: HTMLCanvasElement) => canvas.focus());

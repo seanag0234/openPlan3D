@@ -60,3 +60,25 @@ for (const width of [1440, 390]) test(`the first-visit welcome keeps focus and E
   await expect(title).toBeVisible();
   check();
 });
+
+test('the quick tour explains each part of the screen in plain words, with no key', async ({ page }) => {
+  const check = observe(page);
+  await page.goto('/');
+  const dialog = await focusInside(page, 'Welcome');
+  await dialog.getByRole('button', { name: /Quick Tour/ }).click();
+  const steps = [
+    ['The list on the left', 'Furniture, rooms and other things to add to the plan'],
+    ['The plan', 'Pick a thing from the list, press the plan to put it down, then drag it where it goes'],
+    ['The bar at the top', 'Switch between the flat plan and the 3D view'],
+    ['The bar at the bottom', 'Show or hide the grid, move in steps, and more'],
+  ];
+  for (const [index, [title, description]] of steps.entries()) {
+    await expect(dialog.getByRole('heading', { level: 2 })).toHaveText(title);
+    await expect(dialog.locator('p').first()).toHaveText(description);
+    const shown = await dialog.innerText();
+    for (const word of [/\bkey\b/i, /canvas/i, /sidebar/i]) expect(shown, `${title}: ${shown}`).not.toMatch(word);
+    if (index < steps.length - 1) await dialog.getByRole('button', { name: 'Next', exact: true }).click();
+  }
+  await expect(dialog.getByRole('button', { name: 'Get Started', exact: true })).toBeVisible();
+  check();
+});

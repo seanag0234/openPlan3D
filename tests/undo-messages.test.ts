@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import ts from 'typescript';
 import { undoMessage } from '../src/lib/i18n/undoMessages';
 import { get } from 'svelte/store';
-import { addDoor, addWindow, addColumn, currentProject, loadProject, undoHistoryStore } from '../src/lib/stores/project';
+import { addDoor, addWindow, addColumn, currentProject, loadProject, removeElement, undoHistoryStore } from '../src/lib/stores/project';
 import { roomProject } from './fixtures/project';
 
 it('translates exact built-in undo descriptions and preserves unknown text', () => {
@@ -91,4 +91,13 @@ it('has a Portuguese entry for every fixed description the editor records', () =
 it('names an added plain box in the Undo list', () => {
   expect(undoMessage('Added a box', 'pt')).toBe('Caixa adicionada');
   expect(undoMessage('Added a box', 'en')).toBe('Added a box');
+});
+
+it('says a thing was deleted in the undo list', () => {
+  loadProject(roomProject());
+  removeElement(get(currentProject)!.floors[0].walls[0].id);
+  const description = get(undoHistoryStore).entries.at(-1)!.description;
+  expect(description).toBe('Deleted a thing');
+  expect(undoMessage(description, 'en')).toBe('Deleted a thing');
+  expect(undoMessage(description, 'pt')).toBe('Coisa excluída');
 });

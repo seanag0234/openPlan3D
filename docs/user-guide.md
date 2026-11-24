@@ -84,7 +84,8 @@ them as copies. **Restore a library backup** also takes a project from
   templates) and **Things** (furniture catalog, your own 3D models, 2D
   entourage symbols).
 - **Canvas** in the middle. An empty project shows "Start building your floor
-  plan — Draw walls with W or drag items from the sidebar". The status bar
+  plan — Draw walls with W or drag items from the sidebar"; on a touch screen
+  the second line reads "Add walls, rooms and furniture from the list". The status bar
   under the canvas counts rooms, walls, doors, windows and objects, shows
   "Zoom: …%", and has the **Fit**, **Grid**, **Snap**, **Furniture**,
   **Layers**, **Rulers** and **Map** toggles plus zoom buttons (**Zoom out**,
@@ -282,7 +283,7 @@ Plumbing, Imported) and the **Recent** row. Hovering an item shows its size
 ### Placing and editing
 
 - Click an item, then click on the canvas, or drag the item onto the canvas.
-  While placing, **R** turns the preview in 15° steps. With **Wall snapping**
+  While placing, **R** turns the preview in 15° steps. With **Line up with walls**
   on (Settings → Dimensions), "Furniture automatically aligns its back edge
   with nearby walls".
 - Select an item (V) and drag to move. Drag the corner handles to resize; hold
@@ -470,7 +471,7 @@ menu) has four tabs:
 - **Project**: **Project Name**, **Description** (printed in the PDF title
   block) and **Floor elevations** (see section 5). These are saved with the
   project.
-- **Dimensions**: **Wall snapping**; **Metrics unit** — **m, cm** or
+- **Dimensions**: **Line up with walls**; **Metrics unit** — **m, cm** or
   **ft, inch**; **Measure walls** — **Centerline** or **Edge to edge**; the
   **Dimensions**, **External Dimensions**, **Internal Dimensions**, **Extension
   Lines** and **Object Distance** switches; **Line Color**. These settings are
@@ -625,8 +626,8 @@ exists in the Downloads folder.
 If the active floor is empty, the 2D PNG, SVG, DXF, DWG and PDF exports do
 nothing except show "Add walls, furniture, stairs, columns, entourage, notes or
 measurements to the active floor before exporting a PNG" (or "… an SVG", "… a
-DXF", "… a DWG", "… a PDF"). If everything on it is on a hidden layer, they
-say "Everything on the active floor is on a hidden layer. …" instead (see
+DXF", "… a DWG", "… a PDF"). If everything on it is hidden, they
+say "Everything on this floor is hidden. …" instead (see
 [What the 2D exports show](#what-the-2d-exports-show)).
 
 DXF and DWG files hold CAD linework only, so they leave out uploaded entourage
@@ -691,10 +692,10 @@ while a door, window or furniture item is selected, and the Floor Below ghost
 are never exported; **Extension Lines**, **Object Distance** and **Line Color**
 only change the screen. The PDF's Room Schedule and summary always cover the
 whole floor. If every item on the active floor is hidden, the export says
-"Everything on the active floor is on a hidden layer. Exports show only what
-the 2D plan shows: turn the layers back on under Layers and export again."
-instead of saving an empty file, and Print Preview says "Everything on this
-floor is on a hidden layer. Turn its layers back on under Layers to print it."
+"Everything on this floor is hidden. Exports show only what the 2D plan
+shows: turn it back on under "Show and hide" and export again." instead of
+saving an empty file, and Print Preview says "Everything on this floor is
+hidden. Turn it back on under "Show and hide" to print it."
 **Export 3D as PNG** shows the 3D view, which has no labels, notes or
 dimensions. JSON files, project packages and interchange files always contain
 everything.
@@ -1006,9 +1007,9 @@ Press **?** in the editor to see this list on screen (**Copy All** copies it;
 | **D** | Door tool (last chosen type) |
 | **H** | Pan mode |
 | **M** | Measure tool |
-| **N** | Dimension (annotate) tool |
+| **N** | Dimension tool |
 | **T** | Text tool |
-| **S** | Switch snap step: 25 cm grid or 10 cm (status bar Snap) |
+| **S** | Switch the size of the steps: 25 cm grid or 10 cm (the steps button in the bottom bar) |
 | **G** | Toggle grid |
 | **F** / **Shift+F** | Zoom to fit / Fit selection |
 | **+** / **−** (also **=** / **_** and the numpad keys) | Zoom in / out, 25% steps between the minimum zoom and 1000% |
@@ -1123,8 +1124,8 @@ Messages are quoted as the editor shows them.
 
 **Exporting**
 
-- "Everything on the active floor is on a hidden layer." — The exports draw
-  what the 2D plan shows; show the hidden groups again under **Layers**.
+- "Everything on this floor is hidden." — The exports draw
+  what the 2D plan shows; show the hidden groups again under **Show and hide**.
   Dimensions, notes or furniture missing from an export are hidden the same
   way (see "What the 2D exports show" in section 11).
 - "Couldn't export PDF" / "Couldn't export 2D PNG" with "Add walls, furniture,
