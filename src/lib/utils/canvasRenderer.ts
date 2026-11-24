@@ -1280,7 +1280,8 @@ export function drawTextAnnotations(cs: CanvasState, floor: Floor, selectedTextA
   for (const ta of floor.textAnnotations) {
     const selected = ta.id === selectedTextAnnotationId || ta.id === currentSelectedId;
     const s = wts(cs, ta.x, ta.y);
-    const fontSize = Math.max(8, ta.fontSize * zoom);
+    // In the editor a label never reads under 12 px; the picture, the PDF and the print page keep 8.
+    const fontSize = Math.max(captionFrameOpen() ? 12 : 8, ta.fontSize * zoom);
     ctx.save();
     ctx.translate(s.x, s.y);
     if (ta.rotation) ctx.rotate(ta.rotation * Math.PI / 180);
