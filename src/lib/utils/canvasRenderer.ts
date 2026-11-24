@@ -17,6 +17,7 @@ import { getCatalogItem, getFurnitureSize } from '$lib/utils/furnitureCatalog';
 import { drawFurnitureIcon } from '$lib/utils/furnitureIcons';
 import { READABLE_CAPTION_PX, readableCaptionLines } from '$lib/utils/furnitureCaption';
 import { captionFrameOpen, queueCaption } from '$lib/utils/captionPlan';
+import { handleGeometry } from '$lib/utils/handleGeometry';
 import { getRoomPolygon, roomCentroid, roomLabelPosition } from '$lib/utils/roomDetection';
 import { getWallTextureCanvas, getFloorTextureCanvas } from '$lib/utils/textureGenerator';
 import { getEntourageDef } from '$lib/utils/entourageCatalog';
@@ -965,46 +966,49 @@ export function drawFurnitureItem(cs: CanvasState, item: FurnitureItem, selected
     ctx.strokeRect(-w / 2 - 2, -d / 2 - 2, w + 4, d + 4);
     ctx.setLineDash([]);
 
-    const hs = 5;
+    // Where and how big the handles are drawn for a mouse or a finger; the press that reaches them uses the same numbers.
+    const { outset, radius } = handleGeometry(cs.coarse);
+    const hs = radius;
     ctx.fillStyle = '#ffffff';
     ctx.strokeStyle = '#3b82f6';
     ctx.lineWidth = 1.5;
     // Corner handles
-    for (const [hx, hy] of [[-w/2, -d/2], [w/2, -d/2], [-w/2, d/2], [w/2, d/2]]) {
+    for (const [hx, hy] of [[-w/2 - outset, -d/2 - outset], [w/2 + outset, -d/2 - outset], [-w/2 - outset, d/2 + outset], [w/2 + outset, d/2 + outset]]) {
       ctx.fillRect(hx - hs, hy - hs, hs * 2, hs * 2);
       ctx.strokeRect(hx - hs, hy - hs, hs * 2, hs * 2);
     }
 
     // Edge midpoint handles
-    const ehs = 4; // slightly smaller
-    for (const [hx, hy] of [[0, -d/2], [0, d/2], [-w/2, 0], [w/2, 0]]) {
+    const ehs = radius - 1; // slightly smaller
+    for (const [hx, hy] of [[0, -d/2 - outset], [0, d/2 + outset], [-w/2 - outset, 0], [w/2 + outset, 0]]) {
       ctx.fillRect(hx - ehs, hy - ehs, ehs * 2, ehs * 2);
       ctx.strokeRect(hx - ehs, hy - ehs, ehs * 2, ehs * 2);
     }
 
-    const rotY = -d / 2 - 18;
+    const rotY = -d / 2 - (18 + 3 * outset);
+    const k = radius / 5;
     ctx.strokeStyle = '#3b82f6';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(0, -d / 2 - 2);
-    ctx.lineTo(0, rotY + 5);
+    ctx.lineTo(0, rotY + radius);
     ctx.stroke();
     ctx.fillStyle = '#3b82f6';
     ctx.beginPath();
-    ctx.arc(0, rotY, 5, 0, Math.PI * 2);
+    ctx.arc(0, rotY, radius, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.2;
+    ctx.lineWidth = 1.2 * k;
     ctx.beginPath();
-    ctx.arc(0, rotY, 3, -Math.PI * 0.8, Math.PI * 0.4);
+    ctx.arc(0, rotY, 3 * k, -Math.PI * 0.8, Math.PI * 0.4);
     ctx.stroke();
     const arrowAngle2 = Math.PI * 0.4;
-    const ax = Math.cos(arrowAngle2) * 3;
-    const ay = Math.sin(arrowAngle2) * 3;
+    const ax = Math.cos(arrowAngle2) * 3 * k;
+    const ay = Math.sin(arrowAngle2) * 3 * k;
     ctx.beginPath();
-    ctx.moveTo(ax + 1.5, rotY + ay - 1);
+    ctx.moveTo(ax + 1.5 * k, rotY + ay - 1 * k);
     ctx.lineTo(ax, rotY + ay);
-    ctx.lineTo(ax - 1, rotY + ay - 2);
+    ctx.lineTo(ax - 1 * k, rotY + ay - 2 * k);
     ctx.stroke();
   }
 
