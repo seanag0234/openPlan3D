@@ -76,11 +76,18 @@ async function postFeedback(message: FeedbackMessage): Promise<number> {
 
 let flushing: Promise<unknown> = Promise.resolve();
 
-/** One flush at a time, here and, where the browser can, across this copy's tabs. */
+/** One flush at a time, here and, where the browser can, across this copy's tabs. The lock callback never
+ *  rejects (Firefox reports one that does as an uncaught error): the outcome is carried out and rethrown. */
 function exclusively<T>(work: () => Promise<T>): Promise<T> {
-  const run = () => (typeof navigator !== 'undefined' && navigator.locks?.request
-    ? navigator.locks.request('openplan3d-feedback-outbox', work) as Promise<T>
-    : work());
+  const locked = async () => {
+    const outcome = await navigator.locks.request('openplan3d-feedback-outbox', async () => {
+      try { return { ok: true as const, value: await work() }; }
+      catch (error) { return { ok: false as const, error }; }
+    });
+    if (!outcome.ok) throw outcome.error;
+    return outcome.value;
+  };
+  const run = () => (typeof navigator !== 'undefined' && typeof navigator.locks?.request === 'function' ? locked() : work());
   const next = flushing.then(run, run);
   flushing = next.catch(() => {});
   return next;

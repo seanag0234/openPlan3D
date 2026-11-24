@@ -17,6 +17,7 @@
   import LibraryStorageNote from '$lib/components/LibraryStorageNote.svelte';
   import ProjectActionsMenu from '$lib/components/ProjectActionsMenu.svelte';
   import { houseTemplates } from '$lib/utils/houseTemplates';
+  import { feedbackOpen } from '$lib/stores/ui';
 
   const openingLifetime = new AbortController();
   onDestroy(() => openingLifetime.abort());
@@ -274,6 +275,7 @@
         <button class="font-semibold text-blue-600 underline" onclick={() => openRestore()}>{$t('library.restore')}</button>
         <button class="font-semibold text-blue-600 underline" onclick={openPackage}>{$t('library.package')}</button>
         <a class="font-semibold text-blue-600 underline" href={USER_GUIDE_URL} target="_blank" rel="noopener">{$t('help.userGuide')}</a>
+        <button class="font-semibold text-blue-600 underline" onclick={() => feedbackOpen.set(true)}>{$t('home.feedback')}</button>
       </div>
     </div>
     <LibraryStorageNote active={projects.length > 0 && !libraryError} />
