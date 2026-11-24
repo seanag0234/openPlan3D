@@ -1,6 +1,6 @@
 import './fixtures/indexeddb';
 import { expect, it, vi } from 'vitest';
-import { flushFeedback, pendingFeedback, queueFeedback, removeFeedback, feedbackEnabled, type FeedbackMessage } from '$lib/services/feedbackOutbox';
+import { flushFeedback, pendingFeedback, queueFeedback, removeFeedback, feedbackEnabled, lastKnownFeedbackEnabled, type FeedbackMessage } from '$lib/services/feedbackOutbox';
 
 const message = (n: number): FeedbackMessage => ({
   id: `0000000${n}-0000-4000-8000-000000000000`, createdAt: new Date(2026, 10, 24, 14, n).toISOString(),
@@ -61,15 +61,77 @@ it('a failing post is a message kept, not an error', async () => {
   expect(await flushFeedback(async () => { throw new Error('offline'); })).toEqual({ sent: 0, waiting: 1 });
 });
 
+/** A localStorage of its own for each test: what the last answer was is kept there. */
+function stubStorage() {
+  const storage = new Map<string, string>();
+  vi.stubGlobal('localStorage', {
+    getItem: (key: string) => storage.get(key) ?? null,
+    setItem: (key: string, value: string) => { storage.set(key, value); },
+    removeItem: (key: string) => { storage.delete(key); },
+  });
+  return storage;
+}
+const answers = (response: () => Response) => vi.stubGlobal('fetch', vi.fn(async () => response()));
+const json = (body: unknown, status = 200) => () => new Response(JSON.stringify(body), { status });
+
 it('feedback is on only when the copy says so', async () => {
-  vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ enabled: true }))));
+  stubStorage();
+  answers(json({ enabled: true }));
   expect(await feedbackEnabled()).toBe(true);
-  vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ enabled: false }))));
+  answers(json({ enabled: false }));
   expect(await feedbackEnabled()).toBe(false);
-  vi.stubGlobal('fetch', vi.fn(async () => new Response('<html>', { status: 404 })));
+  answers(() => new Response('<html>', { status: 404 }));
   expect(await feedbackEnabled()).toBe(false);
+});
+
+it('a copy that takes no feedback is told from one that could not be asked, and the last answer is kept', async () => {
+  stubStorage();
+  expect(lastKnownFeedbackEnabled()).toBeNull();
   vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('offline'); }));
+  expect(await feedbackEnabled()).toBeNull();
+  expect(lastKnownFeedbackEnabled()).toBeNull();
+  answers(() => new Response('oops', { status: 500 }));
+  expect(await feedbackEnabled()).toBeNull();
+  expect(lastKnownFeedbackEnabled()).toBeNull();
+
+  answers(json({ enabled: true }));
+  expect(await feedbackEnabled()).toBe(true);
+  expect(lastKnownFeedbackEnabled()).toBe(true);
+  answers(json({ error: 'off' }, 503));
   expect(await feedbackEnabled()).toBe(false);
+  expect(lastKnownFeedbackEnabled()).toBe(false);
+  answers(json({ enabled: true }));
+  await feedbackEnabled();
+  answers(() => new Response('<html>', { status: 404 }));
+  expect(await feedbackEnabled()).toBe(false);
+  expect(lastKnownFeedbackEnabled()).toBe(false);
+  answers(json({ enabled: true }));
+  await feedbackEnabled();
+  answers(json({ enabled: false }));
+  expect(await feedbackEnabled()).toBe(false);
+  expect(lastKnownFeedbackEnabled()).toBe(false);
+  answers(json({ enabled: true }));
+  expect(await feedbackEnabled()).toBe(true);
+  expect(lastKnownFeedbackEnabled()).toBe(true);
+
+  // No answer, then: the last one still stands.
+  vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('offline'); }));
+  expect(await feedbackEnabled()).toBeNull();
+  expect(lastKnownFeedbackEnabled()).toBe(true);
+  answers(() => new Response('oops', { status: 500 }));
+  expect(await feedbackEnabled()).toBeNull();
+  expect(lastKnownFeedbackEnabled()).toBe(true);
+});
+
+it('a storage that cannot be read or written leaves the question unanswered, not broken', async () => {
+  vi.stubGlobal('localStorage', {
+    getItem: () => { throw new Error('blocked'); },
+    setItem: () => { throw new Error('blocked'); },
+    removeItem: () => { throw new Error('blocked'); },
+  });
+  answers(json({ enabled: false }));
+  expect(await feedbackEnabled()).toBe(false);
+  expect(lastKnownFeedbackEnabled()).toBeNull();
 });
 
 it('by default posts the message as JSON to the copy and reads the status', async () => {
