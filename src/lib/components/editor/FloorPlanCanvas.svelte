@@ -41,11 +41,13 @@
   import { beginCaptions, drawCaptions } from '$lib/utils/captionPlan';
   import { fitIds } from '$lib/utils/fitBounds';
   import { drawNoteMarks, noteMarkAt } from '$lib/utils/noteMarks';
-  import { noteTarget, planObstruction, revealSelection } from '$lib/stores/ui';
+  import { detailsOpen, multiSelectMode, noteTarget, planObstruction, revealSelection } from '$lib/stores/ui';
   import { shiftToReveal } from '$lib/utils/viewShift';
   import { coarsePointer } from '$lib/stores/pointer';
+  import { handleGeometry } from '$lib/utils/handleGeometry';
   import { gridLineStepCm, resizeStep, snapPieceMove, snapValue, stopAtWalls, type SnapContext } from '$lib/utils/snapPolicy';
   import { furnitureSizeLabel } from '$lib/utils/furnitureCaption';
+  import { createTouchGestures, type TouchSample } from '$lib/utils/touchGestures';
   import { drawWall as _drawWall, drawDoorOnWall as _drawDoorOnWall, drawWindowOnWall as _drawWindowOnWall, drawDoorDistanceDimensions as _drawDoorDistanceDimensions, drawWindowDistanceDimensions as _drawWindowDistanceDimensions, drawFurnitureItem, drawStair as _drawStair, drawColumn as _drawColumn, drawGuides as _drawGuides, drawPersistedMeasurements as _drawPersistedMeasurements, drawTextAnnotations as _drawTextAnnotations, drawAnnotation as _drawAnnotation, drawAnnotations as _drawAnnotations, drawRooms as _drawRooms, drawWallJoints as _drawWallJoints, drawSnapPoints as _drawSnapPoints, drawMinimap as _drawMinimap, drawEntourageItems as _drawEntourageItems, drawEntourageGhost as _drawEntourageGhost, drawFloorBelowGhost as _drawFloorBelowGhost, entourageAspect } from '$lib/utils/canvasRenderer';
   import { getEntourageDef } from '$lib/utils/entourageCatalog';
   import { translatedOpeningPosition } from '$lib/utils/openingTranslation';
@@ -152,6 +154,8 @@
   let draggingGuideId: string | null = $state(null);
 
   let currentTool: string = $state('select');
+  // Picking several belongs to the select tool; another tool ends it.
+  $effect(() => { if (currentTool !== 'select') multiSelectMode.set(false); });
 
   // Measurement tool
   let measureStart: Point | null = $state(null);
@@ -357,13 +361,20 @@
     return currentSelectedIds.size ? [...currentSelectedIds] : currentSelectedId ? [currentSelectedId] : [];
   }
 
+  /** The floor as selecting sees it: with the house fixed, without its walls, doors, windows, columns and stairs. */
+  function movableFloor(): Floor | null {
+    if (!currentFloor) return null;
+    return currentHouseFixed ? { ...currentFloor, walls: [], doors: [], windows: [], columns: [], stairs: [] } : currentFloor;
+  }
+
   function selectAllPlanElements() {
-    if (!currentFloor) return;
+    const floor = movableFloor();
+    if (!floor) return;
     const ids = new Set<string>();
-    for (const items of [currentFloor.walls, currentFloor.furniture, currentFloor.doors,
-      currentFloor.windows, currentFloor.stairs, currentFloor.columns, currentFloor.entourage,
-      layerVis.textAnnotations ? currentFloor.textAnnotations : [],
-      layerVis.measurements ? currentFloor.measurements : [], layerVis.annotations ? currentFloor.annotations : []]) {
+    for (const items of [floor.walls, floor.furniture, floor.doors,
+      floor.windows, floor.stairs, floor.columns, floor.entourage,
+      layerVis.textAnnotations ? floor.textAnnotations : [],
+      layerVis.measurements ? floor.measurements : [], layerVis.annotations ? floor.annotations : []]) {
       for (const item of items ?? []) ids.add(item.id);
     }
     clearAuxiliarySelection();
@@ -2172,6 +2183,28 @@
     return null;
   }
 
+  /**
+   * A selected measuring line, dimension or text label, for the bar at the selection to offer
+   * removing it: its kind, id and screen point in canvas px. Null when none is selected, or when
+   * the label is the single selected element the bar already anchors to.
+   */
+  function selectedExtra(): { kind: 'measurement' | 'annotation' | 'text'; id: string; x: number; y: number } | null {
+    const f = currentFloor;
+    if (!f) return null;
+    const line = (kind: 'measurement' | 'annotation', id: string | null, list: { id: string; x1: number; y1: number; x2: number; y2: number }[] | undefined) => {
+      const item = id ? list?.find(m => m.id === id) : undefined;
+      if (!item) return null;
+      const p = worldToScreen((item.x1 + item.x2) / 2, (item.y1 + item.y2) / 2);
+      return { kind, id: item.id, x: p.x, y: p.y };
+    };
+    const extra = line('measurement', selectedMeasurementId, f.measurements) ?? line('annotation', selectedAnnotationId, f.annotations);
+    if (extra) return extra;
+    const label = selectedTextAnnotationId ? f.textAnnotations?.find(item => item.id === selectedTextAnnotationId) : undefined;
+    if (!label || (currentSelectedId === label.id && currentSelectedIds.size === 0 && selectionAnchor())) return null;
+    const p = worldToScreen(label.x, label.y);
+    return { kind: 'text', id: label.id, x: p.x, y: p.y };
+  }
+
   /** The selection's bounds on screen, in canvas px, or null when nothing is selected. */
   function selectionScreenBox(): { left: number; top: number; right: number; bottom: number } | null {
     if (!currentFloor) return null;
@@ -2255,7 +2288,7 @@
 
   function findHandleAt(p: Point): HandleType | null {
     if (!currentFloor) return null;
-    return _findHandleAt(p, currentSelectedId, currentFloor.furniture, zoom);
+    return _findHandleAt(p, currentSelectedId, currentFloor.furniture, zoom, handleGeometry(currentCoarse));
   }
 
   function findFurnitureAt(p: Point): FurnitureItem | null {
@@ -2331,6 +2364,9 @@
 
   function onMouseDown(e: MouseEvent) {
     markDirty();
+    const touchPan = touchPanNext; touchPanNext = false;
+    // With the house fixed, walls, doors, windows, columns, stairs and rooms do not answer to a press.
+    const fixed = currentHouseFixed;
     if (e.button !== 0 && e.button !== 1) return;
     finishCanvasGesture();
     // Native double-clicks belong to the original press even if selection opened
@@ -2351,15 +2387,15 @@
         selectAnnotationTarget(measurement ? 'measurement' : note ? 'text' : 'annotation', id, e, wp);
         return;
       }
-      const object = findColumnAt(wp) || findStairAt(wp) || findFurnitureAt(wp) ||
-        findEntourageAt(wp, currentFloor.entourage, d => entourageAspect(d, customEntourageDefs)) ||
-        findDoorAt(wp) || findWindowAt(wp) || findWallAt(wp);
+      const entourage = () => findEntourageAt(wp, currentFloor!.entourage, d => entourageAspect(d, customEntourageDefs));
+      const object = fixed ? findFurnitureAt(wp) || entourage() : findColumnAt(wp) || findStairAt(wp) || findFurnitureAt(wp) ||
+        entourage() || findDoorAt(wp) || findWindowAt(wp) || findWallAt(wp);
       if (object) {
         toggleSelectionTarget(object.id);
         return;
       }
     }
-    if (e.button === 1 || (e.button === 0 && (spaceDown || $panMode || (e.shiftKey && currentTool === 'select')))) {
+    if (e.button === 1 || (e.button === 0 && (touchPan || spaceDown || $panMode || (e.shiftKey && currentTool === 'select')))) {
       isPanning = true;
       panStartX = e.clientX;
       panStartY = e.clientY;
@@ -2371,7 +2407,7 @@
     const wp = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
     const tool = currentTool;
     // A plain press passes through locked items; Layers, Select All, modifier clicks and the context menu still reach them.
-    const hitFloor = currentFloor && !e.shiftKey && !e.ctrlKey && !e.metaKey ? interactiveFloor(currentFloor, false) : currentFloor;
+    const hitFloor = currentFloor && !e.shiftKey && !e.ctrlKey && !e.metaKey ? interactiveFloor(currentFloor, fixed) : currentFloor;
     if (tool === 'select' && currentFloor && e.detail === 1) {
       selectionPress = { floorId: currentFloor.id, x: e.clientX, y: e.clientY, world: wp };
     }
@@ -2472,7 +2508,7 @@
     if (currentEntourageDefId) {
       const entW = getEntourageDef(currentEntourageDefId)?.width ?? 100;
       const entId = addEntourageItem(currentEntourageDefId, { x: snap(wp.x), y: snap(wp.y) }, entW);
-      if (!e.shiftKey) placingEntourageId.set(null); // hold Shift to keep stamping
+      if (!e.shiftKey) { placingEntourageId.set(null); selectedTool.set('select'); } // hold Shift to keep stamping
       selectedElementId.set(entId);
       return;
     }
@@ -2575,7 +2611,8 @@
       try {
         const id = addFurniture(currentPlacingId, pos);
         if (rot !== 0) rotateFurniture(id, rot);
-        selectedElementId.set(id);
+        // One press puts one piece down, selects it and goes back to Select.
+        selectedElementId.set(id); placingFurnitureId.set(null); selectedTool.set('select');
       } finally {
         endUndoGroup('Placed furniture');
       }
@@ -2607,7 +2644,7 @@
     } else if (tool === 'select') {
       if (!e.ctrlKey && !e.metaKey && startMultiSelectionDrag(wp)) return;
       // Check wall endpoint handles first (drag-to-resize walls)
-      if (!e.ctrlKey && !e.metaKey && currentSelectedId && currentFloor) {
+      if (!fixed && !e.ctrlKey && !e.metaKey && currentSelectedId && currentFloor) {
         const selWall = currentFloor.walls.find(w => w.id === currentSelectedId);
         if (selWall) {
           const epThreshold = 15 / zoom;
@@ -2700,7 +2737,7 @@
       }
 
       // Check columns
-      const col = findColumnAt(wp);
+      const col = fixed ? null : findColumnAt(wp);
       if (col) {
         if (selectElement(col.id, e.shiftKey)) return;
         if (!e.shiftKey) {
@@ -2710,7 +2747,7 @@
         return;
       }
       // Check stairs
-      const stair = findStairAt(wp);
+      const stair = fixed ? null : findStairAt(wp);
       if (stair) {
         if (selectElement(stair.id, e.shiftKey)) return;
         if (!e.shiftKey) {
@@ -2744,24 +2781,32 @@
       }
       // Doors and windows sit on walls, so they come after the objects standing in the room
       // and before the walls themselves.
-      const door = findDoorAt(wp);
+      const door = fixed ? null : findDoorAt(wp);
       if (door) {
         if (selectElement(door.id, e.shiftKey)) return;
         if (!e.shiftKey) draggingDoorId = door.id;
         return;
       }
-      const win = findWindowAt(wp);
+      const win = fixed ? null : findWindowAt(wp);
       if (win) {
         if (selectElement(win.id, e.shiftKey)) return;
         if (!e.shiftKey) draggingWindowId = win.id;
         return;
       }
-      const wall = findWallAt(wp);
+      const wall = fixed ? null : findWallAt(wp);
       if (wall) {
         if (selectElement(wall.id, e.shiftKey)) return;
       } else {
+        // A tap reaches a locked label or piece when nothing else is under the finger; a drag
+        // still passes through it. Everything found here is locked: the rest was found above.
+        if (touchPress === 'tap' && currentFloor) {
+          const label = hitTestTextAnnotation(wp, currentFloor);
+          if (label) { selectAuxiliary('text', label); return; }
+          const piece = _findFurnitureAt(wp, currentFloor.furniture) ?? findEntourageAt(wp, currentFloor.entourage, d => entourageAspect(d, customEntourageDefs));
+          if (piece) { selectElement(piece.id, false); return; }
+        }
         // Check if clicking on a room label (for dragging)
-        const labelRoom = findRoomLabelAt(wp);
+        const labelRoom = fixed ? null : findRoomLabelAt(wp);
         if (labelRoom) {
           draggingRoomLabelId = labelRoom.id;
           roomLabelDragStart = { x: e.clientX, y: e.clientY };
@@ -2776,7 +2821,7 @@
           selectedElementIds.set(new Set());
           return;
         }
-        const room = findRoomLabelAt(wp) ?? findRoomAt(wp);
+        const room = fixed ? null : findRoomLabelAt(wp) ?? findRoomAt(wp);
         if (room) {
           selectedRoomId.set(room.id);
           selectedElementId.set(null);
@@ -2789,6 +2834,11 @@
             const w = currentFloor!.walls.find(wall => wall.id === wid);
             if (w) roomDragStartPositions.set(wid, wallGeometryOf(w));
           }
+        } else if (touchPress === 'drag') {
+          // A finger dragged across bare paper slides the view and leaves the selection alone.
+          isPanning = true;
+          panStartX = e.clientX;
+          panStartY = e.clientY;
         } else {
           // Empty space — start marquee selection
           marqueeStart = { ...wp };
@@ -2854,8 +2904,11 @@
       }
     }
 
+    // With the house fixed, a double-click neither renames a room nor splits a wall.
+    const fixed = currentHouseFixed;
+
     // Double-click on a room to edit its name inline
-    if (currentTool === 'select') {
+    if (currentTool === 'select' && !fixed) {
       const wp = selectionPoint;
       const room = findRoomLabelAt(wp) ?? findRoomAt(wp);
       if (room) {
@@ -2871,7 +2924,7 @@
     }
 
     // Double-click on a wall in select mode to split it
-    if (currentTool === 'select') {
+    if (currentTool === 'select' && !fixed) {
       const wp = selectionPoint;
       const wall = findWallAt(wp);
       if (wall) {
@@ -3219,7 +3272,7 @@
       // Only treat as marquee if dragged at least a small distance
       if (marqueeW > 5 || marqueeH > 5) {
         const ids = new Set<string>(e.shiftKey ? currentSelectedIds : []);
-        for (const id of marqueeSelectionIds(currentFloor, { minX, maxX, minY, maxY }, layerVis)) ids.add(id);
+        for (const id of marqueeSelectionIds(movableFloor() ?? currentFloor, { minX, maxX, minY, maxY }, layerVis)) ids.add(id);
 
         if (ids.size > 0) {
           clearAuxiliarySelection();
@@ -3303,20 +3356,22 @@
   }
 
   // ── Touch input (phones/tablets) ──────────────────────────────────
-  // One finger drives the existing mouse pipeline via synthetic MouseEvents
-  // (so every tool works unchanged); two fingers pinch-zoom and pan.
-  // Listeners are registered manually in onMount with { passive: false }
-  // because we must preventDefault to stop scrolling and the browser's
-  // compatibility mouse events (which would double-fire the handlers).
-  let pinchState: { dist: number; cx: number; cy: number } | null = null;
-  let singleTouchActive = false;
-  let singleTouchOrigin: { clientX: number; clientY: number } | null = null;
-  let singleTouchMoved = false;
-  let lastTapTime = 0;
-  let lastTapX = 0;
-  let lastTapY = 0;
+  // touchGestures turns the fingers into one gesture: a tap, a long press, a one-finger drag or
+  // a two-finger pinch. Nothing is pressed until the finger has moved past the slop or lifted,
+  // so a pinch never selects what its first finger landed on. Taps and drags drive the existing
+  // mouse pipeline through synthetic MouseEvents (so every tool works unchanged); a pinch zooms
+  // and pans. Listeners are registered manually in onMount with { passive: false } because we
+  // must preventDefault to stop scrolling and the browser's compatibility mouse events (which
+  // would double-fire the handlers).
+  let touchPress: 'tap' | 'drag' | null = null;   // set only while a touch's mousedown is being handled
+  /** The next press slides the view: a drag outside the pieces being picked several at a time. */
+  let touchPanNext = false;
 
-  function dispatchMouse(type: 'mousedown' | 'mousemove' | 'mouseup' | 'click' | 'dblclick', clientX: number, clientY: number) {
+  function samples(list: ArrayLike<{ identifier?: number; clientX: number; clientY: number }>): TouchSample[] {
+    return Array.from(list, (t, i) => ({ id: t.identifier ?? i, x: t.clientX, y: t.clientY }));
+  }
+
+  function dispatchMouse(type: 'mousedown' | 'mousemove' | 'mouseup' | 'click' | 'dblclick', clientX: number, clientY: number, init: MouseEventInit = {}) {
     canvas.dispatchEvent(new MouseEvent(type, {
       clientX,
       clientY,
@@ -3324,101 +3379,63 @@
       buttons: type === 'mousedown' || type === 'mousemove' ? 1 : 0,
       bubbles: true,
       cancelable: true,
+      ...init,
     }));
   }
 
-  function onTouchStart(e: TouchEvent) {
-    e.preventDefault();
-    if (e.touches.length === 1) {
-      singleTouchActive = true;
-      singleTouchOrigin = { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
-      singleTouchMoved = false;
-      dispatchMouse('mousedown', e.touches[0].clientX, e.touches[0].clientY);
-    } else if (e.touches.length === 2) {
-      lastTapTime = 0;
-      singleTouchOrigin = null;
-      // Second finger landed: abandon any single-finger drag and start pinching
-      if (singleTouchActive) {
-        dispatchMouse('mouseup', e.touches[0].clientX, e.touches[0].clientY);
-        singleTouchActive = false;
-      }
-      const a = e.touches[0], b = e.touches[1];
-      pinchState = {
-        dist: Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY),
-        cx: (a.clientX + b.clientX) / 2,
-        cy: (a.clientY + b.clientY) / 2,
-      };
-    }
+  /** Two fingers: zoom about their centre by `scale` and let the plan follow the centre. */
+  function pinchBy(event: { centerX: number; centerY: number; scale: number; dx: number; dy: number }) {
+    const rect = canvas.getBoundingClientRect();
+    const sx = event.centerX - rect.left, sy = event.centerY - rect.top;
+    // Zoom about the pinch midpoint (same math as onWheel)
+    const newZoom = Math.max(minimumZoom, Math.min(10, zoom * event.scale));
+    const worldX = (sx - width / 2) / zoom + camX;
+    const worldY = (sy - height / 2) / zoom + camY;
+    camX = worldX - (sx - width / 2) / newZoom;
+    camY = worldY - (sy - height / 2) / newZoom;
+    zoom = newZoom;
+    // Two-finger pan: camera follows the midpoint
+    camX -= event.dx / newZoom;
+    camY -= event.dy / newZoom;
+    markDirty();
   }
 
-  function onTouchMove(e: TouchEvent) {
-    e.preventDefault();
-    if (pinchState && e.touches.length >= 2) {
-      const a = e.touches[0], b = e.touches[1];
-      const dist = Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
-      const cx = (a.clientX + b.clientX) / 2;
-      const cy = (a.clientY + b.clientY) / 2;
-      const rect = canvas.getBoundingClientRect();
-      const sx = cx - rect.left, sy = cy - rect.top;
-      // Zoom about the pinch midpoint (same math as onWheel)
-      const newZoom = Math.max(minimumZoom, Math.min(10, zoom * (dist / (pinchState.dist || dist))));
-      const worldX = (sx - width / 2) / zoom + camX;
-      const worldY = (sy - height / 2) / zoom + camY;
-      camX = worldX - (sx - width / 2) / newZoom;
-      camY = worldY - (sy - height / 2) / newZoom;
-      zoom = newZoom;
-      // Two-finger pan: camera follows the midpoint
-      camX -= (cx - pinchState.cx) / newZoom;
-      camY -= (cy - pinchState.cy) / newZoom;
-      pinchState = { dist, cx, cy };
-      markDirty();
-    } else if (singleTouchActive && e.touches.length === 1) {
-      if (singleTouchOrigin && Math.hypot(e.touches[0].clientX - singleTouchOrigin.clientX,
-          e.touches[0].clientY - singleTouchOrigin.clientY) > 10) singleTouchMoved = true;
-      dispatchMouse('mousemove', e.touches[0].clientX, e.touches[0].clientY);
+  const gestures = createTouchGestures(event => {
+    if (!canvas?.isConnected) return;   // a long press can come due after the plan has closed
+    switch (event.type) {
+      case 'tap':
+        touchPress = 'tap';
+        // While picking several, a tap adds or removes what is under the finger, as a Shift-click does.
+        dispatchMouse('mousedown', event.x, event.y, { shiftKey: get(multiSelectMode) });
+        touchPress = null;
+        dispatchMouse('mouseup', event.x, event.y);
+        // Synthesize click so document-level click-outside handlers (menus) fire
+        dispatchMouse('click', event.x, event.y);
+        // Double-tap → dblclick (finish wall chains, rename rooms, …)
+        if (event.count === 2) dispatchMouse('dblclick', event.x, event.y);
+        break;
+      case 'dragStart':
+        // While picking several, a drag inside the picked pieces moves them; any other drag slides the view.
+        if (get(multiSelectMode) && currentSelectedIds.size >= 2) {
+          const rect = canvas.getBoundingClientRect();
+          const wp = screenToWorld(event.x - rect.left, event.y - rect.top);
+          const box = getMultiSelectBBox();
+          touchPanNext = !box || wp.x < box.minX || wp.x > box.maxX || wp.y < box.minY || wp.y > box.maxY;
+        }
+        touchPress = 'drag'; dispatchMouse('mousedown', event.x, event.y); touchPress = null; touchPanNext = false;
+        break;
+      case 'dragMove': dispatchMouse('mousemove', event.x, event.y); break;
+      case 'dragEnd': dispatchMouse('mouseup', event.x, event.y); break;
+      case 'pinchMove': pinchBy(event); break;
+      case 'longPress': canvas.dispatchEvent(new MouseEvent('contextmenu', { clientX: event.x, clientY: event.y, button: 2, bubbles: true, cancelable: true })); break;
     }
-  }
+  });
 
+  function onTouchStart(e: TouchEvent) { e.preventDefault(); gestures.start(samples(e.touches)); }
+  function onTouchMove(e: TouchEvent) { e.preventDefault(); gestures.move(samples(e.touches)); }
   function onTouchEnd(e: TouchEvent) {
     e.preventDefault();
-    if (e.type === 'touchcancel') {
-      pinchState = null;
-      lastTapTime = 0;
-      if (singleTouchActive) {
-        singleTouchActive = false;
-        const touch = e.changedTouches[0] ?? singleTouchOrigin;
-        if (touch) dispatchMouse('mouseup', touch.clientX, touch.clientY);
-      }
-      singleTouchOrigin = null;
-      return;
-    }
-    if (pinchState) {
-      // Leaving pinch: ignore the remaining finger until it lifts too
-      if (e.touches.length < 2) pinchState = null;
-      return;
-    }
-    if (singleTouchActive && e.touches.length === 0) {
-      const t = e.changedTouches[0] ?? singleTouchOrigin;
-      singleTouchActive = false;
-      if (t && singleTouchOrigin && Math.hypot(t.clientX - singleTouchOrigin.clientX,
-          t.clientY - singleTouchOrigin.clientY) > 10) singleTouchMoved = true;
-      singleTouchOrigin = null;
-      if (!t) return;
-      dispatchMouse('mouseup', t.clientX, t.clientY);
-      if (singleTouchMoved) { lastTapTime = 0; return; }
-      // Synthesize click so document-level click-outside handlers (menus) fire
-      dispatchMouse('click', t.clientX, t.clientY);
-      // Double-tap → dblclick (finish wall chains, rename rooms, …)
-      const now = Date.now();
-      if (now - lastTapTime < 350 && Math.hypot(t.clientX - lastTapX, t.clientY - lastTapY) < 30) {
-        dispatchMouse('dblclick', t.clientX, t.clientY);
-        lastTapTime = 0;
-      } else {
-        lastTapTime = now;
-        lastTapX = t.clientX;
-        lastTapY = t.clientY;
-      }
-    }
+    if (e.type === 'touchcancel') gestures.cancel(); else gestures.end(samples(e.touches), samples(e.changedTouches));
   }
 
   // ── Exact-length wall entry (issue #6) ────────────────────────────
@@ -3821,7 +3838,10 @@
     const rect = canvas.getBoundingClientRect();
     const wp = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
 
-    // Hit-test in priority order: furniture > door > window > wall > room > canvas
+    // Hit-test in priority order: furniture > door > window > wall > room > canvas.
+    // With the house fixed, doors and windows are passed over, and a wall or room is the menu's
+    // target without being selected.
+    const fixed = currentHouseFixed;
     const fi = findFurnitureAt(wp);
     if (fi) {
       selectedElementId.set(fi.id);
@@ -3831,7 +3851,7 @@
       ctxMenuWall = null;
       ctxMenuRoom = null;
     } else {
-      const door = findDoorAt(wp);
+      const door = fixed ? null : findDoorAt(wp);
       if (door) {
         selectedElementId.set(door.id);
         ctxMenuTargetType = 'door';
@@ -3840,7 +3860,7 @@
         ctxMenuWall = null;
         ctxMenuRoom = null;
       } else {
-        const win = findWindowAt(wp);
+        const win = fixed ? null : findWindowAt(wp);
         if (win) {
           selectedElementId.set(win.id);
           ctxMenuTargetType = 'window';
@@ -3851,7 +3871,7 @@
         } else {
           const wall = findWallAt(wp);
           if (wall) {
-            selectedElementId.set(wall.id);
+            if (!fixed) selectedElementId.set(wall.id);
             ctxMenuTargetType = 'wall';
             ctxMenuTargetId = wall.id;
             ctxMenuWall = wall;
@@ -3860,7 +3880,7 @@
           } else {
             const room = findRoomLabelAt(wp) ?? findRoomAt(wp);
             if (room) {
-              selectedRoomId.set(room.id);
+              if (!fixed) selectedRoomId.set(room.id);
               ctxMenuTargetType = 'room';
               ctxMenuTargetId = room.id;
               ctxMenuRoom = room;
@@ -4000,6 +4020,15 @@
         }
         break;
 
+      // Picking several and notes
+      case 'select-more': if (id) selectedElementId.set(id); multiSelectMode.set(true); break;
+      case 'note': {
+        const kind = ctxMenuTargetType === 'furniture' ? 'furniture' : ctxMenuTargetType === 'wall' ? 'walls' : ctxMenuTargetType === 'room' ? 'rooms' : null;
+        if (id && kind) noteTarget.set({ floorId: currentFloor.id, kind, id });
+        break;
+      }
+      case 'note-plan': noteTarget.set('plan'); break;
+
       // Door actions
       case 'join-door':
         if (id) doorJoinMode.set({ firstDoorId: id });
@@ -4010,6 +4039,7 @@
         if (id) { removeElement(id); selectedElementId.set(null); }
         break;
       case 'properties':
+        detailsOpen.set(true);
         if (id) {
           selectedElementId.set(id);
           void tick().then(() => {
@@ -4052,7 +4082,7 @@
 
 <svelte:window on:keydown={onKeyDown} on:keyup={onKeyUp} onmousemove={onWindowMouseMove} onmouseup={onWindowMouseUp} onblur={onWindowBlur} />
 
-<div class="w-full h-full relative overflow-hidden" role="application">
+<div class="w-full h-full relative overflow-hidden" role="application" data-extra-kind={selectedExtra()?.kind}>
   <canvas
     bind:this={canvas}
     class="block w-full h-full touch-none"
@@ -4206,9 +4236,9 @@
   <StatusBar rooms={detectedRooms} floor={currentFloor} {floorBelow} selectedCount={currentSelectedIds.size} {zoom} {snapControl} snapEnabled={currentSnapEnabled} {layerVis} {showRoomLabels} {showDimensions} bottomInset={zoomControlsBottom} bind:showGrid bind:showRulers bind:showMinimap onfit={onFitPressed} />
 
   <!-- Contextual Toolbar (hidden while the integrated elevation view covers the canvas) -->
-  {#if (currentSelectedId || currentSelectedIds.size > 0) && currentFloor && currentTool === 'select' && !elevationOpen}
+  {#if (currentSelectedId || currentSelectedIds.size > 0 || selectedExtra()) && currentFloor && currentTool === 'select' && !elevationOpen}
     <SelectionToolbar anchor={selectionAnchor()} box={selectionScreenBox()} selectedId={currentSelectedId} selectedIds={currentSelectedIds}
-      floorId={currentFloor.id} locked={allLocked(currentFloor, deleteTargetIds())} extra={null}
+      floorId={currentFloor.id} locked={allLocked(currentFloor, deleteTargetIds())} extra={selectedExtra()}
       onsplit={() => {
         if (currentSelectedId) {
           const newId = trySplitWall(currentSelectedId, 0.5);
@@ -4258,6 +4288,7 @@
     targetFurniture={ctxMenuFurniture}
     targetRoom={ctxMenuRoom}
     deletable={!currentFloor || !ctxMenuTargetId || !isLocked(currentFloor, ctxMenuTargetId)}
+    houseFixed={currentHouseFixed}
     clipboard={clipboard}
     onclose={() => { ctxMenuVisible = false; }}
     onaction={handleContextMenuAction}

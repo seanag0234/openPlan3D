@@ -15,11 +15,13 @@
     clipboard?: any;
     /** False when Delete would do nothing, so it is not offered. */
     deletable?: boolean;
+    /** The house is fixed: a wall or room offers only its note. */
+    houseFixed?: boolean;
     onclose: () => void;
     onaction: (action: string, data?: any) => void;
   }
 
-  let { x, y, visible, targetType, targetId, targetWall, targetFurniture, targetRoom, clipboard, deletable = true, onclose, onaction }: Props = $props();
+  let { x, y, visible, targetType, targetId, targetWall, targetFurniture, targetRoom, clipboard, deletable = true, houseFixed = false, onclose, onaction }: Props = $props();
 
   let menuEl = $state<HTMLDivElement>();
 
@@ -44,7 +46,9 @@
   $effect(() => {
     if (visible && menuEl) {
       returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      menuEl.querySelector<HTMLButtonElement>('[role="menuitem"]:not(:disabled)')?.focus();
+      // A keyboard opener lands on the item's own first action; the Note row above it is one arrow away.
+      (menuEl.querySelector<HTMLButtonElement>('[role="menuitem"]:not(:disabled):not([data-note])')
+        ?? menuEl.querySelector<HTMLButtonElement>('[role="menuitem"]:not(:disabled)'))?.focus();
     }
   });
 
@@ -119,6 +123,12 @@
         <span class="ctx-icon">⬇️</span> {$t('contextMenu.sendToBack')}
       </button>
       <div class="ctx-sep"></div>
+      <button class="ctx-item" role="menuitem" onclick={() => clickItem('select-more')}>
+        <span class="ctx-icon">➕</span> {$t('touch.selectMore')}
+      </button>
+      <button class="ctx-item" role="menuitem" data-note onclick={() => clickItem('note')}>
+        <span class="ctx-icon">📝</span> {$t('touch.note')}
+      </button>
       <div class="ctx-sep"></div>
       <button class="ctx-item" role="menuitem" onclick={() => clickItem('toggle-lock')}>
         <span class="ctx-icon">{targetFurniture?.locked ? '🔓' : '🔒'}</span> {targetFurniture?.locked ? $t('contextMenu.unlock') : $t('contextMenu.lock')}
@@ -133,7 +143,17 @@
         </button>
       {/if}
 
+    {:else if (targetType === 'wall' || targetType === 'room') && houseFixed}
+      <button class="ctx-item" role="menuitem" data-note onclick={() => clickItem('note')}>
+        <span class="ctx-icon">📝</span> {$t('touch.note')}
+      </button>
+      <div class="ctx-muted">{$t('touch.houseFixed')}</div>
+
     {:else if targetType === 'wall'}
+      <button class="ctx-item" role="menuitem" data-note onclick={() => clickItem('note')}>
+        <span class="ctx-icon">📝</span> {$t('touch.note')}
+      </button>
+      <div class="ctx-sep"></div>
       <button class="ctx-item" role="menuitem" onclick={() => clickItem('split-wall')}>
         <span class="ctx-icon">✂️</span> {$t('contextMenu.splitWall')}
       </button>
@@ -165,6 +185,10 @@
       </button>
 
     {:else if targetType === 'room'}
+      <button class="ctx-item" role="menuitem" data-note onclick={() => clickItem('note')}>
+        <span class="ctx-icon">📝</span> {$t('touch.note')}
+      </button>
+      <div class="ctx-sep"></div>
       <button class="ctx-item" role="menuitem" onclick={() => clickItem('reset-room-label')}>
         <span class="ctx-icon">↺</span> {$t('contextMenu.resetLabel')}
       </button>
@@ -180,6 +204,10 @@
       </button>
 
     {:else if targetType === 'canvas'}
+      <button class="ctx-item" role="menuitem" onclick={() => clickItem('select-more')}>
+        <span class="ctx-icon">➕</span> {$t('touch.selectMore')}
+      </button>
+      <div class="ctx-sep"></div>
       {#if clipboard}
         <button class="ctx-item" role="menuitem" onclick={() => clickItem('paste')}>
           <span class="ctx-icon">📋</span> {$t('contextMenu.paste')}
@@ -201,6 +229,10 @@
       <div class="ctx-sep"></div>
       <button class="ctx-item" role="menuitem" onclick={() => clickItem('zoom-to-fit')}>
         <span class="ctx-icon">🔍</span> {$t('contextMenu.zoomToFit')}
+      </button>
+      <div class="ctx-sep"></div>
+      <button class="ctx-item" role="menuitem" onclick={() => clickItem('note-plan')}>
+        <span class="ctx-icon">📝</span> {$t('touch.planNote')}
       </button>
     {/if}
   </div>
@@ -239,5 +271,17 @@
     height: 1px;
     background: #e5e7eb;
     margin: 4px 0;
+  }
+  .ctx-muted {
+    padding: 6px 14px;
+    color: #6b7280;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  @media (pointer: coarse) {
+    .ctx-item {
+      min-height: 44px;
+      font-size: 15px;
+    }
   }
 </style>
