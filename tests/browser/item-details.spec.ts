@@ -41,7 +41,7 @@ async function download(page: Page, button: string) {
 }
 async function packageFiles(page: Page) {
   await page.getByRole('button', { name: 'Export', exact: true }).click();
-  return readPackageZip(new Uint8Array(await download(page, 'Download project package')));
+  return readPackageZip(new Uint8Array(await download(page, 'Download the plan with its pictures')));
 }
 async function addPhoto(page: Page, path = resolve('tests/fixtures/large-item-photo.png')) {
   await choose(page, 'Add photo', path);
@@ -206,7 +206,7 @@ for (const locale of ['en', 'pt']) test(`${locale}: room, wall and opening metad
   await page.getByRole('button', { name: tr('🚪 single door 1', '🚪 Porta simples 1'), exact: true }).click();
   await fill(page, tr('Item cost', 'Custo do item'), '12.345', true);
   await page.getByRole('button', { name: tr('Export', 'Exportar'), exact: true }).click();
-  const files = await readPackageZip(new Uint8Array(await download(page, tr('Download project package', 'Baixar pacote de projeto'))));
+  const files = await readPackageZip(new Uint8Array(await download(page, tr('Download the plan with its pictures', 'Baixar a planta com as imagens'))));
   const plan = packageJSON(files['plan.json']);
   expect(plan.rooms[0]).toMatchObject({ note: 'Web room update', ceilingHeight: 2.97625, type: 'office' });
   expect(plan.walls[0].material).toBe('wood'); expect(plan.openings[0].price).toBe(12.345);

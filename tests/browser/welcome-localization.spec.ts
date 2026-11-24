@@ -20,7 +20,7 @@ test('Portuguese welcome recovers from invalid JSON and creates the selected tem
   await page.getByRole('button', { name: /Apartamento estúdio/ }).click();
   await expect(page.getByRole('application')).toContainText('paredes');
   await page.getByRole('button', { name: 'Exportar', exact: true }).click();
-  for (const name of ['Exportar 2D como PNG', 'Exportar 3D como PNG', 'Exportar como SVG', 'Exportar como DXF', 'Exportar como DWG', 'Exportar como PDF', 'Baixar pacote de projeto', 'Importar JSON']) {
+  for (const name of ['Exportar 2D como PNG', 'Exportar 3D como PNG', 'Exportar como SVG', 'Exportar como DXF', 'Exportar como DWG', 'Exportar como PDF', 'Baixar a planta com as imagens', 'Importar JSON']) {
     await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
   }
   const pending = page.waitForEvent('download');

@@ -71,7 +71,7 @@ for (const width of [1440, 390]) test(`saved legacy furniture refreshes without 
   await expect.poll(async () => (await savedProjects(page))[id].floors[0].furniture[2].width).toBe(119.125);
   await page.reload();
   await page.getByRole('button', { name: 'Export', exact: true }).click();
-  const files = readPackageZip(new Uint8Array(await download(page, 'Download project package')));
+  const files = readPackageZip(new Uint8Array(await download(page, 'Download the plan with its pictures')));
   const plan = packageJSON(files['plan.json']);
   expect(plan.furniture.map((item: any) => item.category)).toEqual(['sofa', 'stairs', 'bed', 'desk', 'sink', 'washerDryer', 'washerdryer', 'future-appliance']);
   expect(plan.furniture[2]).toMatchObject({ width: 1.4890625, depth: 0.93515625, note: 'Edited locally before preview refresh', price: 123.456, photos: ['legacy-photo.png'], future: { retain: 2 } });

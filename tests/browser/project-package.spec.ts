@@ -19,7 +19,7 @@ function observe(page: Page) {
 async function packageDownload(page: Page) {
   await page.getByRole('button', { name: 'Export', exact: true }).click();
   const pending = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Download project package', exact: true }).click();
+  await page.getByRole('button', { name: 'Download the plan with its pictures', exact: true }).click();
   const path = (await (await pending).path())!;
   return readPackageZip(new Uint8Array(await readFile(path)));
 }

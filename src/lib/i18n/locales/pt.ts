@@ -421,7 +421,7 @@ export const pt = {
   "exportMenu.pdf": "Exportar como PDF",
   "exportMenu.planHelp": "O layout de impressão e as exportações 2D mostram o que a planta mostra: oculte dimensões, notas, móveis ou outras camadas em Camadas para deixá-los de fora.",
   "exportMenu.json": "Baixar JSON",
-  "exportMenu.package": "Baixar pacote de projeto",
+  "exportMenu.package": "Baixar a planta com as imagens",
   "exportMenu.packageHelp": "Para iPhone e web. Inclui dados originais preservados e anexos, mesmo quando não são exibidos aqui.",
   "exportMenu.assistant": "Partilhar com assistente…",
   "exportMenu.plannersTitle": "Outros planejadores",

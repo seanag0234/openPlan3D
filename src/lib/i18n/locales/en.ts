@@ -421,7 +421,7 @@ export const en = {
   "exportMenu.pdf": "Export as PDF",
   "exportMenu.planHelp": "Print Layout and the 2D exports show what the plan shows: hide dimensions, notes, furniture or other layers under Layers to leave them out.",
   "exportMenu.json": "Download JSON",
-  "exportMenu.package": "Download project package",
+  "exportMenu.package": "Download the plan with its pictures",
   "exportMenu.packageHelp": "For iPhone and web. Includes retained original data and attachments, even when they are not shown here.",
   "exportMenu.assistant": "Share with Assistant…",
   "exportMenu.plannersTitle": "Other planners",
