@@ -32,6 +32,11 @@
   import { saveState, saveError, lastSavedAt, manualSave, autoSave, initAutoSave } from '$lib/stores/saveStatus';
   import { initVersionHistory, stopVersionHistory, snapshotOnAction } from '$lib/stores/versionHistory';
   import VersionHistoryPanel from './VersionHistoryPanel.svelte';
+  import { coarsePointer } from '$lib/stores/pointer';
+  import { feedbackOpen } from '$lib/stores/ui';
+
+  /** On a touch screen a picture button stacks its word under its picture; nothing hovers to explain it. */
+  const stacked = $derived($coarsePointer ? 'flex flex-col items-center justify-center gap-0.5' : '');
 
   const openingLifetime = new AbortController();
   onDestroy(() => openingLifetime.abort());
@@ -283,6 +288,30 @@
     URL.revokeObjectURL(url);
   }
 
+  /** Hand the plan file to the device's share sheet (AirDrop, Messages, Mail…), or download it where there is none. */
+  async function sendPlan() {
+    exportOpen = false; moreOpen = false;
+    const p = get(currentProject);
+    if (!p) return;
+    const json = JSON.stringify(withDisplaySettings(p, get(projectSettings)), null, 2);
+    const file = new File([json], `${p.name || 'floorplan'}.openplan.json`, { type: 'application/json' });
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: p.name });
+        return;
+      } catch (error) {
+        // Closing the share sheet is not a failure; any other refusal falls back to the download.
+        if ((error as DOMException)?.name === 'AbortError') return;
+      }
+    }
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   async function newProject() {
     importError = null;
     exportOpen = false;
@@ -358,6 +387,7 @@
     };
     input.click();
     exportOpen = false;
+    moreOpen = false;
   }
 
   function onImportPackage() {
@@ -375,18 +405,24 @@
   }
 </script>
 
-<div class="h-12 bg-gradient-to-r from-slate-800 to-slate-700 flex items-center px-4 gap-2 max-xl:px-2 max-xl:gap-1 shrink-0 shadow-sm">
+<!-- From 1280 to 1535 px the bar holds every control in one line: dividers hide and gaps tighten so Save stays on screen. -->
+<div data-bar="top" class="h-12 bg-gradient-to-r from-slate-800 to-slate-700 flex items-center px-4 gap-2 max-2xl:gap-1.5 max-xl:px-2 max-xl:gap-1 shrink-0 shadow-sm">
   <!-- Back to Projects -->
   <a
     href={base || '/'}
-    class="flex items-center gap-1 text-white/70 hover:text-white text-sm transition-colors"
+    class="flex items-center gap-1 text-white/70 hover:text-white text-sm transition-colors {stacked}"
     title={$t('projectToolbar.back')}
   >
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-    <span class="hidden sm:inline">{$t('projectToolbar.projects')}</span>
+    {#if $coarsePointer}
+      <span class="sr-only">{$t('projectToolbar.projects')}</span>
+      <span aria-hidden="true" class="block text-[10px] leading-none">{$t('bars.plans')}</span>
+    {:else}
+      <span class="hidden sm:inline">{$t('projectToolbar.projects')}</span>
+    {/if}
   </a>
 
-  <div class="h-5 w-px bg-white/20 max-xl:hidden"></div>
+  <div class="h-5 w-px bg-white/20 max-2xl:hidden"></div>
 
   {#if editingName}
     <input
@@ -400,13 +436,13 @@
     />
   {:else}
     <button
-      class="font-semibold text-white text-sm hover:bg-white/10 px-2 py-0.5 rounded transition-colors max-w-[12rem] truncate max-xl:max-w-[4rem]"
+      class="font-semibold text-white text-sm hover:bg-white/10 px-2 py-0.5 rounded transition-colors max-w-[12rem] min-w-0 truncate max-xl:max-w-[8rem]"
       onclick={() => editingName = true}
       title={$t('projectToolbar.rename')}
     >{projectName}</button>
   {/if}
 
-  <div class="h-5 w-px bg-white/20 max-xl:hidden"></div>
+  <div class="h-5 w-px bg-white/20 max-2xl:hidden"></div>
 
   <!-- Floor selector as buttons (in overflow menu on mobile) -->
   <div class="flex items-center gap-1 max-xl:hidden">
@@ -423,7 +459,7 @@
       />
     {:else}
       <select aria-label={$t('floorControls.current')} value={activeFloorId} onchange={(e) => setActiveFloor(e.currentTarget.value)}
-        class="w-32 rounded bg-slate-700 px-2 py-1 text-xs text-white" title={$t('floorControls.switch')}>
+        class="w-32 max-2xl:w-28 rounded bg-slate-700 px-2 py-1 text-xs text-white" title={$t('floorControls.switch')}>
         {#each floors as fl}<option value={fl.id}>{fl.name}</option>{/each}
       </select>
       <button
@@ -477,14 +513,16 @@
 
   <div class="flex-1"></div>
 
-  <button onclick={undo} class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors" title={$t('projectToolbar.undoHint')} aria-label={$t('projectToolbar.undo')}>
+  <button onclick={undo} class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors {stacked}" title={$t('projectToolbar.undoHint')} aria-label={$t('projectToolbar.undo')}>
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+    {#if $coarsePointer}<span aria-hidden="true" class="block text-[10px] leading-none">{$t('projectToolbar.undo')}</span>{/if}
   </button>
-  <button onclick={redo} class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors" title={$t('projectToolbar.redoHint')} aria-label={$t('projectToolbar.redo')}>
+  <button onclick={redo} class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors {stacked}" title={$t('projectToolbar.redoHint')} aria-label={$t('projectToolbar.redo')}>
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10"/></svg>
+    {#if $coarsePointer}<span aria-hidden="true" class="block text-[10px] leading-none">{$t('projectToolbar.redo')}</span>{/if}
   </button>
 
-  <div class="h-5 w-px bg-white/20 max-xl:hidden"></div>
+  <div class="h-5 w-px bg-white/20 max-2xl:hidden"></div>
 
   <!-- Snap to grid toggle: drawn from the store, which the Command Palette also toggles -->
   <button
@@ -533,7 +571,7 @@
     </svg>
   </button>
 
-  <div class="h-5 w-px bg-white/20 max-xl:hidden"></div>
+  <div class="h-5 w-px bg-white/20 max-2xl:hidden"></div>
 
   <!-- Plan / Elevation sub-toggle (2D only) — sits left of the 2D/3D pill so the
        two switches read as a family; mobile (<md) uses the overflow menu instead -->
@@ -609,14 +647,18 @@
     <button
       bind:this={moreButton}
       onclick={() => moreOpen = !moreOpen}
-      class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors"
+      class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors {stacked}"
       title={$t('toolbarView.more')}
       aria-label={$t('toolbarView.moreActions')}
     >
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      {#if $coarsePointer}<span aria-hidden="true" class="block text-[10px] leading-none">{$t('bars.more')}</span>{/if}
     </button>
     {#if moreOpen}
       <div data-popup="menu" class="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 w-56 z-50 max-h-[70vh] overflow-y-auto">
+        <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={onImportJSON}>{$t('bars.openPlanFile')}</button>
+        <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={sendPlan}>{$t('bars.sendPlan')}</button>
+        <div class="h-px bg-gray-100 my-1"></div>
         {#if floors.length > 1 || mode === '2d'}
           <div class="px-3 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-gray-400">{$t('floorControls.floors')}</div>
           {#each floors as fl}
@@ -672,21 +714,56 @@
     {/if}
   </div>
 
-  <div class="h-5 w-px bg-white/20 max-xl:hidden"></div>
+  <div class="h-5 w-px bg-white/20 max-2xl:hidden"></div>
+
+  <!-- Opening a plan file, where it is looked for; the Export menu keeps its Import JSON too. -->
+  <button
+    onclick={onImportJSON}
+    class="px-3 max-2xl:px-2 py-1.5 text-sm text-white/90 hover:text-white hover:bg-white/10 rounded transition-colors items-center gap-1.5 max-xl:hidden {$coarsePointer ? stacked : 'flex'}"
+    title={$t('bars.openPlanFile')}
+  >
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+    <span class={$coarsePointer ? 'block text-[10px] leading-none' : ''}>{$t('bars.open')}</span>
+  </button>
+
+  <!-- Saying what is wrong, from inside the editor; the feedback sheet itself is another part's. -->
+  <button
+    onclick={() => feedbackOpen.set(true)}
+    data-feedback-open={$feedbackOpen}
+    class="px-2 py-1.5 text-sm text-white/90 hover:text-white hover:bg-white/10 rounded transition-colors {$coarsePointer ? stacked : 'flex items-center gap-1.5'}"
+    title={$t('bars.feedback')}
+    aria-label={$t('bars.feedback')}
+  >
+    <span aria-hidden="true">💬</span>
+    {#if $coarsePointer}
+      <span aria-hidden="true" class="block text-[10px] leading-none">{$t('bars.feedback')}</span>
+    {:else}
+      <span class="max-2xl:hidden">{$t('bars.feedback')}</span>
+    {/if}
+  </button>
 
   <!-- Export dropdown -->
   <div class="relative" bind:this={exportRef}>
     <button
       onclick={() => { exportOpen = !exportOpen; if (exportOpen) triggerTip('first-export', 300, 60); }}
-      class="px-3 py-1.5 max-xl:px-2 text-sm text-white/90 hover:text-white hover:bg-white/10 rounded transition-colors flex items-center gap-1.5"
+      class="px-3 py-1.5 max-2xl:px-2 text-sm text-white/90 hover:text-white hover:bg-white/10 rounded transition-colors {$coarsePointer ? stacked : 'flex items-center gap-1.5'}"
       title={$t('exportMenu.title')}
       aria-label={$t('exportMenu.title')}
     >
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      <span class="max-xl:hidden">{$t('exportMenu.title')}</span>
+      {#if $coarsePointer}
+        <span aria-hidden="true" class="block text-[10px] leading-none">{$t('exportMenu.title')}</span>
+      {:else}
+        <span class="max-xl:hidden">{$t('exportMenu.title')}</span>
+      {/if}
     </button>
     {#if exportOpen}
       <div data-popup="menu" class="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 w-56 z-50 max-h-[70vh] overflow-y-auto">
+        <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left flex items-center gap-2" onclick={sendPlan}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          {$t('bars.sendPlan')}
+        </button>
+        <div class="h-px bg-gray-100 my-1"></div>
         <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left flex items-center gap-2" onclick={() => { exportOpen = false; window.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', ctrlKey: true })); }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
           {$t('print.entry')}
@@ -717,6 +794,7 @@
           {$t('exportMenu.pdf')}
         </button>
         <p class="px-3 pb-2 text-xs text-gray-500">{$t('exportMenu.planHelp')}</p>
+        <div aria-hidden="true" class="px-3 pt-1 text-[11px] text-gray-400">{$t('bars.savePlanFile')}</div>
         <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left flex items-center gap-2" onclick={onExportJSON}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
           {$t('exportMenu.json')}
@@ -733,6 +811,7 @@
         <div class="h-px bg-gray-100 my-1"></div>
         <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left" onclick={onShareWithAssistant}>{$t('exportMenu.assistant')}</button>
         <div class="h-px bg-gray-100 my-1"></div>
+        <div aria-hidden="true" class="px-3 pt-1 text-[11px] text-gray-400">{$t('bars.openPlanFile')}</div>
         <button class="w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left flex items-center gap-2" onclick={onImportJSON}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           {$t('exportMenu.import')}
@@ -749,12 +828,13 @@
     {/if}
   </div>
 
-  <!-- Reserve the widest translated status so autosave cannot move toolbar targets. -->
-  <span class="inline-grid shrink-0 text-[11px] font-medium max-xl:hidden">
+  <!-- Reserve the widest translated status so autosave cannot move toolbar targets. Shown at every width;
+       when room is short the plan's name gives way first. -->
+  <span class="inline-grid shrink-0 text-[11px] font-medium">
     {#each (['saveControls.saving', 'saveControls.saved', 'saveControls.unsaved'] as const) as key}
       <span aria-hidden="true" data-save-label={$t(key)} class="invisible col-start-1 row-start-1 whitespace-nowrap before:content-[attr(data-save-label)]"></span>
     {/each}
-    <span class="col-start-1 row-start-1 whitespace-nowrap transition-colors duration-300 {$saveState === 'saved' ? 'text-emerald-400' : $saveState === 'saving' ? 'text-amber-300 animate-pulse' : 'text-white/50'}" title={lastSavedText}>
+    <span data-save-state class="col-start-1 row-start-1 whitespace-nowrap transition-colors duration-300 {$saveState === 'saved' ? 'text-emerald-400' : $saveState === 'saving' ? 'text-amber-300 animate-pulse' : 'text-white/50'}" title={lastSavedText}>
     {#if $saveState === 'saving'}
       {$t('saveControls.saving')}
     {:else if $saveState === 'saved'}

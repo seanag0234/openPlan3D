@@ -1,1 +1,10 @@
-/* Larger press targets for touch screens. */
+/* Things a finger presses are at least 44 px, as Apple and WCAG 2.5.5 ask; a mouse keeps today's sizes. */
+@media (pointer: coarse) {
+  button, [role="button"], [role="menuitem"], [role="tab"], select, summary, a[href] { min-height: 44px; }
+  button, [role="button"] { min-width: 44px; }
+  /* 16 px keeps Safari from zooming the page when a box takes focus. */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), select, textarea { min-height: 44px; font-size: 16px; }
+  label:has(> input[type="checkbox"]), label:has(> input[type="radio"]) { min-height: 44px; }
+  /* Keys mean nothing without a keyboard. */
+  kbd { display: none; }
+}

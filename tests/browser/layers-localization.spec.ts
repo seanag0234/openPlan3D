@@ -47,7 +47,7 @@ for (const width of [1440, 390]) test(`Portuguese layers preserve visibility, se
         await testInfo.attach('phone-status-controls', { path, contentType: 'image/png' });
       }
     }
-    const visibility = page.getByRole('button', { name: '🗂 Camadas', exact: true });
+    const visibility = page.getByRole('button', { name: '🗂 Mostrar e ocultar', exact: true });
     await clickStatusControl(visibility);
     const walls = page.getByRole('checkbox', { name: 'Paredes', exact: true });
     await expect(walls).toBeChecked();
