@@ -1076,6 +1076,19 @@ export function updateProjectName(name: string) {
   currentProject.set({ ...p });
 }
 
+/** The plan's walls, doors, windows and rooms stay put under plain presses. */
+export const houseFixed = derived(currentProject, $p => $p?.houseFixed === true);
+
+/** Fixing the house or letting it move is one history step; a plan never fixed keeps no flag. */
+export function setHouseFixed(value: boolean) {
+  const p = get(currentProject);
+  if (!p || (p.houseFixed === true) === value) return;
+  snapshot(value ? 'Fixed the house' : 'Let the house move');
+  if (value) p.houseFixed = true; else delete p.houseFixed;
+  p.updatedAt = new Date();
+  currentProject.set({ ...p });
+}
+
 /** The Settings dialog edits per keystroke; rapid edits share one step. */
 export function updateProjectDescription(description: string) {
   const p = get(currentProject);

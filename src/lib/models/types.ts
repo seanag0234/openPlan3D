@@ -297,6 +297,8 @@ export interface Project {
   id: string;
   name: string;
   description?: string;
+  /** Walls, doors, windows and rooms ignore plain presses. */
+  houseFixed?: boolean;
   floors: Floor[];
   activeFloorId: string;
   createdAt: Date;

@@ -1,1 +1,4 @@
-export const sharedPt = {} as const;
+export const sharedPt = {
+  "undoAction.fixHouse": "Casa fixada",
+  "undoAction.freeHouse": "Casa liberada para mover",
+} as const;
