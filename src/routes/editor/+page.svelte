@@ -28,6 +28,8 @@
   import CommandPalette from '$lib/components/editor/CommandPalette.svelte';
   import ElevationView from '$lib/components/editor/ElevationView.svelte';
   import PrintLayout from '$lib/components/editor/PrintLayout.svelte';
+  import NoteSheet from '$lib/components/editor/NoteSheet.svelte';
+  import NotesList from '$lib/components/editor/NotesList.svelte';
   import OnboardingTooltip from '$lib/components/OnboardingTooltip.svelte';
 
   let commandPaletteOpen = $state(false);
@@ -505,6 +507,8 @@
 
   <CommandPalette bind:open={commandPaletteOpen} />
   <PrintLayout bind:open={printOpen} />
+  <NoteSheet />
+  <NotesList />
   <OnboardingTooltip />
 {:else}
   <div class="h-screen flex flex-col items-center justify-center gap-3">

@@ -2,7 +2,7 @@
   import { onDestroy } from 'svelte';
   import { locale, t, type Locale, type TranslationKey } from '$lib/i18n';
   import { modalDialog } from '$lib/utils/modalDialog';
-  import { projectSettings } from '$lib/stores/settings';
+  import { projectSettings, DEFAULT_SETTINGS } from '$lib/stores/settings';
   import type { ProjectSettings } from '$lib/stores/settings';
   import { currentProject, updateProjectDescription, updateProjectName } from '$lib/stores/project';
   import type { Project } from '$lib/models/types';
@@ -60,20 +60,7 @@
 
   let currentTheme = $state<ThemePreference>('system');
   onDestroy(themePreference.subscribe((t) => { currentTheme = t; }));
-  let settings = $state<ProjectSettings>({
-    units: 'metric',
-    showDimensions: true,
-    showExternalDimensions: true,
-    showInternalDimensions: false,
-    showExtensionLines: true,
-    showObjectDistance: true,
-    showObjectSizes: true,
-    dimensionLineColor: '#1e293b',
-    wallMeasureMode: 'centerline',
-    snapToGrid: true,
-    snapToWalls: true,
-    gridSize: 25,
-  });
+  let settings = $state<ProjectSettings>({ ...DEFAULT_SETTINGS });
 
   onDestroy(projectSettings.subscribe((s) => { settings = { ...s }; }));
 

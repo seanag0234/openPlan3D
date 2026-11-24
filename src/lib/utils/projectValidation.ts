@@ -55,6 +55,7 @@ export function readProject(value: unknown): Project {
   text(project!.id, 'id', true);
   defaults(project!, { name: 'Untitled Project' });
   text(project!.name, 'name'); strings(project!, ['description'], 'document');
+  booleans(project!, ['houseFixed'], 'document');
   if (project!.projectPackage !== undefined) validateRetainedDetailState(project!.projectPackage);
   const customModelIds = validateCustomModelDefinitions(project!.customModels, project!.projectPackage?.assets);
   if (project!.displaySettings !== undefined) {

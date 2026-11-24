@@ -1,3 +1,12 @@
+import { sharedEn } from './parts/shared.en';
+import { touchEn } from './parts/touch.en';
+import { panelsEn } from './parts/panels.en';
+import { barsEn } from './parts/bars.en';
+import { savingEn } from './parts/saving.en';
+import { homeEn } from './parts/home.en';
+import { addingEn } from './parts/adding.en';
+import { drawingEn } from './parts/drawing.en';
+import { wordsEn } from './parts/words.en';
 export const en = {
   "settings.title": "Settings",
   "settings.close": "Close settings",
@@ -1568,4 +1577,13 @@ export const en = {
   "customModelValidation.attributeFormat": "Invalid GLB geometry: Unsupported format for {name}.",
   "customModelValidation.unsupportedExtension": "Unsupported GLB extension: {name} is not supported by local model import yet.",
   "customModelValidation.undeclaredExtension": "Unsupported GLB extension: {name} is missing from extensionsUsed.",
+  ...sharedEn,
+  ...touchEn,
+  ...panelsEn,
+  ...barsEn,
+  ...savingEn,
+  ...homeEn,
+  ...addingEn,
+  ...drawingEn,
+  ...wordsEn,
 } as const;

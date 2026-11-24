@@ -12,6 +12,8 @@ export interface CanvasState {
   zoom: number;
   camX: number;
   camY: number;
+  /** The pointer is a finger; handles are drawn and reached for it. */
+  coarse?: boolean;
 }
 
 export const GRID = 20;
@@ -118,6 +120,8 @@ export interface FurnitureResizeInput {
   pointer: Point;
   preserveAspectRatio: boolean;
   minSize?: number;
+  /** Step the new size rounds to, in cm; not used yet. */
+  sizeStep?: number;
 }
 
 export interface FurnitureResizeResult {

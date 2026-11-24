@@ -13,11 +13,13 @@
     targetFurniture?: FurnitureItem | null;
     targetRoom?: Room | null;
     clipboard?: any;
+    /** False when Delete would do nothing, so it is not offered. */
+    deletable?: boolean;
     onclose: () => void;
     onaction: (action: string, data?: any) => void;
   }
 
-  let { x, y, visible, targetType, targetId, targetWall, targetFurniture, targetRoom, clipboard, onclose, onaction }: Props = $props();
+  let { x, y, visible, targetType, targetId, targetWall, targetFurniture, targetRoom, clipboard, deletable = true, onclose, onaction }: Props = $props();
 
   let menuEl = $state<HTMLDivElement>();
 
@@ -124,7 +126,7 @@
       <button class="ctx-item" role="menuitem" onclick={() => clickItem('properties')}>
         <span class="ctx-icon">⚙️</span> {$t('contextMenu.properties')}
       </button>
-      {#if !targetFurniture?.locked}
+      {#if deletable}
         <div class="ctx-sep"></div>
         <button class="ctx-item ctx-danger" role="menuitem" onclick={() => clickItem('delete')}>
           <span class="ctx-icon">🗑️</span> {$t('contextMenu.delete')}

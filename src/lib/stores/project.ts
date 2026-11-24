@@ -15,6 +15,7 @@ import { readProject } from '$lib/utils/projectValidation';
 import { mergeRoomPlanFloors, selectableContentIds, type AddedContent } from '$lib/utils/roomplanMerge';
 import { movePlanSelection } from '$lib/utils/moveToFloor';
 import { doorJoin } from '$lib/utils/scanAlignment';
+import { isLocked, lockableItems } from '$lib/utils/editPolicy';
 
 
 function uid(): string {
@@ -692,15 +693,12 @@ export function removeRoom(id: string) {
   }
 }
 
-/** Pieces, symbols and text labels that can be locked. */
-export function lockableItems(floor: Floor) {
-  return [...floor.furniture, ...floor.entourage ?? [], ...floor.textAnnotations ?? []];
-}
+export { lockableItems } from '$lib/utils/editPolicy';
 
 /** A locked piece, symbol or text label stays; in a mixed selection only the unlocked items go. */
 export function removeElement(id: string) {
   mutate((f) => {
-    if (lockableItems(f).some(item => item.id === id && item.locked)) return;
+    if (isLocked(f, id)) return;
     // Check if the element being removed is a wall — if so, also remove associated doors/windows
     const isWall = f.walls.some((w) => w.id === id);
     const removedIds = new Set([id]);
@@ -1078,6 +1076,19 @@ export function updateProjectName(name: string) {
   currentProject.set({ ...p });
 }
 
+/** The plan's walls, doors, windows and rooms stay put under plain presses. */
+export const houseFixed = derived(currentProject, $p => $p?.houseFixed === true);
+
+/** Fixing the house or letting it move is one history step; a plan never fixed keeps no flag. */
+export function setHouseFixed(value: boolean) {
+  const p = get(currentProject);
+  if (!p || (p.houseFixed === true) === value) return;
+  snapshot(value ? 'Fixed the house' : 'Let the house move');
+  if (value) p.houseFixed = true; else delete p.houseFixed;
+  p.updatedAt = new Date();
+  currentProject.set({ ...p });
+}
+
 /** The Settings dialog edits per keystroke; rapid edits share one step. */
 export function updateProjectDescription(description: string) {
   const p = get(currentProject);
@@ -1258,17 +1269,7 @@ export function pasteSelection(source: Floor, ids: ReadonlySet<string>, step = 1
 
 /** Duplicate furniture */
 export function duplicateFurniture(id: string): string | null {
-  const p = get(currentProject);
-  if (!p) return null;
-  const floor = p.floors.find(f => f.id === p.activeFloorId);
-  if (!floor) return null;
-  const fi = floor.furniture.find(fi => fi.id === id);
-  if (!fi) return null;
-  const newId = uid();
-  mutate(f => {
-    f.furniture.push({ ...fi, id: newId, position: { x: fi.position.x + 30, y: fi.position.y + 30 } });
-  });
-  return newId;
+  return duplicateSelection(new Set([id]))[0] ?? null;
 }
 
 /** Move a wall parallel to itself (both endpoints shift by the same perpendicular offset) without undo snapshot (for dragging) */

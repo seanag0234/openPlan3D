@@ -138,3 +138,24 @@ it('copies notes and dimensions without changing their styling, offsets or measu
   expect(target.annotations![0]).toEqual({id:'new-3',x1:80,y1:90,x2:180,y2:290,label:'Custom',offset:-60});
   expect(target.groups![0].elementIds).toEqual(['new-1','new-3']);expect(source).toEqual(before);
 });
+
+it('copying one piece gives the same piece as copying a selection of one', async () => {
+  const { duplicateFurniture, undoHistoryStore } = await import('$lib/stores/project');
+  const project = createDefaultProject(), floor = project.floors[0];
+  floor.furniture = [{ id: 'piece', catalogId: 'imported_object', name: 'Box', position: { x: 150, y: 200 }, rotation: 30,
+    scale: { x: 1.5, y: 1, z: 1 }, width: 120, depth: 90, locked: true, details: { note: 'keep' } }];
+  loadProject(project);
+  const copyOf = (id: string | null | undefined) => {
+    const { id: _id, ...rest } = get(currentProject)!.floors[0].furniture.find(item => item.id === id)!;
+    return rest;
+  };
+  const single = duplicateFurniture('piece');
+  const singleCopy = copyOf(single), singleSteps = get(undoHistoryStore).entries.map(entry => entry.description);
+  undo();
+  expect(get(currentProject)!.floors[0].furniture).toHaveLength(1);
+  const [selected] = duplicateSelection(new Set(['piece']));
+  expect(single).not.toBe('piece');
+  expect(singleCopy).toEqual(copyOf(selected));
+  expect(singleSteps).toEqual(get(undoHistoryStore).entries.map(entry => entry.description));
+  expect(duplicateFurniture('missing')).toBeNull();
+});

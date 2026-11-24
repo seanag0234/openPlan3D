@@ -10,7 +10,8 @@
   import { planContentBounds, hasPlanContent } from '$lib/utils/planContentBounds';
   import { connectedWallEndpoints } from '$lib/utils/wallEditing';
   import { createDrawScheduler } from '$lib/utils/drawScheduler';
-  import { activeFloor, selectedTool, selectedElementId, selectedElementIds, selectedRoomId, addWall, addDoor, addWindow, updateWall, moveWallEndpoint, moveWallGeometryDuringDrag, updateDoor, updateWindow, addFurniture, moveFurniture, transformFurnitureDuringDrag, rotateFurniture, rotateSelection, setFurnitureRotation, scaleFurniture, removeElement, placingFurnitureId, placingRotation, placingDoorType, placingWindowType, detectedRoomsStore, duplicateDoor, duplicateWindow, duplicateFurniture, duplicateSelection, pasteSelection, moveWallParallel, splitWall, wallSplitIntersectsOpening, snapEnabled, placingStair, addStair, moveStair, updateStair, placingColumn, placingColumnShape, addColumn, moveColumn, updateColumn, calibrationMode, calibrationPoints, updateBackgroundImage, setBackgroundImage, canvasZoom, canvasMinimumZoom, canvasCamX, canvasCamY, panMode, showFurnitureStore, addGuide, moveGuide, removeGuide, beginUndoGroup, endUndoGroup, layerVisibility, updateRoom, addMeasurement, updateMeasurement, removeMeasurement, addAnnotation, removeAnnotation, updateAnnotation, addTextAnnotation, removeTextAnnotation, updateTextAnnotation, moveTextAnnotation, toggleFurnitureLock, toggleSelectionLock, createGroup, ungroupElements, findGroupForElement, placingEntourageId, addEntourageItem, moveEntourage, resizeEntourage, currentProject, elevationWallId, elevationPickMode, doorJoinMode, joinScanDoors, lockableItems } from '$lib/stores/project';
+  import { activeFloor, selectedTool, selectedElementId, selectedElementIds, selectedRoomId, addWall, addDoor, addWindow, updateWall, moveWallEndpoint, moveWallGeometryDuringDrag, updateDoor, updateWindow, addFurniture, moveFurniture, transformFurnitureDuringDrag, rotateFurniture, rotateSelection, setFurnitureRotation, scaleFurniture, removeElement, placingFurnitureId, placingRotation, placingDoorType, placingWindowType, detectedRoomsStore, duplicateDoor, duplicateWindow, duplicateFurniture, pasteSelection, moveWallParallel, splitWall, wallSplitIntersectsOpening, snapEnabled, placingStair, addStair, moveStair, updateStair, placingColumn, placingColumnShape, addColumn, moveColumn, updateColumn, calibrationMode, calibrationPoints, updateBackgroundImage, setBackgroundImage, canvasZoom, canvasMinimumZoom, canvasCamX, canvasCamY, panMode, showFurnitureStore, addGuide, moveGuide, removeGuide, beginUndoGroup, endUndoGroup, layerVisibility, updateRoom, addMeasurement, updateMeasurement, removeMeasurement, addAnnotation, removeAnnotation, updateAnnotation, addTextAnnotation, removeTextAnnotation, updateTextAnnotation, moveTextAnnotation, toggleFurnitureLock, toggleSelectionLock, createGroup, ungroupElements, findGroupForElement, placingEntourageId, addEntourageItem, moveEntourage, resizeEntourage, currentProject, elevationWallId, elevationPickMode, doorJoinMode, joinScanDoors, houseFixed } from '$lib/stores/project';
+  import { allLocked, interactiveFloor, isLocked, unlockedOnly } from '$lib/utils/editPolicy';
   import type { Point, Wall, Door, Window as Win, FurnitureItem, Stair, Column, GuideLine, Measurement, Annotation, TextAnnotation, CustomEntourageDef } from '$lib/models/types';
   import type { Floor, Room } from '$lib/models/types';
   import { resolveRoomGeometry, roomLabelPosition, roomCentroid } from '$lib/utils/roomDetection';
@@ -24,16 +25,26 @@
   import { handleGlobalShortcut, isEditingField, isControlKey } from '$lib/utils/shortcuts';
   import { hasOpenModal } from '$lib/utils/modalDialog';
   import { focusInlineEditor } from '$lib/utils/inlineEditorFocus';
+  import StatusBar from './canvas/StatusBar.svelte';
+  import ZoomControls from './canvas/ZoomControls.svelte';
+  import ToolHints from './canvas/ToolHints.svelte';
+  import SelectionToolbar from './canvas/SelectionToolbar.svelte';
   import ContextMenu from './ContextMenu.svelte';
-  import MoveToFloorMenu from './MoveToFloorMenu.svelte';
   import { roomPresets, placePreset } from '$lib/utils/roomPresets';
   import { roomTemplates, placeRoomTemplate } from '$lib/utils/roomTemplates';
   import { openingDropTarget } from '$lib/utils/openingDrop';
   import { getWallTextureCanvas, getFloorTextureCanvas, setTextureLoadCallback } from '$lib/utils/textureGenerator';
-  import { projectSettings, formatLength, formatArea } from '$lib/stores/settings';
+  import { projectSettings, formatLength, formatArea, DEFAULT_SETTINGS } from '$lib/stores/settings';
   import type { ProjectSettings } from '$lib/stores/settings';
   import { snapStatus } from '$lib/utils/snapStep';
-  import { angleSnapWithin, cameraAfterResize, resizeFurnitureFromHandle, snap as _snap, type CanvasState } from '$lib/utils/canvasInteraction';
+  import { angleSnapWithin, cameraAfterResize, resizeFurnitureFromHandle, type CanvasState } from '$lib/utils/canvasInteraction';
+  import { beginCaptions, drawCaptions } from '$lib/utils/captionPlan';
+  import { fitIds } from '$lib/utils/fitBounds';
+  import { drawNoteMarks, noteMarkAt } from '$lib/utils/noteMarks';
+  import { noteTarget, planObstruction, revealSelection } from '$lib/stores/ui';
+  import { shiftToReveal } from '$lib/utils/viewShift';
+  import { coarsePointer } from '$lib/stores/pointer';
+  import { gridLineStepCm, resizeStep, snapPieceMove, snapValue, stopAtWalls, type SnapContext } from '$lib/utils/snapPolicy';
   import { furnitureSizeLabel } from '$lib/utils/furnitureCaption';
   import { drawWall as _drawWall, drawDoorOnWall as _drawDoorOnWall, drawWindowOnWall as _drawWindowOnWall, drawDoorDistanceDimensions as _drawDoorDistanceDimensions, drawWindowDistanceDimensions as _drawWindowDistanceDimensions, drawFurnitureItem, drawStair as _drawStair, drawColumn as _drawColumn, drawGuides as _drawGuides, drawPersistedMeasurements as _drawPersistedMeasurements, drawTextAnnotations as _drawTextAnnotations, drawAnnotation as _drawAnnotation, drawAnnotations as _drawAnnotations, drawRooms as _drawRooms, drawWallJoints as _drawWallJoints, drawSnapPoints as _drawSnapPoints, drawMinimap as _drawMinimap, drawEntourageItems as _drawEntourageItems, drawEntourageGhost as _drawEntourageGhost, drawFloorBelowGhost as _drawFloorBelowGhost, entourageAspect } from '$lib/utils/canvasRenderer';
   import { getEntourageDef } from '$lib/utils/entourageCatalog';
@@ -65,7 +76,7 @@
   let drawing: ReturnType<typeof createDrawScheduler> | undefined;
   function markDirty() { drawing?.invalidate(); }
   onDestroy(locale.subscribe(() => markDirty()));
-  function getCS(): CanvasState { return { ctx, width, height, zoom, camX, camY }; }
+  function getCS(): CanvasState { return { ctx, width, height, zoom, camX, camY, coarse: currentCoarse }; }
   // Sync zoom with shared store
   onDestroy(canvasZoom.subscribe(v => { zoom = v; }));
   $effect(() => { canvasZoom.set(zoom); });
@@ -129,6 +140,9 @@
   let customEntourageDefs: CustomEntourageDef[] | undefined = $state(undefined);
   let dragOffset: Point = { x: 0, y: 0 };
   let dragStartRotation: number = 0;
+  let dragStartPosition: Point = { x: 0, y: 0 };
+  let currentHouseFixed = $state(false);
+  let currentCoarse = $state(false);
   let dragWasWallSnapped: boolean = false;
   let draggingDoorId: string | null = $state(null);
   let draggingWindowId: string | null = $state(null);
@@ -184,19 +198,13 @@
   // Shared with the plan exports: Room Labels is a layer switch, Automatic dimensions is Settings → Dimensions → Dimensions.
   let showRoomLabels = $derived(layerVis.roomLabels);
   let showDimensions = $state(true);
-  let dimSettings: ProjectSettings = $state({
-    units: 'metric', showDimensions: true, showExternalDimensions: true,
-    showInternalDimensions: false, showExtensionLines: true,
-    showObjectDistance: true, showObjectSizes: true, dimensionLineColor: '#1e293b',
-    wallMeasureMode: 'centerline', snapToGrid: true, snapToWalls: true, gridSize: 25,
-  });
+  let dimSettings: ProjectSettings = $state({ ...DEFAULT_SETTINGS });
   onDestroy(projectSettings.subscribe((s) => {
     dimSettings = s;
     showDimensions = s.showDimensions;
     markDirty();
   }));
   let showStairs = $derived(layerVis.stairs);
-  let showLayerPanel = $state(false);
   let showMinimap = $state(true);
   let minimapCanvas = $state<HTMLCanvasElement>();
   const RULER_SIZE = 24;
@@ -344,11 +352,9 @@
     return false;
   }
 
-  /** Delete would do nothing, so the bin is not offered. */
-  function selectionAllLocked() {
-    const ids = currentSelectedIds.size ? [...currentSelectedIds] : currentSelectedId ? [currentSelectedId] : [];
-    const items = currentFloor ? lockableItems(currentFloor) : [];
-    return ids.length > 0 && ids.every(id => items.some(item => item.id === id && item.locked));
+  /** The ids the bin and Delete act on. */
+  function deleteTargetIds(): string[] {
+    return currentSelectedIds.size ? [...currentSelectedIds] : currentSelectedId ? [currentSelectedId] : [];
   }
 
   function selectAllPlanElements() {
@@ -383,8 +389,10 @@
     return snapFurnitureToWalls(pos, furniture, currentFloor.walls, snap);
   }
 
+  function snapContext(): SnapContext { return { enabled: currentSnapEnabled, snapToGrid: currentSnapToGrid, gridSize: currentGridSize, units: dimSettings.units }; }
+
   function snap(v: number): number {
-    return _snap(v, currentSnapEnabled, currentSnapToGrid, currentGridSize);
+    return snapValue(v, snapContext());
   }
 
   function screenToWorld(sx: number, sy: number): Point {
@@ -479,7 +487,7 @@
 
   function drawGrid() {
     if (!ctx || !showGrid) return;
-    const step = (currentSnapToGrid ? currentGridSize : GRID) * zoom;
+    const step = gridLineStepCm(snapContext(), GRID) * zoom;
     if (step < 4) return;
 
     // Minor grid
@@ -1198,6 +1206,7 @@
   function draw() {
     if (canvas) updateZoomControlsPosition();
     if (!ctx) return;
+    beginCaptions();
     ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = '#f8f9fa';
     ctx.fillRect(0, 0, width, height);
@@ -1739,6 +1748,8 @@
     if (annotating && annotationStart) drawAnnotationPreview();
     // Text annotations
     if (layerVis.textAnnotations && floor) drawTextAnnotations(floor);
+    drawCaptions(getCS());
+    const noted = get(currentProject); if (noted) drawNoteMarks(getCS(), noted, floor, detectedRooms);
 
     // Rotation angle tooltip while dragging rotation handle
     if (draggingHandle === 'rotate' && currentSelectedId && currentFloor) {
@@ -1885,6 +1896,12 @@
     const unsub9 = placingWindowType.subscribe((t) => { currentWindowType = t; markDirty(); });
     const unsub10 = snapEnabled.subscribe((v) => { currentSnapEnabled = v; markDirty(); });
     const unsub_snapgrid = projectSettings.subscribe((s) => { currentSnapToGrid = s.snapToGrid; currentSnapToWalls = s.snapToWalls; currentGridSize = s.gridSize; markDirty(); });
+    const unsub_house = houseFixed.subscribe((value) => { currentHouseFixed = value; markDirty(); });
+    const unsub_coarse = coarsePointer.subscribe((value) => { currentCoarse = value; markDirty(); });
+    // A sheet opening over the plan, or a request to show the selection, slides the plan; the first call is the starting value.
+    let obstruction = { right: 0, bottom: 0 }, sheetsReady = false, revealReady = false;
+    const unsub_obstruction = planObstruction.subscribe((value) => { obstruction = value; if (sheetsReady) revealSelectionClear(obstruction); sheetsReady = true; });
+    const unsub_reveal = revealSelection.subscribe(() => { if (revealReady) revealSelectionClear(obstruction); revealReady = true; });
     const unsub11 = placingStair.subscribe((v) => { isPlacingStair = v; markDirty(); });
     const unsubEnt1 = placingEntourageId.subscribe((id) => { currentEntourageDefId = id; if (id) { placingStair.set(false); placingColumn.set(false); } markDirty(); });
     const unsubEnt2 = currentProject.subscribe((pr) => {
@@ -1977,7 +1994,7 @@
     canvas.addEventListener('touchend', onTouchEnd, { passive: false });
     canvas.addEventListener('touchcancel', onTouchEnd, { passive: false });
 
-    return () => { mounted = false; drawing?.stop(); stopTextures(); resizeObs.disconnect(); unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsub13(); unsub_multi(); unsub_elevopen(); unsub_elevpick(); unsub_join(); unsub14(); unsub_col(); unsub_cols(); unsub_layers(); unsub_snapgrid(); unsubEnt1(); unsubEnt2(); document.removeEventListener('paste', handlePaste); canvas.removeEventListener('touchstart', onTouchStart); canvas.removeEventListener('touchmove', onTouchMove); canvas.removeEventListener('touchend', onTouchEnd); canvas.removeEventListener('touchcancel', onTouchEnd); };
+    return () => { mounted = false; drawing?.stop(); stopTextures(); resizeObs.disconnect(); unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsub13(); unsub_multi(); unsub_elevopen(); unsub_elevpick(); unsub_join(); unsub14(); unsub_col(); unsub_cols(); unsub_layers(); unsub_snapgrid(); unsub_house(); unsub_coarse(); unsub_obstruction(); unsub_reveal(); unsubEnt1(); unsubEnt2(); document.removeEventListener('paste', handlePaste); canvas.removeEventListener('touchstart', onTouchStart); canvas.removeEventListener('touchmove', onTouchMove); canvas.removeEventListener('touchend', onTouchEnd); canvas.removeEventListener('touchcancel', onTouchEnd); };
   });
 
   /** Compute world bounding box of all elements */
@@ -2120,10 +2137,82 @@
     return ids;
   }
 
-  function zoomToFit(selectionOnly = false) {
-    const ids = fitSelectionIds();
-    const boundsAt = (scale = 1) => selectionOnly
-      ? (currentFloor ? boundsForFloor(currentFloor,scale,ids) : null) : getFitBounds(scale);
+  /** Where the bar over the selection sits: the selected item's middle, in canvas px. */
+  function selectionAnchor(): { type: string; pos: { x: number; y: number }; door?: Door } | null {
+    const f = currentFloor;
+    if (!f) return null;
+    const wall = f.walls.find(w => w.id === currentSelectedId);
+    if (wall) {
+      const s = worldToScreen((wall.start.x + wall.end.x) / 2, (wall.start.y + wall.end.y) / 2);
+      return { type: 'wall', pos: s };
+    }
+    const door = f.doors.find(d => d.id === currentSelectedId);
+    if (door) {
+      const w = f.walls.find(w => w.id === door.wallId);
+      if (w) {
+        const s = worldToScreen(w.start.x + (w.end.x - w.start.x) * door.position, w.start.y + (w.end.y - w.start.y) * door.position);
+        return { type: 'door', pos: s, door };
+      }
+    }
+    const win = f.windows.find(w => w.id === currentSelectedId);
+    if (win) {
+      const w = f.walls.find(w => w.id === win.wallId);
+      if (w) {
+        const s = worldToScreen(w.start.x + (w.end.x - w.start.x) * win.position, w.start.y + (w.end.y - w.start.y) * win.position);
+        return { type: 'window', pos: s };
+      }
+    }
+    const furn = f.furniture.find(fi => fi.id === currentSelectedId);
+    if (furn) {
+      const s = worldToScreen(furn.position.x, furn.position.y);
+      return { type: 'furniture', pos: s };
+    }
+    const positioned = [...f.stairs ?? [], ...f.columns ?? [], ...f.entourage ?? []].find(item => item.id === currentSelectedId);
+    if (positioned) return { type: 'object', pos: worldToScreen(positioned.position.x, positioned.position.y) };
+    return null;
+  }
+
+  /** The selection's bounds on screen, in canvas px, or null when nothing is selected. */
+  function selectionScreenBox(): { left: number; top: number; right: number; bottom: number } | null {
+    if (!currentFloor) return null;
+    const bounds = boundsForFloor(currentFloor, zoom, fitSelectionIds());
+    if (!bounds) return null;
+    const a = worldToScreen(bounds.minX, bounds.minY), b = worldToScreen(bounds.maxX, bounds.maxY);
+    return { left: a.x, top: a.y, right: b.x, bottom: b.y };
+  }
+
+  function deleteAuxiliary(kind: 'measurement' | 'annotation' | 'text', id: string) {
+    if (kind === 'measurement') removeMeasurement(id);
+    else if (kind === 'annotation') removeAnnotation(id);
+    else removeTextAnnotation(id);
+    clearAuxiliarySelection();
+  }
+
+  /** Slide the plan so the selection is clear of what covers its right and bottom edges (CSS px). */
+  function revealSelectionClear(obstruction: { right: number; bottom: number }) {
+    const box = selectionScreenBox();
+    const cssWidth = canvas?.getBoundingClientRect().width;
+    if (!box || !cssWidth) return;
+    const toCanvas = width / cssWidth;
+    const { dx, dy } = shiftToReveal(box, { width, height }, { right: obstruction.right * toCanvas, bottom: obstruction.bottom * toCanvas });
+    if (!dx && !dy) return;
+    camX -= dx / zoom; camY -= dy / zoom;
+    markDirty();
+  }
+
+  let lastFitPress = 0;
+  /** Fit frames what fitIds picks; a second press within 3 s frames everything. */
+  function onFitPressed() { const again = Date.now() - lastFitPress < 3000; lastFitPress = again ? 0 : Date.now(); zoomToFit(false, again); }
+
+  function zoomToFit(selectionOnly = false, everything = false) {
+    const scoped = selectionOnly ? fitSelectionIds() : currentFloor ? fitIds(currentFloor, currentHouseFixed, everything) : undefined;
+    const boundsAt = (scale = 1) => {
+      if (scoped) {
+        const scopedBounds = currentFloor ? boundsForFloor(currentFloor, scale, scoped) : null;
+        if (scopedBounds || selectionOnly) return scopedBounds;
+      }
+      return getFitBounds(scale);
+    };
     const bounds = boundsAt();
     if (!bounds && selectionOnly) return;
     if (!bounds) { camX = 0; camY = 0; zoom = 1; minimumZoom = 0.1; markDirty(); return; }
@@ -2172,12 +2261,6 @@
   function findFurnitureAt(p: Point): FurnitureItem | null {
     if (!currentFloor) return null;
     return _findFurnitureAt(p, currentFloor.furniture);
-  }
-
-  /** A plain press passes through locked items; Layers, Select All, modifier clicks and the context menu still reach them. */
-  function unlockedOnly(floor: Floor): Floor {
-    return { ...floor, furniture: floor.furniture.filter(item => !item.locked), entourage: floor.entourage?.filter(item => !item.locked),
-      textAnnotations: floor.textAnnotations?.filter(item => !item.locked) };
   }
 
   function findColumnAt(p: Point): Column | null {
@@ -2287,7 +2370,8 @@
     const rect = canvas.getBoundingClientRect();
     const wp = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
     const tool = currentTool;
-    const hitFloor = currentFloor && !e.shiftKey && !e.ctrlKey && !e.metaKey ? unlockedOnly(currentFloor) : currentFloor;
+    // A plain press passes through locked items; Layers, Select All, modifier clicks and the context menu still reach them.
+    const hitFloor = currentFloor && !e.shiftKey && !e.ctrlKey && !e.metaKey ? interactiveFloor(currentFloor, false) : currentFloor;
     if (tool === 'select' && currentFloor && e.detail === 1) {
       selectionPress = { floorId: currentFloor.id, x: e.clientX, y: e.clientY, world: wp };
     }
@@ -2431,6 +2515,11 @@
     }
 
     // Text annotation click detection (select + drag)
+    if (tool === 'select' && currentFloor) {
+      const noted = get(currentProject);
+      const mark = noted ? noteMarkAt({ x: e.clientX - rect.left, y: e.clientY - rect.top }, getCS(), noted, currentFloor, detectedRooms) : null;
+      if (mark) { noteTarget.set(mark); return; }
+    }
     if (tool === 'select' && currentFloor && hitFloor) {
       const textHitId = hitTestTextAnnotation(wp, hitFloor);
       if (textHitId && (e.ctrlKey || e.metaKey || !(currentSelectedIds.size >= 2 && currentSelectedIds.has(textHitId)))) {
@@ -2636,6 +2725,7 @@
         if (selectElement(fi.id, e.shiftKey, e.ctrlKey || e.metaKey)) return;
         if (!e.shiftKey && !fi.locked) {
           draggingFurnitureId = fi.id;
+          dragStartPosition = { ...fi.position };
           dragOffset = { x: wp.x - fi.position.x, y: wp.y - fi.position.y };
           dragStartRotation = fi.rotation;
           dragWasWallSnapped = false;
@@ -2986,6 +3076,7 @@
             handle: draggingHandle,
             pointer: mousePos,
             preserveAspectRatio: shiftDown,
+            sizeStep: resizeStep(snapContext()),
           });
           transformFurnitureDuringDrag(currentSelectedId, {
             position: resized.position,
@@ -3036,7 +3127,7 @@
           dragWasWallSnapped = true;
           wallSnapInfo = { wallId: wallSnap.wallId, side: wallSnap.side, wallAngle: wallSnap.wallAngle };
         } else {
-          const snapped = { x: snap(basePos.x), y: snap(basePos.y) };
+          const snapped = snapPieceMove(basePos, dragStartPosition, snapContext());
           // Snap to guide lines
           const GUIDE_SNAP = 10; // world units
           if (currentFloor?.guides) {
@@ -3050,7 +3141,7 @@
             }
           }
           transformFurnitureDuringDrag(draggingFurnitureId, {
-            position: snapped,
+            position: stopAtWalls(snapped, fi.position, fi, currentFloor?.walls ?? []),
             ...(dragWasWallSnapped ? { rotation: dragStartRotation } : {}),
           });
           dragWasWallSnapped = false;
@@ -3369,6 +3460,31 @@
     return { x: wallStart.x + (dx / d) * lenCm, y: wallStart.y + (dy / d) * lenCm };
   }
 
+  /** What Escape does on the plan: drop the gesture in progress and any tool's half-made item. */
+  function cancelTool() {
+    splitBlocked = false;
+    calibrationMode.set(false);
+    calibrationPoints.set([]);
+    doorJoinMode.set(null);
+    finishCanvasGesture();
+    clearAuxiliarySelection();
+    selectedRoomId.set(null);
+    elevationPickMode.set(false);
+    wallStart = null; wallSequenceFirst = null; typedWallLength = '';
+    placingFurnitureId.set(null);
+    placingEntourageId.set(null);
+    placingStair.set(false);
+    placingColumn.set(false);
+    placingRotation.set(0);
+    editingTextAnnotationId = null;
+    textAnnotationMode = false;
+    measureStart = null;
+    measureEnd = null;
+    annotationStart = null;
+    marqueeStart = null;
+    marqueeEnd = null;
+  }
+
   function onKeyDown(e: KeyboardEvent) {
     if (hasOpenModal()) return;
     if (e.target === canvas && (e.key === 'ContextMenu' || (e.key === 'F10' && e.shiftKey))) {
@@ -3455,27 +3571,7 @@
 
     // Canvas-specific Escape handling (before global shortcut eats it)
     if (e.code === 'Escape') {
-      splitBlocked = false;
-      calibrationMode.set(false);
-      calibrationPoints.set([]);
-      doorJoinMode.set(null);
-      finishCanvasGesture();
-      clearAuxiliarySelection();
-      selectedRoomId.set(null);
-      elevationPickMode.set(false);
-      wallStart = null; wallSequenceFirst = null; typedWallLength = '';
-      placingFurnitureId.set(null);
-      placingEntourageId.set(null);
-      placingStair.set(false);
-      placingColumn.set(false);
-      placingRotation.set(0);
-      editingTextAnnotationId = null;
-      textAnnotationMode = false;
-      measureStart = null;
-      measureEnd = null;
-      annotationStart = null;
-      marqueeStart = null;
-      marqueeEnd = null;
+      cancelTool();
     }
 
     // Select All (Ctrl+A / Cmd+A)
@@ -4107,258 +4203,42 @@
       onclick={onMinimapClick}
     ></canvas>
   {/if}
-  <!-- Keep controls above classic horizontal scrollbars, which consume height on Linux. -->
-  <div style:--visible-bottom={`${zoomControlsBottom}px`} class="absolute bottom-2 right-2 max-md:bottom-[calc(var(--visible-bottom)+3rem)] max-md:left-2 max-md:overflow-x-auto max-md:min-h-12 max-md:items-center max-md:whitespace-nowrap max-md:[&>*]:shrink-0 bg-white/80 rounded px-2 py-1 text-xs text-gray-500 flex gap-3">
-    {#if detectedRooms.length > 0}
-      <span>{$t(detectedRooms.length === 1 ? 'canvasStatus.roomsOne' : 'canvasStatus.roomsMany', { count: detectedRooms.length })}</span>
-      <span>{formatArea(detectedRooms.reduce((s, r) => s + r.area, 0), $projectSettings.units)}</span>
-      <span class="text-gray-300">|</span>
-    {/if}
-    {#if currentFloor}
-      <span>{$t(currentFloor.walls.length === 1 ? 'canvasStatus.wallsOne' : 'canvasStatus.wallsMany', { count: currentFloor.walls.length })}</span>
-      {#if currentFloor.doors.length > 0}
-        <span>{$t(currentFloor.doors.length === 1 ? 'canvasStatus.doorsOne' : 'canvasStatus.doorsMany', { count: currentFloor.doors.length })}</span>
-      {/if}
-      {#if currentFloor.windows.length > 0}
-        <span>{$t(currentFloor.windows.length === 1 ? 'canvasStatus.windowsOne' : 'canvasStatus.windowsMany', { count: currentFloor.windows.length })}</span>
-      {/if}
-      {#if currentFloor.furniture.length > 0}
-        <span>{$t(currentFloor.furniture.length === 1 ? 'canvasStatus.objectsOne' : 'canvasStatus.objectsMany', { count: currentFloor.furniture.length })}</span>
-      {/if}
-      <span class="text-gray-300">|</span>
-    {/if}
-    {#if currentSelectedIds.size > 1}
-      <span class="text-blue-600 font-medium">{$t('canvasStatus.selected', { count: currentSelectedIds.size })}</span>
-      <span class="text-gray-300">|</span>
-    {/if}
-    <span>{$t('canvasStatus.zoom', { value: Math.round(zoom * 100) })}</span>
-    <button class="hover:text-gray-700" onclick={() => zoomToFit()} title={$t('canvasZoom.fitHint')}>⊞ {$t('canvasDisplay.fit')}</button>
-    <button class="hover:text-gray-700" onclick={() => showGrid = !showGrid} title={$t('canvasDisplay.gridHint')} aria-pressed={showGrid}>
-      {showGrid ? '▦' : '▢'} {$t('canvasDisplay.grid')}
-    </button>
-    <!-- Snap (S) picks the step snapping rounds to and shows it; the top-bar Snap to Grid turns snapping off, and then this reads "Snap off". -->
-    <button class="hover:text-gray-700" onclick={() => projectSettings.update(s => ({ ...s, snapToGrid: !s.snapToGrid }))} title={snapControl.title} aria-pressed={snapControl.pressed}>
-      <span class:opacity-40={!currentSnapEnabled}>🧲</span> {snapControl.label}
-    </button>
-    <button class="hover:text-gray-700" onclick={() => layerVisibility.update(v => ({ ...v, furniture: !v.furniture }))} title={$t('canvasDisplay.furnitureHint')} aria-pressed={showFurniture}>
-      {showFurniture ? '🪑' : '👻'} {$t('canvasDisplay.furniture')}
-    </button>
-    <button class="hover:text-gray-700" onclick={() => showLayerPanel = !showLayerPanel} title={$t('layerVisibility.title')}>
-      🗂 {$t('layers.title')}
-    </button>
-    <button class="hover:text-gray-700" onclick={() => showRulers = !showRulers} title={$t('canvasDisplay.rulersHint')} aria-pressed={showRulers}>
-      {showRulers ? '📏' : '📐'} {$t('canvasDisplay.rulers')}
-    </button>
-    <button class="hover:text-gray-700" onclick={() => showMinimap = !showMinimap} title={$t('canvasDisplay.mapHint')} aria-pressed={showMinimap}>
-      {showMinimap ? '🗺' : '🗺'} {$t('canvasDisplay.map')}
-    </button>
-  </div>
-  <!-- Layer Visibility Panel -->
-  {#if showLayerPanel}
-    <div style:--visible-bottom={`${zoomControlsBottom}px`} class="absolute bottom-12 right-2 max-md:bottom-[calc(var(--visible-bottom)+6rem)] z-20 bg-white rounded-lg shadow-lg border border-gray-200 p-3 text-xs min-w-[160px]">
-      <div class="font-semibold text-gray-700 mb-2">{$t('layers.title')}</div>
-      {#each [['walls',$t('layers.walls')],['doors',$t('layers.doors')],['windows',$t('layers.windows')],['furniture',$t('layers.furniture')],['stairs',$t('layers.stairs')],['columns',$t('layers.columns')],['guides',$t('layers.guides')],['measurements',$t('layers.measurements')],['annotations',$t('layerVisibility.dimensions')],['textAnnotations',$t('layers.textAnnotations')]] as [key, label]}
-        <label class="flex items-center gap-2 py-0.5 cursor-pointer hover:bg-gray-50 rounded px-1">
-          <input type="checkbox" checked={(layerVis as Record<string, boolean>)[key]} onchange={() => layerVisibility.update(v => ({ ...v, [key]: !(v as Record<string, boolean>)[key] }))} class="accent-blue-500" />
-          <span>{label}</span>
-        </label>
-      {/each}
-      <hr class="my-1 border-gray-100" />
-      <label class="flex items-center gap-2 py-0.5 cursor-pointer hover:bg-gray-50 rounded px-1" class:opacity-40={!floorBelow}>
-        <input type="checkbox" checked={layerVis.floorBelow} disabled={!floorBelow} onchange={() => layerVisibility.update(v => ({ ...v, floorBelow: !v.floorBelow }))} class="accent-blue-500" />
-        <span>{floorBelow ? $t('layerVisibility.belowNamed', { name: floorBelow.name }) : $t('layerVisibility.below')}</span>
-      </label>
-      <label class="flex items-center gap-2 py-0.5 cursor-pointer hover:bg-gray-50 rounded px-1">
-        <input type="checkbox" checked={showRoomLabels} onchange={() => layerVisibility.update(v => ({ ...v, roomLabels: !v.roomLabels }))} class="accent-blue-500" />
-        <span>{$t('layerVisibility.roomLabels')}</span>
-      </label>
-      <label class="flex items-center gap-2 py-0.5 cursor-pointer hover:bg-gray-50 rounded px-1">
-        <input type="checkbox" checked={showDimensions} onchange={() => projectSettings.update(s => ({ ...s, showDimensions: !s.showDimensions }))} class="accent-blue-500" />
-        <span>{$t('layerVisibility.automaticDimensions')}</span>
-      </label>
-    </div>
-  {/if}
+  <StatusBar rooms={detectedRooms} floor={currentFloor} {floorBelow} selectedCount={currentSelectedIds.size} {zoom} {snapControl} snapEnabled={currentSnapEnabled} {layerVis} {showRoomLabels} {showDimensions} bottomInset={zoomControlsBottom} bind:showGrid bind:showRulers bind:showMinimap onfit={onFitPressed} />
 
   <!-- Contextual Toolbar (hidden while the integrated elevation view covers the canvas) -->
   {#if (currentSelectedId || currentSelectedIds.size > 0) && currentFloor && currentTool === 'select' && !elevationOpen}
-    {@const el = (() => {
-      const f = currentFloor;
-      const wall = f.walls.find(w => w.id === currentSelectedId);
-      if (wall) {
-        const s = worldToScreen((wall.start.x + wall.end.x) / 2, (wall.start.y + wall.end.y) / 2);
-        return { type: 'wall', pos: s };
-      }
-      const door = f.doors.find(d => d.id === currentSelectedId);
-      if (door) {
-        const w = f.walls.find(w => w.id === door.wallId);
-        if (w) {
-          const s = worldToScreen(w.start.x + (w.end.x - w.start.x) * door.position, w.start.y + (w.end.y - w.start.y) * door.position);
-          return { type: 'door', pos: s, door };
+    <SelectionToolbar anchor={selectionAnchor()} box={selectionScreenBox()} selectedId={currentSelectedId} selectedIds={currentSelectedIds}
+      floorId={currentFloor.id} locked={allLocked(currentFloor, deleteTargetIds())} extra={null}
+      onsplit={() => {
+        if (currentSelectedId) {
+          const newId = trySplitWall(currentSelectedId, 0.5);
+          if (newId) selectedElementId.set(null);
         }
-      }
-      const win = f.windows.find(w => w.id === currentSelectedId);
-      if (win) {
-        const w = f.walls.find(w => w.id === win.wallId);
-        if (w) {
-          const s = worldToScreen(w.start.x + (w.end.x - w.start.x) * win.position, w.start.y + (w.end.y - w.start.y) * win.position);
-          return { type: 'window', pos: s };
-        }
-      }
-      const furn = f.furniture.find(fi => fi.id === currentSelectedId);
-      if (furn) {
-        const s = worldToScreen(furn.position.x, furn.position.y);
-        return { type: 'furniture', pos: s };
-      }
-      const positioned = [...f.stairs ?? [], ...f.columns ?? [], ...f.entourage ?? []].find(item => item.id === currentSelectedId);
-      if (positioned) return { type: 'object', pos: worldToScreen(positioned.position.x, positioned.position.y) };
-      return null;
-    })()}
-    {#if el}
-      <div
-        class="absolute z-40 flex items-center gap-0.5 bg-white rounded-lg shadow-lg border border-gray-200 px-1 py-0.5"
-        style="left: {el.pos.x}px; top: {el.pos.y - 44}px; transform: translateX(-50%);"
-      >
-        <button
-          class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
-          title={$t('contextMenu.duplicate')}
-          aria-label={$t('contextMenu.duplicate')}
-          onclick={() => {
-            if (!currentSelectedId || !currentFloor) return;
-            const ids = currentSelectedIds.size ? currentSelectedIds : new Set([currentSelectedId]);
-            const newIds = duplicateSelection(ids);
-            if (newIds.length) {
-              selectedElementIds.set(new Set(newIds));
-              selectedElementId.set(newIds[0]);
-            }
-          }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-        </button>
-        {#if el.type === 'door' && el.door}
-          <button
-            class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
-            title={$t('canvasActions.flipSwing')}
-            aria-label={$t('canvasActions.flipSwing')}
-            onclick={() => { if (el.door) updateDoor(el.door.id, { swingDirection: el.door.swingDirection === 'left' ? 'right' : 'left' }); }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
-          </button>
-        {/if}
-        {#if el.type === 'wall' && currentSelectedId && currentSelectedIds.size === 0}
-          <button
-            class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
-            title={$t('canvasActions.splitMidpoint')}
-            aria-label={$t('canvasActions.splitMidpoint')}
-            onclick={() => {
-              if (currentSelectedId) {
-                const newId = trySplitWall(currentSelectedId, 0.5);
-                if (newId) selectedElementId.set(null);
-              }
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 12h4M16 12h4"/></svg>
-          </button>
-        {/if}
-        {#if currentSelectedId && currentSelectedIds.size === 0}
-          <MoveToFloorMenu ids={new Set([currentSelectedId])} />
-        {/if}
-        {#if !selectionAllLocked()}
-        <div class="w-px h-5 bg-gray-200 mx-0.5"></div>
-        <button
-          class="w-7 h-7 flex items-center justify-center rounded hover:bg-red-50 text-gray-400 hover:text-red-600"
-          title={$t('contextMenu.delete')}
-          aria-label={$t('contextMenu.delete')}
-          onclick={() => {
-            if (currentSelectedIds.size > 0) {
-              beginUndoGroup();
-              for (const id of currentSelectedIds) removeElement(id);
-              endUndoGroup();
-              selectedElementIds.set(new Set());
-              selectedElementId.set(null);
-            } else if (currentSelectedId) {
-              removeElement(currentSelectedId);
-              selectedElementId.set(null);
-            }
-          }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14"/></svg>
-        </button>
-        {/if}
-      </div>
-    {/if}
+      }}
+      ondeleteextra={deleteAuxiliary} />
   {/if}
-  {#if currentTool === 'wall' && wallStart}
-    <div class="absolute top-2 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-3 py-1 rounded-full text-xs shadow">
-      {$t('canvasHints.wall')}
-    </div>
-  {/if}
-  {#if currentPlacingId && currentTool === 'furniture'}
-    <div class="absolute top-2 left-1/2 -translate-x-1/2 bg-purple-600 text-white px-3 py-1 rounded-full text-xs shadow">
-      {$t('canvasHints.furniture', { angle: currentPlacingRotation })}
-    </div>
-  {/if}
-  {#if measuring}
-    <div class="absolute top-2 left-1/2 -translate-x-1/2 bg-red-600 text-white px-3 py-1 rounded-full text-xs shadow">
-      {$t('canvasHints.measure')}
-    </div>
-  {/if}
-  {#if textAnnotationMode}
-    <div class="absolute top-2 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-3 py-1 rounded-full text-xs shadow">
-      {$t('canvasHints.text')}
-    </div>
-  {/if}
-  {#if annotating}
-    <div class="absolute top-2 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-3 py-1 rounded-full text-xs shadow">
-      {$t(annotationStart ? 'canvasHints.annotateEnd' : 'canvasHints.annotateStart')}
-    </div>
-  {/if}
+  <ToolHints wallStarted={currentTool === 'wall' && !!wallStart}
+    placingRotation={currentPlacingId && currentTool === 'furniture' ? currentPlacingRotation : null}
+    {measuring} textMode={textAnnotationMode} {annotating} annotationStarted={!!annotationStart}
+    ondone={() => { cancelTool(); selectedTool.set('select'); }} />
 
-  <!-- Zoom Controls (bottom-left) -->
-  <div style:bottom={`${zoomControlsBottom}px`} class="absolute left-3 max-md:left-20 z-20 flex items-center gap-1 bg-white rounded-lg shadow-lg border border-gray-200 px-1 py-0.5">
-    <button
-      class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-600 hover:text-gray-800 font-bold text-lg"
-      title={$t('canvasZoom.outHint')}
-      aria-label={$t('canvasZoom.out')}
-      onclick={() => {
-        const newZoom = Math.max(minimumZoom, zoom * 0.8);
-        // Zoom towards canvas center
-        const worldCX = (width / 2 - width / 2) / zoom + camX;
-        const worldCY = (height / 2 - height / 2) / zoom + camY;
-        camX = worldCX - (width / 2 - width / 2) / newZoom;
-        camY = worldCY - (height / 2 - height / 2) / newZoom;
-        zoom = newZoom;
-      }}
-    >−</button>
-    <button
-      class="min-w-[3.5rem] h-7 flex items-center justify-center rounded hover:bg-gray-100 text-xs font-medium text-gray-600 hover:text-gray-800 tabular-nums"
-      title={$t('canvasZoom.resetHint')}
-      aria-label={$t('canvasZoom.reset')}
-      onclick={() => { zoom = 1; }}
-    >{zoom < 0.01 ? (zoom * 100).toPrecision(2) : Math.round(zoom * 100)}%</button>
-    <button
-      class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-600 hover:text-gray-800 font-bold text-lg"
-      title={$t('canvasZoom.inHint')}
-      aria-label={$t('canvasZoom.in')}
-      onclick={() => {
-        const newZoom = Math.min(10, zoom * 1.25);
-        zoom = newZoom;
-      }}
-    >+</button>
-    <div class="w-px h-5 bg-gray-200"></div>
-    <button
-      class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700 text-sm"
-      title={$t('canvasZoom.fitHint')}
-      aria-label={$t('canvasZoom.fit')}
-      onclick={() => zoomToFit()}
-    >⊞</button>
-    <button
-      class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700 text-sm disabled:opacity-30 disabled:cursor-not-allowed"
-      title={$t('canvasZoom.selectionHint')}
-      aria-label={$t('canvasZoom.selection')}
-      disabled={fitSelectionIds().size === 0}
-      onclick={() => zoomToFit(true)}
-    >⊡</button>
-  </div>
+  <ZoomControls {zoom} {minimumZoom} bottom={zoomControlsBottom} canFitSelection={fitSelectionIds().size > 0}
+    onzoomout={() => {
+      const newZoom = Math.max(minimumZoom, zoom * 0.8);
+      // Zoom towards canvas center
+      const worldCX = (width / 2 - width / 2) / zoom + camX;
+      const worldCY = (height / 2 - height / 2) / zoom + camY;
+      camX = worldCX - (width / 2 - width / 2) / newZoom;
+      camY = worldCY - (height / 2 - height / 2) / newZoom;
+      zoom = newZoom;
+    }}
+    onreset={() => { zoom = 1; }}
+    onzoomin={() => {
+      const newZoom = Math.min(10, zoom * 1.25);
+      zoom = newZoom;
+    }}
+    onfit={onFitPressed}
+    onfitselection={() => zoomToFit(true)} />
 
   {#if splitBlocked}
     <div role="status" class="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 shadow-md max-w-[90%]">
@@ -4377,6 +4257,7 @@
     targetWall={ctxMenuWall}
     targetFurniture={ctxMenuFurniture}
     targetRoom={ctxMenuRoom}
+    deletable={!currentFloor || !ctxMenuTargetId || !isLocked(currentFloor, ctxMenuTargetId)}
     clipboard={clipboard}
     onclose={() => { ctxMenuVisible = false; }}
     onaction={handleContextMenuAction}
