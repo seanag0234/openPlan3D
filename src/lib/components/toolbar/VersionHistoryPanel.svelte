@@ -81,7 +81,7 @@
               </div>
               <button
                 onclick={() => onRestore(realIndex, snap)}
-                class="text-xs px-2.5 py-1 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 font-medium shrink-0 ml-2"
+                class="text-xs px-2.5 py-1 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors opacity-100 [@media(hover:hover)]:md:opacity-0 [@media(hover:hover)]:md:group-hover:opacity-100 focus-visible:opacity-100 font-medium shrink-0 ml-2"
               >
                 {$t('versions.restore')}
               </button>
