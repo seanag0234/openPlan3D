@@ -21,7 +21,7 @@
   import FurnitureThumbnail from './FurnitureThumbnail.svelte';
   import CustomModelPanel from './CustomModelPanel.svelte';
   import { createProjectFromRoomPlan, extractRoomJsonFromZip, importRoomPlanFloors, interchangeStateFromRoomPlan, roomPlanImportOptions, roomPlanStoryIndices, validateRoomPlan, ORTHO_VERSION } from '$lib/utils/roomplanImport';
-  import { addRoomPlanFloorToFloor, addRoomPlanFloorsToProject, currentProject, selectImportedElements } from '$lib/stores/project';
+  import { addRoomPlanFloorToFloor, addRoomPlanFloorsToProject, currentProject, selectImportedElements, addFurniture, updateFurniture, beginUndoGroup, endUndoGroup, selectedElementId, selectedElementIds } from '$lib/stores/project';
   import { orderedFloors } from '$lib/utils/floors';
   import { selectableContentIds, type AddedContent } from '$lib/utils/roomplanMerge';
   import { interchangeProjectName } from '$lib/utils/interchange';
@@ -86,6 +86,19 @@
   }
 
   let withFurniture = $state(true);
+
+  const BOX_CM = 91.44; // 3 ft
+  /** A plain box, named, in the middle of what the plan shows, selected, in one Undo step. */
+  function addPlainBox(name: string) {
+    const label = name.trim().slice(0, 60) || $t('adding.boxName');
+    beginUndoGroup();
+    const id = addFurniture('imported_object', { x: get(canvasCamX), y: get(canvasCamY) });
+    updateFurniture(id, { name: label, width: BOX_CM, depth: BOX_CM, height: BOX_CM });
+    endUndoGroup('Added a box');
+    selectedTool.set('select'); placingFurnitureId.set(null);
+    selectedElementId.set(id); selectedElementIds.set(new Set());
+    search = '';
+  }
 
   let search = $state('');
 
@@ -665,6 +678,13 @@
 
     {:else if activeTab === 'objects'}
       <div class="space-y-2">
+        <button
+          class="w-full flex flex-col items-start gap-0.5 px-3 py-2 rounded-lg border-2 border-dashed border-blue-300 text-left text-blue-800 hover:bg-blue-50 transition-colors [@media(pointer:coarse)]:min-h-11"
+          onclick={() => addPlainBox('')}
+        >
+          <span class="text-sm font-medium">{$t('adding.addBox')}</span>
+          <span class="text-xs text-gray-600">{$t('adding.addBoxHelp')}</span>
+        </button>
         <CustomModelPanel />
         <!-- Search with clear button and result count -->
         <div class="relative">
