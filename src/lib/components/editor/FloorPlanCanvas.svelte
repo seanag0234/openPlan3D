@@ -10,7 +10,8 @@
   import { planContentBounds, hasPlanContent } from '$lib/utils/planContentBounds';
   import { connectedWallEndpoints } from '$lib/utils/wallEditing';
   import { createDrawScheduler } from '$lib/utils/drawScheduler';
-  import { activeFloor, selectedTool, selectedElementId, selectedElementIds, selectedRoomId, addWall, addDoor, addWindow, updateWall, moveWallEndpoint, moveWallGeometryDuringDrag, updateDoor, updateWindow, addFurniture, moveFurniture, transformFurnitureDuringDrag, rotateFurniture, rotateSelection, setFurnitureRotation, scaleFurniture, removeElement, placingFurnitureId, placingRotation, placingDoorType, placingWindowType, detectedRoomsStore, duplicateDoor, duplicateWindow, duplicateFurniture, duplicateSelection, pasteSelection, moveWallParallel, splitWall, wallSplitIntersectsOpening, snapEnabled, placingStair, addStair, moveStair, updateStair, placingColumn, placingColumnShape, addColumn, moveColumn, updateColumn, calibrationMode, calibrationPoints, updateBackgroundImage, setBackgroundImage, canvasZoom, canvasMinimumZoom, canvasCamX, canvasCamY, panMode, showFurnitureStore, addGuide, moveGuide, removeGuide, beginUndoGroup, endUndoGroup, layerVisibility, updateRoom, addMeasurement, updateMeasurement, removeMeasurement, addAnnotation, removeAnnotation, updateAnnotation, addTextAnnotation, removeTextAnnotation, updateTextAnnotation, moveTextAnnotation, toggleFurnitureLock, toggleSelectionLock, createGroup, ungroupElements, findGroupForElement, placingEntourageId, addEntourageItem, moveEntourage, resizeEntourage, currentProject, elevationWallId, elevationPickMode, doorJoinMode, joinScanDoors, lockableItems } from '$lib/stores/project';
+  import { activeFloor, selectedTool, selectedElementId, selectedElementIds, selectedRoomId, addWall, addDoor, addWindow, updateWall, moveWallEndpoint, moveWallGeometryDuringDrag, updateDoor, updateWindow, addFurniture, moveFurniture, transformFurnitureDuringDrag, rotateFurniture, rotateSelection, setFurnitureRotation, scaleFurniture, removeElement, placingFurnitureId, placingRotation, placingDoorType, placingWindowType, detectedRoomsStore, duplicateDoor, duplicateWindow, duplicateFurniture, duplicateSelection, pasteSelection, moveWallParallel, splitWall, wallSplitIntersectsOpening, snapEnabled, placingStair, addStair, moveStair, updateStair, placingColumn, placingColumnShape, addColumn, moveColumn, updateColumn, calibrationMode, calibrationPoints, updateBackgroundImage, setBackgroundImage, canvasZoom, canvasMinimumZoom, canvasCamX, canvasCamY, panMode, showFurnitureStore, addGuide, moveGuide, removeGuide, beginUndoGroup, endUndoGroup, layerVisibility, updateRoom, addMeasurement, updateMeasurement, removeMeasurement, addAnnotation, removeAnnotation, updateAnnotation, addTextAnnotation, removeTextAnnotation, updateTextAnnotation, moveTextAnnotation, toggleFurnitureLock, toggleSelectionLock, createGroup, ungroupElements, findGroupForElement, placingEntourageId, addEntourageItem, moveEntourage, resizeEntourage, currentProject, elevationWallId, elevationPickMode, doorJoinMode, joinScanDoors } from '$lib/stores/project';
+  import { allLocked, interactiveFloor, isLocked, unlockedOnly } from '$lib/utils/editPolicy';
   import type { Point, Wall, Door, Window as Win, FurnitureItem, Stair, Column, GuideLine, Measurement, Annotation, TextAnnotation, CustomEntourageDef } from '$lib/models/types';
   import type { Floor, Room } from '$lib/models/types';
   import { resolveRoomGeometry, roomLabelPosition, roomCentroid } from '$lib/utils/roomDetection';
@@ -344,11 +345,9 @@
     return false;
   }
 
-  /** Delete would do nothing, so the bin is not offered. */
-  function selectionAllLocked() {
-    const ids = currentSelectedIds.size ? [...currentSelectedIds] : currentSelectedId ? [currentSelectedId] : [];
-    const items = currentFloor ? lockableItems(currentFloor) : [];
-    return ids.length > 0 && ids.every(id => items.some(item => item.id === id && item.locked));
+  /** The ids the bin and Delete act on. */
+  function deleteTargetIds(): string[] {
+    return currentSelectedIds.size ? [...currentSelectedIds] : currentSelectedId ? [currentSelectedId] : [];
   }
 
   function selectAllPlanElements() {
@@ -2174,12 +2173,6 @@
     return _findFurnitureAt(p, currentFloor.furniture);
   }
 
-  /** A plain press passes through locked items; Layers, Select All, modifier clicks and the context menu still reach them. */
-  function unlockedOnly(floor: Floor): Floor {
-    return { ...floor, furniture: floor.furniture.filter(item => !item.locked), entourage: floor.entourage?.filter(item => !item.locked),
-      textAnnotations: floor.textAnnotations?.filter(item => !item.locked) };
-  }
-
   function findColumnAt(p: Point): Column | null {
     if (!currentFloor) return null;
     return _findColumnAt(p, currentFloor.columns);
@@ -2287,7 +2280,8 @@
     const rect = canvas.getBoundingClientRect();
     const wp = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
     const tool = currentTool;
-    const hitFloor = currentFloor && !e.shiftKey && !e.ctrlKey && !e.metaKey ? unlockedOnly(currentFloor) : currentFloor;
+    // A plain press passes through locked items; Layers, Select All, modifier clicks and the context menu still reach them.
+    const hitFloor = currentFloor && !e.shiftKey && !e.ctrlKey && !e.metaKey ? interactiveFloor(currentFloor, false) : currentFloor;
     if (tool === 'select' && currentFloor && e.detail === 1) {
       selectionPress = { floorId: currentFloor.id, x: e.clientX, y: e.clientY, world: wp };
     }
@@ -4262,7 +4256,7 @@
         {#if currentSelectedId && currentSelectedIds.size === 0}
           <MoveToFloorMenu ids={new Set([currentSelectedId])} />
         {/if}
-        {#if !selectionAllLocked()}
+        {#if !currentFloor || !allLocked(currentFloor, deleteTargetIds())}
         <div class="w-px h-5 bg-gray-200 mx-0.5"></div>
         <button
           class="w-7 h-7 flex items-center justify-center rounded hover:bg-red-50 text-gray-400 hover:text-red-600"
@@ -4377,6 +4371,7 @@
     targetWall={ctxMenuWall}
     targetFurniture={ctxMenuFurniture}
     targetRoom={ctxMenuRoom}
+    deletable={!currentFloor || !ctxMenuTargetId || !isLocked(currentFloor, ctxMenuTargetId)}
     clipboard={clipboard}
     onclose={() => { ctxMenuVisible = false; }}
     onaction={handleContextMenuAction}
