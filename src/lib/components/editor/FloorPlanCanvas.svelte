@@ -25,6 +25,7 @@
   import { handleGlobalShortcut, isEditingField, isControlKey } from '$lib/utils/shortcuts';
   import { hasOpenModal } from '$lib/utils/modalDialog';
   import { focusInlineEditor } from '$lib/utils/inlineEditorFocus';
+  import StatusBar from './canvas/StatusBar.svelte';
   import ContextMenu from './ContextMenu.svelte';
   import MoveToFloorMenu from './MoveToFloorMenu.svelte';
   import { roomPresets, placePreset } from '$lib/utils/roomPresets';
@@ -192,7 +193,6 @@
     markDirty();
   }));
   let showStairs = $derived(layerVis.stairs);
-  let showLayerPanel = $state(false);
   let showMinimap = $state(true);
   let minimapCanvas = $state<HTMLCanvasElement>();
   const RULER_SIZE = 24;
@@ -4096,77 +4096,7 @@
       onclick={onMinimapClick}
     ></canvas>
   {/if}
-  <!-- Keep controls above classic horizontal scrollbars, which consume height on Linux. -->
-  <div style:--visible-bottom={`${zoomControlsBottom}px`} class="absolute bottom-2 right-2 max-md:bottom-[calc(var(--visible-bottom)+3rem)] max-md:left-2 max-md:overflow-x-auto max-md:min-h-12 max-md:items-center max-md:whitespace-nowrap max-md:[&>*]:shrink-0 bg-white/80 rounded px-2 py-1 text-xs text-gray-500 flex gap-3">
-    {#if detectedRooms.length > 0}
-      <span>{$t(detectedRooms.length === 1 ? 'canvasStatus.roomsOne' : 'canvasStatus.roomsMany', { count: detectedRooms.length })}</span>
-      <span>{formatArea(detectedRooms.reduce((s, r) => s + r.area, 0), $projectSettings.units)}</span>
-      <span class="text-gray-300">|</span>
-    {/if}
-    {#if currentFloor}
-      <span>{$t(currentFloor.walls.length === 1 ? 'canvasStatus.wallsOne' : 'canvasStatus.wallsMany', { count: currentFloor.walls.length })}</span>
-      {#if currentFloor.doors.length > 0}
-        <span>{$t(currentFloor.doors.length === 1 ? 'canvasStatus.doorsOne' : 'canvasStatus.doorsMany', { count: currentFloor.doors.length })}</span>
-      {/if}
-      {#if currentFloor.windows.length > 0}
-        <span>{$t(currentFloor.windows.length === 1 ? 'canvasStatus.windowsOne' : 'canvasStatus.windowsMany', { count: currentFloor.windows.length })}</span>
-      {/if}
-      {#if currentFloor.furniture.length > 0}
-        <span>{$t(currentFloor.furniture.length === 1 ? 'canvasStatus.objectsOne' : 'canvasStatus.objectsMany', { count: currentFloor.furniture.length })}</span>
-      {/if}
-      <span class="text-gray-300">|</span>
-    {/if}
-    {#if currentSelectedIds.size > 1}
-      <span class="text-blue-600 font-medium">{$t('canvasStatus.selected', { count: currentSelectedIds.size })}</span>
-      <span class="text-gray-300">|</span>
-    {/if}
-    <span>{$t('canvasStatus.zoom', { value: Math.round(zoom * 100) })}</span>
-    <button class="hover:text-gray-700" onclick={() => zoomToFit()} title={$t('canvasZoom.fitHint')}>⊞ {$t('canvasDisplay.fit')}</button>
-    <button class="hover:text-gray-700" onclick={() => showGrid = !showGrid} title={$t('canvasDisplay.gridHint')} aria-pressed={showGrid}>
-      {showGrid ? '▦' : '▢'} {$t('canvasDisplay.grid')}
-    </button>
-    <!-- Snap (S) picks the step snapping rounds to and shows it; the top-bar Snap to Grid turns snapping off, and then this reads "Snap off". -->
-    <button class="hover:text-gray-700" onclick={() => projectSettings.update(s => ({ ...s, snapToGrid: !s.snapToGrid }))} title={snapControl.title} aria-pressed={snapControl.pressed}>
-      <span class:opacity-40={!currentSnapEnabled}>🧲</span> {snapControl.label}
-    </button>
-    <button class="hover:text-gray-700" onclick={() => layerVisibility.update(v => ({ ...v, furniture: !v.furniture }))} title={$t('canvasDisplay.furnitureHint')} aria-pressed={showFurniture}>
-      {showFurniture ? '🪑' : '👻'} {$t('canvasDisplay.furniture')}
-    </button>
-    <button class="hover:text-gray-700" onclick={() => showLayerPanel = !showLayerPanel} title={$t('layerVisibility.title')}>
-      🗂 {$t('layers.title')}
-    </button>
-    <button class="hover:text-gray-700" onclick={() => showRulers = !showRulers} title={$t('canvasDisplay.rulersHint')} aria-pressed={showRulers}>
-      {showRulers ? '📏' : '📐'} {$t('canvasDisplay.rulers')}
-    </button>
-    <button class="hover:text-gray-700" onclick={() => showMinimap = !showMinimap} title={$t('canvasDisplay.mapHint')} aria-pressed={showMinimap}>
-      {showMinimap ? '🗺' : '🗺'} {$t('canvasDisplay.map')}
-    </button>
-  </div>
-  <!-- Layer Visibility Panel -->
-  {#if showLayerPanel}
-    <div style:--visible-bottom={`${zoomControlsBottom}px`} class="absolute bottom-12 right-2 max-md:bottom-[calc(var(--visible-bottom)+6rem)] z-20 bg-white rounded-lg shadow-lg border border-gray-200 p-3 text-xs min-w-[160px]">
-      <div class="font-semibold text-gray-700 mb-2">{$t('layers.title')}</div>
-      {#each [['walls',$t('layers.walls')],['doors',$t('layers.doors')],['windows',$t('layers.windows')],['furniture',$t('layers.furniture')],['stairs',$t('layers.stairs')],['columns',$t('layers.columns')],['guides',$t('layers.guides')],['measurements',$t('layers.measurements')],['annotations',$t('layerVisibility.dimensions')],['textAnnotations',$t('layers.textAnnotations')]] as [key, label]}
-        <label class="flex items-center gap-2 py-0.5 cursor-pointer hover:bg-gray-50 rounded px-1">
-          <input type="checkbox" checked={(layerVis as Record<string, boolean>)[key]} onchange={() => layerVisibility.update(v => ({ ...v, [key]: !(v as Record<string, boolean>)[key] }))} class="accent-blue-500" />
-          <span>{label}</span>
-        </label>
-      {/each}
-      <hr class="my-1 border-gray-100" />
-      <label class="flex items-center gap-2 py-0.5 cursor-pointer hover:bg-gray-50 rounded px-1" class:opacity-40={!floorBelow}>
-        <input type="checkbox" checked={layerVis.floorBelow} disabled={!floorBelow} onchange={() => layerVisibility.update(v => ({ ...v, floorBelow: !v.floorBelow }))} class="accent-blue-500" />
-        <span>{floorBelow ? $t('layerVisibility.belowNamed', { name: floorBelow.name }) : $t('layerVisibility.below')}</span>
-      </label>
-      <label class="flex items-center gap-2 py-0.5 cursor-pointer hover:bg-gray-50 rounded px-1">
-        <input type="checkbox" checked={showRoomLabels} onchange={() => layerVisibility.update(v => ({ ...v, roomLabels: !v.roomLabels }))} class="accent-blue-500" />
-        <span>{$t('layerVisibility.roomLabels')}</span>
-      </label>
-      <label class="flex items-center gap-2 py-0.5 cursor-pointer hover:bg-gray-50 rounded px-1">
-        <input type="checkbox" checked={showDimensions} onchange={() => projectSettings.update(s => ({ ...s, showDimensions: !s.showDimensions }))} class="accent-blue-500" />
-        <span>{$t('layerVisibility.automaticDimensions')}</span>
-      </label>
-    </div>
-  {/if}
+  <StatusBar rooms={detectedRooms} floor={currentFloor} {floorBelow} selectedCount={currentSelectedIds.size} {zoom} {snapControl} snapEnabled={currentSnapEnabled} {layerVis} {showRoomLabels} {showDimensions} bottomInset={zoomControlsBottom} bind:showGrid bind:showRulers bind:showMinimap onfit={() => zoomToFit()} />
 
   <!-- Contextual Toolbar (hidden while the integrated elevation view covers the canvas) -->
   {#if (currentSelectedId || currentSelectedIds.size > 0) && currentFloor && currentTool === 'select' && !elevationOpen}
