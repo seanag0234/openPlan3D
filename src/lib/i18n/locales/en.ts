@@ -604,6 +604,7 @@ export const en = {
   "canvasHints.start": "Start building your floor plan",
   "canvasHints.draw": "Draw walls with",
   "canvasHints.drag": "or drag items from the sidebar",
+  "canvasHints.startTouch": "Add walls, rooms and furniture from the list",
   "canvasHints.room": "Room name",
   "canvasHints.dimension": "Dimension label (optional)",
   "canvasHints.distance": "Leave empty for measured distance",

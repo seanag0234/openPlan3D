@@ -4244,7 +4244,7 @@
       <div class="text-center opacity-60">
         <div class="text-5xl mb-3">🏠</div>
         <div class="text-sm font-medium text-gray-500">{$t('canvasHints.start')}</div>
-        <div class="text-xs text-gray-400 mt-1">{$t('canvasHints.draw')} <span class="font-mono bg-gray-100 px-1 rounded">W</span> {$t('canvasHints.drag')}</div>
+        <div class="text-xs text-gray-400 mt-1">{#if currentCoarse}{$t('canvasHints.startTouch')}{:else}{$t('canvasHints.draw')} <span class="font-mono bg-gray-100 px-1 rounded">W</span> {$t('canvasHints.drag')}{/if}</div>
       </div>
     </div>
   {/if}

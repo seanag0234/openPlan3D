@@ -84,7 +84,8 @@ them as copies. **Restore a library backup** also takes a project from
   templates) and **Things** (furniture catalog, your own 3D models, 2D
   entourage symbols).
 - **Canvas** in the middle. An empty project shows "Start building your floor
-  plan — Draw walls with W or drag items from the sidebar". The status bar
+  plan — Draw walls with W or drag items from the sidebar"; on a touch screen
+  the second line reads "Add walls, rooms and furniture from the list". The status bar
   under the canvas counts rooms, walls, doors, windows and objects, shows
   "Zoom: …%", and has the **Fit**, **Grid**, **Snap**, **Furniture**,
   **Layers**, **Rulers** and **Map** toggles plus zoom buttons (**Zoom out**,
