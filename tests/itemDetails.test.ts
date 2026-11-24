@@ -7,7 +7,7 @@ import { readPackageZip, writePackageZip, packageJSON, jsonBytes } from '$lib/ut
 import { itemDetails } from '$lib/utils/itemDetails';
 import { readProject } from '$lib/utils/projectValidation';
 import { attachItemPhoto, checkPhotoStorage, deleteUnusedPhoto, photoHeader, photoStorageBytes } from '$lib/services/itemPhotos';
-import { currentProject, loadProject, updateItemDetails, commitItemDetails, undo, redo, updateWall, undoHistoryStore } from '$lib/stores/project';
+import { currentProject, loadProject, updateItemDetails, commitItemDetails, undo, redo, updateWall, undoHistoryStore, undoHistoryBytes } from '$lib/stores/project';
 import { saveSnapshot, getSnapshots, snapshotError } from '$lib/stores/versionHistory';
 import { readSnapshotStorage, writeSnapshotStorage } from '$lib/utils/snapshotStorage';
 import { libraryBackup } from '$lib/services/localDatabase';
@@ -186,11 +186,23 @@ it('reads actual Swift changes and clears back into the web metadata controls', 
   expect(again.walls[0].extension.future).toBe(true);
   expect(readPackageZip(projectPackageBytes(returned))['assets/new-photo.png']).toEqual(new Uint8Array(readFileSync('tests/fixtures/item-photo.png')));
 });
-it('bounds undo memory for large attachment projects while retaining recent undo/redo', () => {
+it('keeps every undo step over one long text, within the memory bound', () => {
   const p = state(); p.description = 'x'.repeat(5 * 1024 * 1024);
   const id = p.floors[0].walls[0].id;
   for (let i = 0; i < 6; i++) updateWall(id, i % 2 ? { endHeight: 210 + i } : { thickness: 30 + i });
+  expect(get(undoHistoryStore).entries.length).toBe(6);
+  expect(undoHistoryBytes()).toBeLessThan(32 * 1024 * 1024);
+  undo(); expect(state().floors[0].walls[0].endHeight).toBe(213);
+  redo(); expect(state().floors[0].walls[0].endHeight).toBe(215);
+});
+it('bounds undo memory when each step holds a long text of its own', () => {
+  const id = state().floors[0].walls[0].id;
+  for (let i = 0; i < 6; i++) {
+    state().description = String(i).repeat(5 * 1024 * 1024);
+    updateWall(id, i % 2 ? { endHeight: 210 + i } : { thickness: 30 + i });
+  }
   expect(get(undoHistoryStore).entries.length).toBeLessThan(6);
+  expect(undoHistoryBytes()).toBeLessThanOrEqual(32 * 1024 * 1024);
   undo(); expect(state().floors[0].walls[0].endHeight).toBe(213);
   redo(); expect(state().floors[0].walls[0].endHeight).toBe(215);
 });

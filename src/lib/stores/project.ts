@@ -93,11 +93,15 @@ function pushHistory(stack: UndoEntry[], entry: UndoEntry, keep?: string) {
   stack.push(entry);
   // Photos must not multiply into an unbounded string history. Always retain
   // the latest step, even for an existing project larger than this budget.
-  const size = () => stack.reduce((sum, item) => sum + item.state.length * 2, 0) + shared.bytes();
-  while (stack.length > 1 && (stack.length > HISTORY_STEPS || size() > HISTORY_BYTES)) {
+  while (stack.length > 1 && (stack.length > HISTORY_STEPS || undoHistoryBytes() > HISTORY_BYTES)) {
     stack.shift();
     retainHistoryStrings(keep);
   }
+}
+
+/** Memory held by Undo and Redo: every state's own text, plus each long text the states share, counted once. */
+export function undoHistoryBytes(): number {
+  return [...undoStack, ...redoStack].reduce((sum, item) => sum + item.state.length * 2, 0) + shared.bytes();
 }
 
 function retainHistoryStrings(keep?: string) {
