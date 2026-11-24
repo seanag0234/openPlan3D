@@ -21,11 +21,15 @@ describe('the status-bar snap step', () => {
     expect(snap(137, false, true, 25)).toBe(137);
   });
 
-  it('is the rounding the plan canvas ships: the canvas calls this snap() and keeps no copy of it or of SNAP', () => {
+  it('is the rounding the plan canvas ships: the canvas calls this snap() through the snap policy and keeps no copy of it or of SNAP', () => {
     const canvas = readFileSync(new URL('../src/lib/components/editor/FloorPlanCanvas.svelte', import.meta.url), 'utf8');
-    expect(canvas).toMatch(/import \{[^}]*\bsnap as _snap\b[^}]*\} from '\$lib\/utils\/canvasInteraction'/);
-    expect(canvas).toContain('return _snap(v, currentSnapEnabled, currentSnapToGrid, currentGridSize);');
-    expect(canvas).not.toMatch(/\bconst SNAP\b/);
+    const policy = readFileSync(new URL('../src/lib/utils/snapPolicy.ts', import.meta.url), 'utf8');
+    expect(canvas).toMatch(/import \{[^}]*\bsnapValue\b[^}]*\} from '\$lib\/utils\/snapPolicy'/);
+    expect(canvas).toContain('return snapValue(v, snapContext());');
+    expect(canvas).toContain('return { enabled: currentSnapEnabled, snapToGrid: currentSnapToGrid, gridSize: currentGridSize, units: dimSettings.units };');
+    expect(policy).toMatch(/import \{[^}]*\bsnap\b[^}]*\} from '\.\/canvasInteraction'/);
+    expect(policy).toContain('return snap(v, s.enabled, s.snapToGrid, s.gridSize);');
+    for (const source of [canvas, policy]) expect(source).not.toMatch(/\bconst SNAP\b/);
   });
 
   for (const language of ['en', 'pt'] as const) {

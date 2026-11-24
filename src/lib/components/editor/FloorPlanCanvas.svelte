@@ -37,7 +37,8 @@
   import { projectSettings, formatLength, formatArea, DEFAULT_SETTINGS } from '$lib/stores/settings';
   import type { ProjectSettings } from '$lib/stores/settings';
   import { snapStatus } from '$lib/utils/snapStep';
-  import { angleSnapWithin, cameraAfterResize, resizeFurnitureFromHandle, snap as _snap, type CanvasState } from '$lib/utils/canvasInteraction';
+  import { angleSnapWithin, cameraAfterResize, resizeFurnitureFromHandle, type CanvasState } from '$lib/utils/canvasInteraction';
+  import { gridLineStepCm, resizeStep, snapPieceMove, snapValue, stopAtWalls, type SnapContext } from '$lib/utils/snapPolicy';
   import { furnitureSizeLabel } from '$lib/utils/furnitureCaption';
   import { drawWall as _drawWall, drawDoorOnWall as _drawDoorOnWall, drawWindowOnWall as _drawWindowOnWall, drawDoorDistanceDimensions as _drawDoorDistanceDimensions, drawWindowDistanceDimensions as _drawWindowDistanceDimensions, drawFurnitureItem, drawStair as _drawStair, drawColumn as _drawColumn, drawGuides as _drawGuides, drawPersistedMeasurements as _drawPersistedMeasurements, drawTextAnnotations as _drawTextAnnotations, drawAnnotation as _drawAnnotation, drawAnnotations as _drawAnnotations, drawRooms as _drawRooms, drawWallJoints as _drawWallJoints, drawSnapPoints as _drawSnapPoints, drawMinimap as _drawMinimap, drawEntourageItems as _drawEntourageItems, drawEntourageGhost as _drawEntourageGhost, drawFloorBelowGhost as _drawFloorBelowGhost, entourageAspect } from '$lib/utils/canvasRenderer';
   import { getEntourageDef } from '$lib/utils/entourageCatalog';
@@ -133,6 +134,7 @@
   let customEntourageDefs: CustomEntourageDef[] | undefined = $state(undefined);
   let dragOffset: Point = { x: 0, y: 0 };
   let dragStartRotation: number = 0;
+  let dragStartPosition: Point = { x: 0, y: 0 };
   let dragWasWallSnapped: boolean = false;
   let draggingDoorId: string | null = $state(null);
   let draggingWindowId: string | null = $state(null);
@@ -379,8 +381,10 @@
     return snapFurnitureToWalls(pos, furniture, currentFloor.walls, snap);
   }
 
+  function snapContext(): SnapContext { return { enabled: currentSnapEnabled, snapToGrid: currentSnapToGrid, gridSize: currentGridSize, units: dimSettings.units }; }
+
   function snap(v: number): number {
-    return _snap(v, currentSnapEnabled, currentSnapToGrid, currentGridSize);
+    return snapValue(v, snapContext());
   }
 
   function screenToWorld(sx: number, sy: number): Point {
@@ -475,7 +479,7 @@
 
   function drawGrid() {
     if (!ctx || !showGrid) return;
-    const step = (currentSnapToGrid ? currentGridSize : GRID) * zoom;
+    const step = gridLineStepCm(snapContext(), GRID) * zoom;
     if (step < 4) return;
 
     // Minor grid
@@ -2678,6 +2682,7 @@
         if (selectElement(fi.id, e.shiftKey, e.ctrlKey || e.metaKey)) return;
         if (!e.shiftKey && !fi.locked) {
           draggingFurnitureId = fi.id;
+          dragStartPosition = { ...fi.position };
           dragOffset = { x: wp.x - fi.position.x, y: wp.y - fi.position.y };
           dragStartRotation = fi.rotation;
           dragWasWallSnapped = false;
@@ -3028,6 +3033,7 @@
             handle: draggingHandle,
             pointer: mousePos,
             preserveAspectRatio: shiftDown,
+            sizeStep: resizeStep(snapContext()),
           });
           transformFurnitureDuringDrag(currentSelectedId, {
             position: resized.position,
@@ -3078,7 +3084,7 @@
           dragWasWallSnapped = true;
           wallSnapInfo = { wallId: wallSnap.wallId, side: wallSnap.side, wallAngle: wallSnap.wallAngle };
         } else {
-          const snapped = { x: snap(basePos.x), y: snap(basePos.y) };
+          const snapped = snapPieceMove(basePos, dragStartPosition, snapContext());
           // Snap to guide lines
           const GUIDE_SNAP = 10; // world units
           if (currentFloor?.guides) {
@@ -3092,7 +3098,7 @@
             }
           }
           transformFurnitureDuringDrag(draggingFurnitureId, {
-            position: snapped,
+            position: stopAtWalls(snapped, fi.position, fi, currentFloor?.walls ?? []),
             ...(dragWasWallSnapped ? { rotation: dragStartRotation } : {}),
           });
           dragWasWallSnapped = false;

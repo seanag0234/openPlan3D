@@ -118,6 +118,8 @@ export interface FurnitureResizeInput {
   pointer: Point;
   preserveAspectRatio: boolean;
   minSize?: number;
+  /** Step the new size rounds to, in cm; not used yet. */
+  sizeStep?: number;
 }
 
 export interface FurnitureResizeResult {
