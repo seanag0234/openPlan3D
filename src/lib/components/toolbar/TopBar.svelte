@@ -22,7 +22,7 @@
   import { orderedFloors } from '$lib/utils/floors';
   import type { FloorPosition, FloorSeed } from '$lib/stores/project';
   import { projectSettings, withDisplaySettings } from '$lib/stores/settings';
-  import { currentProject, viewMode, undo, redo, addFloor, removeFloor, renameFloor, setActiveFloor, updateProjectName, createDefaultProject, snapEnabled, canvasZoom, canvasMinimumZoom, panMode, showFurnitureStore, layerVisibility, activeFloor, selectedElementId, elevationWallId, elevationPickMode } from '$lib/stores/project';
+  import { currentProject, viewMode, undo, redo, undoHistoryStore, addFloor, removeFloor, renameFloor, setActiveFloor, updateProjectName, createDefaultProject, snapEnabled, canvasZoom, canvasMinimumZoom, panMode, showFurnitureStore, layerVisibility, activeFloor, selectedElementId, elevationWallId, elevationPickMode } from '$lib/stores/project';
   import { get } from 'svelte/store';
   import type { Floor } from '$lib/models/types';
   import { exportAsJSON, exportScreenPNG } from '$lib/utils/export';
@@ -524,11 +524,12 @@
 
   <div class="flex-1"></div>
 
-  <button onclick={undo} class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors {stacked}" title={$t('projectToolbar.undoHint')} aria-label={$t('projectToolbar.undo')}>
+  <!-- Never disabled: pressing either with nothing left is harmless; they only look switched off. -->
+  <button onclick={undo} aria-disabled={$undoHistoryStore.entries.length === 0} class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors {stacked} {$undoHistoryStore.entries.length === 0 ? 'opacity-40' : ''}" title={$t('projectToolbar.undoHint')} aria-label={$t('projectToolbar.undo')}>
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
     {#if $coarsePointer}<span aria-hidden="true" class="block text-[10px] leading-none">{$t('projectToolbar.undo')}</span>{/if}
   </button>
-  <button onclick={redo} class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors {stacked}" title={$t('projectToolbar.redoHint')} aria-label={$t('projectToolbar.redo')}>
+  <button onclick={redo} aria-disabled={$undoHistoryStore.redoCount === 0} class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors {stacked} {$undoHistoryStore.redoCount === 0 ? 'opacity-40' : ''}" title={$t('projectToolbar.redoHint')} aria-label={$t('projectToolbar.redo')}>
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10"/></svg>
     {#if $coarsePointer}<span aria-hidden="true" class="block text-[10px] leading-none">{$t('projectToolbar.redo')}</span>{/if}
   </button>
