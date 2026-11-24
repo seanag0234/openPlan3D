@@ -514,7 +514,7 @@ export const pt = {
   "layers.guides": "Guias",
   "layers.measurements": "Medições",
   "layers.annotations": "Linhas de cota",
-  "layers.textAnnotations": "Notas de texto",
+  "layers.textAnnotations": "Rótulos de texto",
   "layers.rooms": "Ambientes",
   "layers.empty": "Vazio",
   "layers.none": "Nada aqui ainda",

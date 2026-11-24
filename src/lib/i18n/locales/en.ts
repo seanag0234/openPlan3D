@@ -514,7 +514,7 @@ export const en = {
   "layers.guides": "Guides",
   "layers.measurements": "Measurements",
   "layers.annotations": "Dimension lines",
-  "layers.textAnnotations": "Text notes",
+  "layers.textAnnotations": "Text labels",
   "layers.rooms": "Rooms",
   "layers.empty": "Empty",
   "layers.none": "Nothing here yet",
