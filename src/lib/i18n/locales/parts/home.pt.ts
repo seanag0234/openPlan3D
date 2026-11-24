@@ -7,4 +7,5 @@ export const homePt = {
   "home.haveBothHelp": "O arquivo entra ao lado dela, com um número depois do nome.",
   "home.haveCancel": "Cancelar",
   "home.haveCancelHelp": "Nada muda.",
+  "home.startPlan": "Abrir a planta inicial",
 } as const;

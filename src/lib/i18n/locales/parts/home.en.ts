@@ -7,4 +7,5 @@ export const homeEn = {
   "home.haveBothHelp": "The file comes in beside it, with a number after its name.",
   "home.haveCancel": "Cancel",
   "home.haveCancelHelp": "Nothing changes.",
+  "home.startPlan": "Get the starting plan",
 } as const;
