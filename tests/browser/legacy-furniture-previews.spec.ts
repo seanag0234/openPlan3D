@@ -50,7 +50,7 @@ for (const width of [1440, 390]) test(`saved legacy furniture refreshes without 
     await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
   }
   await page.getByRole('button', { name: '📦 Unrecognized item', exact: true }).click();
-  await expect(page.getByText('Original category: future-appliance. Shown as a neutral box.', { exact: true })).toBeVisible();
+  await expect(page.getByText('Original category: future-appliance. Shown as a plain box.', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: '🛏️ Queen Bed', exact: true }).click();
   const field = page.getByRole('spinbutton', { name: 'Width (cm)', exact: true });
   await expect(field).toHaveValue('152.344');

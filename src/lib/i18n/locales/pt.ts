@@ -790,7 +790,7 @@ export const pt = {
   "furnitureProperties.lock": "Bloquear (Ctrl+L)",
   "furnitureProperties.unlock": "Desbloquear (Ctrl+L)",
   "furnitureProperties.locked": "Bloqueado",
-  "furnitureProperties.originalCategory": "Categoria original: {category}. Exibido como uma caixa neutra.",
+  "furnitureProperties.originalCategory": "Categoria original: {category}. Exibido como uma caixa simples.",
   "furnitureProperties.unknown": "Desconhecida",
   "furnitureProperties.stairsHelp": "Prévia de escada importada. Use as escadas de construção para editar espelhos e formatos.",
   "furnitureProperties.color": "Cor",

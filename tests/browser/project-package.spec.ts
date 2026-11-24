@@ -41,7 +41,7 @@ for (const width of [1440, 390]) test(`furniture category previews and original 
     await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
   }
   await page.getByRole('button', { name: '📦 Unrecognized item', exact: true }).click();
-  await expect(page.getByText('Original category: future-appliance. Shown as a neutral box.', { exact: true })).toBeVisible();
+  await expect(page.getByText('Original category: future-appliance. Shown as a plain box.', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: '🛏️ Queen Bed', exact: true }).click();
   const field = page.getByRole('spinbutton', { name: 'Width (cm)', exact: true });
   await expect(field).toHaveValue('160.125');

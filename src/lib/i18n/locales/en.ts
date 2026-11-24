@@ -790,7 +790,7 @@ export const en = {
   "furnitureProperties.lock": "Lock (Ctrl+L)",
   "furnitureProperties.unlock": "Unlock (Ctrl+L)",
   "furnitureProperties.locked": "Locked",
-  "furnitureProperties.originalCategory": "Original category: {category}. Shown as a neutral box.",
+  "furnitureProperties.originalCategory": "Original category: {category}. Shown as a plain box.",
   "furnitureProperties.unknown": "Unknown",
   "furnitureProperties.stairsHelp": "Imported stair preview. Use building stairs to edit risers and stair layouts.",
   "furnitureProperties.color": "Color",
