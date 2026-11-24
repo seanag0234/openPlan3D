@@ -295,8 +295,9 @@
   ];
 
   let panelEl = $state<HTMLDivElement>();
-  // Every new selection starts its details at the top.
-  $effect(() => { void selId; void selRoomId; panelEl?.scrollTo({ top: 0 }); });
+  // Every new selection starts its details at the top, and so does the touch sheet each time it opens:
+  // while hidden it cannot scroll.
+  $effect(() => { void selId; void selRoomId; void $detailsOpen; panelEl?.scrollTo({ top: 0 }); });
 
   let hasSelection = $derived(!!selectedWall || !!selectedDoor || !!selectedWindow || !!selectedFurniture || !!selectedRoom || !!selectedStair || !!selectedColumn || !!selectedTextAnnotation || !!selectedEntourage || (!is3D && hasBgImage));
 
