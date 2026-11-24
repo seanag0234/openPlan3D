@@ -1,3 +1,12 @@
+import { sharedPt } from './parts/shared.pt';
+import { touchPt } from './parts/touch.pt';
+import { panelsPt } from './parts/panels.pt';
+import { barsPt } from './parts/bars.pt';
+import { savingPt } from './parts/saving.pt';
+import { homePt } from './parts/home.pt';
+import { addingPt } from './parts/adding.pt';
+import { drawingPt } from './parts/drawing.pt';
+import { wordsPt } from './parts/words.pt';
 export const pt = {
   "settings.title": "Configurações",
   "settings.close": "Fechar configurações",
@@ -1568,4 +1577,13 @@ export const pt = {
   "customModelValidation.attributeFormat": "Geometria GLB inválida: formato não suportado para {name}.",
   "customModelValidation.unsupportedExtension": "Extensão GLB não suportada: a importação local de modelos ainda não aceita {name}.",
   "customModelValidation.undeclaredExtension": "Extensão GLB não suportada: {name} não está declarada em extensionsUsed.",
+  ...sharedPt,
+  ...touchPt,
+  ...panelsPt,
+  ...barsPt,
+  ...savingPt,
+  ...homePt,
+  ...addingPt,
+  ...drawingPt,
+  ...wordsPt,
 } as const;
