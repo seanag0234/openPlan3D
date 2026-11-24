@@ -41,7 +41,7 @@
   import { beginCaptions, drawCaptions } from '$lib/utils/captionPlan';
   import { fitIds } from '$lib/utils/fitBounds';
   import { drawNoteMarks, noteMarkAt } from '$lib/utils/noteMarks';
-  import { noteTarget, planObstruction, revealSelection } from '$lib/stores/ui';
+  import { detailsOpen, multiSelectMode, noteTarget, planObstruction, revealSelection } from '$lib/stores/ui';
   import { shiftToReveal } from '$lib/utils/viewShift';
   import { coarsePointer } from '$lib/stores/pointer';
   import { gridLineStepCm, resizeStep, snapPieceMove, snapValue, stopAtWalls, type SnapContext } from '$lib/utils/snapPolicy';
@@ -3363,6 +3363,7 @@
       case 'dragMove': dispatchMouse('mousemove', event.x, event.y); break;
       case 'dragEnd': dispatchMouse('mouseup', event.x, event.y); break;
       case 'pinchMove': pinchBy(event); break;
+      case 'longPress': canvas.dispatchEvent(new MouseEvent('contextmenu', { clientX: event.x, clientY: event.y, button: 2, bubbles: true, cancelable: true })); break;
     }
   });
 
@@ -3952,6 +3953,15 @@
         }
         break;
 
+      // Picking several and notes
+      case 'select-more': if (id) selectedElementId.set(id); multiSelectMode.set(true); break;
+      case 'note': {
+        const kind = ctxMenuTargetType === 'furniture' ? 'furniture' : ctxMenuTargetType === 'wall' ? 'walls' : ctxMenuTargetType === 'room' ? 'rooms' : null;
+        if (id && kind) noteTarget.set({ floorId: currentFloor.id, kind, id });
+        break;
+      }
+      case 'note-plan': noteTarget.set('plan'); break;
+
       // Door actions
       case 'join-door':
         if (id) doorJoinMode.set({ firstDoorId: id });
@@ -3962,6 +3972,7 @@
         if (id) { removeElement(id); selectedElementId.set(null); }
         break;
       case 'properties':
+        detailsOpen.set(true);
         if (id) {
           selectedElementId.set(id);
           void tick().then(() => {

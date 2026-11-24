@@ -51,3 +51,34 @@ test('a plain drag lands Box A under the finger', async ({ page }) => {
   expect(Math.abs(now.x - to.x)).toBeLessThanOrEqual(8);
   expect(Math.abs(now.y - to.y)).toBeLessThanOrEqual(8);
 });
+
+test('a long-press opens the menu, which stays open when the finger lifts and closes on a tap elsewhere', async ({ page }) => {
+  const { hand, a, b } = await open(page);
+  const menu = page.getByRole('menu');
+  await hand.longPress(a.x, a.y);
+  await expect(menu).toBeVisible();
+  await expect(menu.getByRole('menuitem', { name: /Bring to Front/ })).toBeVisible();
+  await expect(menu.getByRole('menuitem', { name: /Select more/ })).toBeVisible();
+  await expect(menu.getByRole('menuitem', { name: /^\S*\s*Note$/ })).toBeVisible();
+  // The finger has lifted; the menu is still there.
+  await page.waitForTimeout(300);
+  await expect(menu).toBeVisible();
+  await hand.tap(b.x, b.y + 120);
+  await expect(menu).toBeHidden();
+});
+
+test('a long-press on the locked Rug offers Unlock', async ({ page }) => {
+  const { hand } = await open(page);
+  const rug = await where(page, 'Rug');
+  await hand.longPress(rug.x, rug.y);
+  await expect(page.getByRole('menu').getByRole('menuitem', { name: /Unlock/ })).toBeVisible();
+});
+
+test('a long-press on bare paper offers Select more first and a note about the plan last', async ({ page }) => {
+  const { hand, a, scale } = await open(page);
+  // 60 cm above the room's top wall.
+  await hand.longPress(a.x, a.y - 260 * scale);
+  const items = page.getByRole('menu').getByRole('menuitem');
+  await expect(items.first()).toHaveText(/Select more/);
+  await expect(items.last()).toHaveText(/Note about the plan/);
+});
