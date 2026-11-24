@@ -25,7 +25,6 @@
   /** The bottom-left buttons on a touch screen: a picture with its word under it. */
   const cornerFinger = 'w-11 min-h-[44px] rounded-lg flex flex-col items-center justify-center';
   import FloorPlanCanvas from '$lib/components/editor/FloorPlanCanvas.svelte';
-  import AlignmentToolbar from '$lib/components/editor/AlignmentToolbar.svelte';
   import UndoHistoryPanel from '$lib/components/editor/UndoHistoryPanel.svelte';
   import CommandPalette from '$lib/components/editor/CommandPalette.svelte';
   import ElevationView from '$lib/components/editor/ElevationView.svelte';
@@ -274,7 +273,6 @@
       <div class="flex-1 min-w-0 relative">
         {#if mode === '2d'}
           <FloorPlanCanvas />
-          <AlignmentToolbar />
           {#if $elevationWallId}
             <!-- Integrated elevation view replaces the plan canvas area (sidebars stay) -->
             <ElevationView />
