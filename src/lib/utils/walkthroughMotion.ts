@@ -3,6 +3,9 @@ import { Euler, type Camera } from 'three';
 const keys = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
   'KeyW', 'KeyS', 'KeyA', 'KeyD', 'ShiftLeft', 'ShiftRight']);
 
+/** How far the view turns for each px a finger travels. */
+export const LOOK_RADIANS_PER_PX = 0.005;
+
 export interface WalkthroughSettings {
   moveSpeed: number;
   sprintSpeed: number;
@@ -44,6 +47,14 @@ export class WalkthroughMotion {
     if (down) this.held.add(code);
     else this.held.delete(code);
     return true;
+  }
+
+  /** Turn the view by a finger's travel in px; the picture follows the finger. */
+  look(dx: number, dy: number, camera: Camera) {
+    this.rotation.setFromQuaternion(camera.quaternion, 'YXZ');
+    this.rotation.y += dx * LOOK_RADIANS_PER_PX;
+    this.rotation.x = Math.max(-1.4, Math.min(1.4, this.rotation.x + dy * LOOK_RADIANS_PER_PX));
+    camera.quaternion.setFromEuler(this.rotation);
   }
 
   reset() {
