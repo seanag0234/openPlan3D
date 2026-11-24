@@ -38,3 +38,21 @@ test('with a mouse the measure message keeps its words, and Done returns to the 
   await expect(hint(page)).toContainText('Click or tap two points to measure · M to exit · Esc to cancel');
   await expectDoneReturnsToSelect(page);
 });
+
+test.describe('moving the view', () => {
+  test.use(ipadLandscape);
+
+  test('ticking Pan in the more menu says so, and Done turns it off', async ({ page }) => {
+    await openPlan(page, PLAN);
+    const more = page.getByRole('button', { name: 'More actions', exact: true });
+    await more.click();
+    await page.getByRole('button', { name: 'Pan Mode', exact: true }).click();
+    const moving = hint(page).filter({ hasText: 'Moving the view' });
+    await expect(moving).toBeVisible();
+    await moving.getByRole('button', { name: 'Done', exact: true }).click();
+    await expect(moving).toHaveCount(0);
+    await more.click();
+    await expect(page.getByRole('button', { name: 'Pan Mode', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: '✓ Pan Mode', exact: true })).toHaveCount(0);
+  });
+});

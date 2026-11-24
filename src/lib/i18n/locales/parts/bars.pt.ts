@@ -14,4 +14,6 @@ export const barsPt = {
   "bars.hintText": "Toque onde o texto vai ficar.",
   "bars.hintDimensionStart": "Toque onde a medida começa.",
   "bars.hintDimensionEnd": "Toque onde ela termina.",
+  "bars.moving": "Movendo a vista",
+  "bars.pickingSeveral": "Toque nas coisas para adicioná-las",
 } as const;

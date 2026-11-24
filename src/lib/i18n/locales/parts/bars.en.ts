@@ -14,4 +14,6 @@ export const barsEn = {
   "bars.hintText": "Tap where the words go.",
   "bars.hintDimensionStart": "Tap where the size starts.",
   "bars.hintDimensionEnd": "Tap where it ends.",
+  "bars.moving": "Moving the view",
+  "bars.pickingSeveral": "Tap things to add them",
 } as const;
