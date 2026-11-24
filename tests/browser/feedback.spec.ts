@@ -1,6 +1,7 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { ipadLandscape, openPlan, recordLabels, where } from './touch';
+import { openList } from './list';
 
 test.use(ipadLandscape);
 
@@ -87,11 +88,37 @@ test('a copy that takes no feedback lets the words be saved as a file', async ({
 test('the list of plans has a Feedback link, and its sheet offers no picture', async ({ page }) => {
   await feedbackRoute(page, true, route => route.fulfill({ status: 201, body: '{"ok":true}' }));
   await page.addInitScript(() => localStorage.setItem('hasSeenWelcome', 'true'));
-  await page.goto('/');
+  await openList(page);
   await page.getByRole('button', { name: 'Feedback', exact: true }).tap();
   const sheet = page.getByRole('dialog', { name: 'What is wrong, or what do you wish for?' });
   await expect(sheet).toBeVisible();
   await expect(sheet.getByRole('checkbox')).toHaveCount(0);
   await sheet.getByRole('button', { name: 'Cancel' }).tap();
   await expect(sheet).toHaveCount(0);
+});
+
+test('written with no connection at all, the message is said to be kept, and goes when the connection is back', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('hasSeenWelcome', 'true'));
+  await openList(page);
+  await page.context().setOffline(true);
+  await page.getByRole('button', { name: 'Feedback', exact: true }).tap();
+  const sheet = page.getByRole('dialog', { name: 'What is wrong, or what do you wish for?' });
+  await expect(sheet).toBeVisible();
+  await sheet.getByRole('textbox', { name: 'Your words' }).fill(sentence);
+  await sheet.getByRole('button', { name: 'Send' }).tap();
+  await expect(sheet.getByRole('status')).toHaveText('Kept on this device. It will be sent when the connection is back.');
+  await expect(sheet.getByRole('button', { name: 'Share' })).toHaveCount(0);
+  await expect(sheet.getByRole('button', { name: 'Save as a file' })).toHaveCount(0);
+  await expect(sheet.getByText('1 waiting to be sent')).toBeVisible();
+
+  const posted: any[] = [];
+  await page.route('**/api/feedback', route => {
+    if (route.request().method() !== 'POST') return route.fallback();
+    posted.push(route.request().postDataJSON());
+    return route.fulfill({ status: 201, contentType: 'application/json', body: '{"ok":true}' });
+  });
+  await page.context().setOffline(false);
+  await page.evaluate(() => window.dispatchEvent(new Event('online')));
+  await expect(sheet.getByText(/waiting to be sent/)).toHaveCount(0);
+  expect(posted.map(message => message.text)).toEqual([sentence]);
 });

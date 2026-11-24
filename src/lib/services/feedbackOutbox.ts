@@ -55,13 +55,35 @@ export async function removeFeedback(id: string): Promise<void> {
   await withOutbox('readwrite', store => { store.delete(id); });
 }
 
-/** Whether this copy keeps feedback; false on any failure. */
-export async function feedbackEnabled(): Promise<boolean> {
+/** Where the last answer to "does this copy keep feedback?" is kept, as 'true' or 'false'. */
+const LAST_KNOWN = 'o3d_feedback_enabled';
+
+function remember(enabled: boolean): boolean {
+  try { localStorage.setItem(LAST_KNOWN, String(enabled)); } catch { /* the answer is still given */ }
+  return enabled;
+}
+
+/** The last answer this copy gave, or null when it has never answered here or it cannot be read. */
+export function lastKnownFeedbackEnabled(): boolean | null {
   try {
-    const response = await fetch(`${base}/api/feedback`, { cache: 'no-store' });
-    if (!response.ok) return false;
-    return (await response.json())?.enabled === true;
-  } catch { return false; }
+    const value = localStorage.getItem(LAST_KNOWN);
+    return value === 'true' ? true : value === 'false' ? false : null;
+  } catch { return null; }
+}
+
+/**
+ * Whether this copy keeps feedback: true or false when it answered (404 is a copy without the route,
+ * 503 one without a folder), null when the question got no answer (no connection, or any other status).
+ */
+export async function feedbackEnabled(): Promise<boolean | null> {
+  let response: Response;
+  try { response = await fetch(`${base}/api/feedback`, { cache: 'no-store' }); }
+  catch { return null; }
+  if (response.status === 404 || response.status === 503) return remember(false);
+  if (response.status !== 200) return null;
+  let body: unknown = null;
+  try { body = await response.json(); } catch { /* anything but { enabled: true } is no */ }
+  return remember((body as { enabled?: unknown } | null)?.enabled === true);
 }
 
 /** Post one message; the status, or 0 when the request did not get an answer. */

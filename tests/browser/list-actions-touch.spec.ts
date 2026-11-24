@@ -2,17 +2,18 @@ import { expect, test, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { ipadLandscape } from './touch';
 import { savedProjects } from './storage';
+import { openList } from './list';
 
 /** One made-up plan in the list, then back on the list. */
 async function onePlan(page: Page) {
   const text = await readFile('tests/fixtures/room-with-boxes.openplan.json', 'utf8');
   await page.addInitScript(() => localStorage.setItem('hasSeenWelcome', 'true'));
-  await page.goto('/');
+  await openList(page);
   const chooser = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: 'Open a plan file' }).click();
   await (await chooser).setFiles({ name: 'room.json', mimeType: 'application/json', buffer: Buffer.from(text) });
   await expect(page).toHaveURL(/\/editor\?id=room-with-boxes/);
-  await page.goto('/');
+  await openList(page);
   await expect(page.getByRole('heading', { name: 'Room with boxes' })).toBeVisible();
   return page.getByRole('button', { name: 'Project actions for Room with boxes' });
 }

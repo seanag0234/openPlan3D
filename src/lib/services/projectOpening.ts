@@ -100,7 +100,13 @@ export async function openStoredProject(id: string, signal?: AbortSignal): Promi
 
 /** Read a file the person chose into what openProject takes. Throws LibraryBackupFileError for a backup of every plan. */
 export async function readPlanFile(file: File): Promise<unknown> {
-  const data = JSON.parse(await file.text());
+  let data: unknown;
+  // Each browser words a file that is not JSON its own way: say it once, in the editor's words, and keep theirs after.
+  try { data = JSON.parse(await file.text()); }
+  catch (error) {
+    if (error instanceof SyntaxError) throw new Error(`Invalid project: the file is not valid JSON. ${error.message}`);
+    throw error;
+  }
   // A library backup holds every project: Restore previews it and adds them as copies.
   if (isLibraryBackup(data)) throw new LibraryBackupFileError();
   if (!isRoomPlanJson(data)) return data;
@@ -149,7 +155,7 @@ export async function openPlanFile(readCandidate: () => unknown | Promise<unknow
     return openProject(() => candidate, 'import', signal);
   }
   // Replace: the plan she had stays in its list of versions.
-  await saveSnapshot(stored, 'Before replacing with a file', true);
+  await saveSnapshot(stored, 'Before replacing with a file', false);
   if (signal?.aborted) return null;
   candidate.updatedAt = new Date();
   loadProject(candidate);

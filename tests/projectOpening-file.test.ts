@@ -7,7 +7,7 @@ import { LibraryBackupFileError } from '$lib/services/libraryRestore';
 import { currentProject, loadProject } from '$lib/stores/project';
 import { initAutoSave, markClean, saveState } from '$lib/stores/saveStatus';
 import { importQuestion, type ImportAnswer } from '$lib/stores/ui';
-import { getSnapshots } from '$lib/stores/versionHistory';
+import { getSnapshots, saveSnapshot } from '$lib/stores/versionHistory';
 import { roomProject } from './fixtures/project';
 
 let stop: () => void;
@@ -113,6 +113,19 @@ it('Replace keeps the id, stores the file and keeps the plan it replaced as a ve
   expect(JSON.parse(kept!.data).floors[0].walls[0].height).toBe(before.floors[0].walls[0].height);
 });
 
+it('Replace names the version it keeps, even when the newest version already holds that plan', async () => {
+  await openPlanFile(() => planFile());
+  const stored = (await localStore.load(ID))!;
+  await saveSnapshot(stored, 'Session start');
+  answer = 'replace';
+  const file = planFile(); file.floors[0].walls[0].height = 222;
+  await openPlanFile(() => file);
+  const versions = await getSnapshots(ID);
+  const last = versions.at(-1)!;
+  expect(last.description).toBe('Before replacing with a file');
+  expect(JSON.parse(last.data)).toEqual(JSON.parse(JSON.stringify(stored)));
+});
+
 it('Cancel changes nothing', async () => {
   await openPlanFile(() => planFile());
   const previous = roomProject(); loadProject(previous); markClean(); await localStore.save(previous);
@@ -133,4 +146,8 @@ it('reads a chosen file, and refuses a backup of every plan', async () => {
   await expect(readPlanFile(new File(['{"hello":'], 'broken.json'))).rejects.toThrow();
   const backup = { format: 'openplan3d-library', projects: {} };
   await expect(readPlanFile(new File([JSON.stringify(backup)], 'all.json'))).rejects.toBeInstanceOf(LibraryBackupFileError);
+});
+
+it('a plan file cut short is said to be no plan, whatever the browser calls it', async () => {
+  await expect(readPlanFile(new File(['{"id":"a","name":"Ro'], 'half.json'))).rejects.toThrow(/^Invalid project:/);
 });

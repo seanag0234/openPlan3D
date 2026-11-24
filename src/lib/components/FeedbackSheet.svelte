@@ -7,7 +7,7 @@
   import { coarsePointer } from '$lib/stores/pointer';
   import { canvasZoom, currentProject, selectedElementId, selectedElementIds, selectedTool, viewMode } from '$lib/stores/project';
   import { modalDialog } from '$lib/utils/modalDialog';
-  import { feedbackEnabled, flushFeedback, pendingFeedback, queueFeedback, removeFeedback, type FeedbackMessage } from '$lib/services/feedbackOutbox';
+  import { feedbackEnabled, flushFeedback, lastKnownFeedbackEnabled, pendingFeedback, queueFeedback, removeFeedback, type FeedbackMessage } from '$lib/services/feedbackOutbox';
 
   const id = $props.id();
   let words = $state('');
@@ -128,8 +128,12 @@
       await flushFeedback();
       const still = (await pendingFeedback()).some(item => item.id === message.id);
       if (!still) ending = 'sent';
-      else if (!(await feedbackEnabled())) { ending = 'nowhere'; unsent = message; }
-      else ending = 'waiting';
+      else {
+        // With no connection the copy cannot be asked: its last answer stands, and an unknown is no "no".
+        const enabled = (await feedbackEnabled()) ?? lastKnownFeedbackEnabled();
+        if (enabled === false) { ending = 'nowhere'; unsent = message; }
+        else ending = 'waiting';
+      }
       words = '';
     } catch {
       ending = 'waiting';
