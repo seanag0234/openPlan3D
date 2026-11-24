@@ -13,7 +13,15 @@
     bottomInset: number; showGrid: boolean; showRulers: boolean; showMinimap: boolean; onfit: () => void } = $props();
 
   let showLayerPanel = $state(false);
-  const mouseBarClass = 'absolute bottom-2 right-2 max-md:bottom-[calc(var(--visible-bottom)+3rem)] max-md:left-2 max-md:overflow-x-auto max-md:min-h-12 max-md:items-center max-md:whitespace-nowrap max-md:[&>*]:shrink-0 bg-white/80 rounded px-2 py-1 text-xs text-gray-500 flex gap-3';
+  // From 768 px the bar never breaks a word or grows wider than the plan; it sits at the right of a strip as wide as
+  // the plan, which takes no presses and lets the view toggles drop their words when the plan is narrow. On a plan
+  // narrower still it scrolls sideways, as below 768 px, rather than reach under the panel.
+  const mouseBarClass = 'max-md:absolute max-md:right-2 max-md:bottom-[calc(var(--visible-bottom)+3rem)] max-md:left-2 max-md:overflow-x-auto max-md:min-h-12 max-md:items-center max-md:whitespace-nowrap max-md:[&>*]:shrink-0 md:pointer-events-auto md:whitespace-nowrap md:max-w-full md:overflow-x-auto md:[&>button]:shrink-0 md:[&>span:not([data-counts])]:shrink-0 bg-white/80 rounded px-2 py-1 text-xs text-gray-500 flex gap-3';
+  const mouseStripClass = 'max-md:contents md:absolute md:bottom-2 md:inset-x-2 md:flex md:justify-end md:pointer-events-none @container';
+  /** A view toggle's word: on a narrow plan it takes no room, and still names the button. */
+  const viewWord = '@max-[50rem]:inline-block @max-[50rem]:w-0 @max-[50rem]:overflow-hidden @max-[50rem]:align-bottom';
+  /** Fit's word, which goes only on a narrower plan still. */
+  const narrowWord = '@max-[40rem]:inline-block @max-[40rem]:w-0 @max-[40rem]:overflow-hidden @max-[40rem]:align-bottom';
   // On a touch screen the row is one line across the bottom that scrolls sideways; the counts and view toggles leave it.
   /** The kinds of thing on the plan that can be hidden from the popup; when any is, a notice says so. */
   const HIDEABLE = ['walls', 'doors', 'windows', 'furniture', 'stairs', 'columns', 'measurements', 'annotations', 'textAnnotations'] as const;
@@ -25,12 +33,22 @@
 </script>
 
 <!-- Keep controls above classic horizontal scrollbars, which consume height on Linux. -->
+{#if $coarsePointer}
+  {@render bar()}
+{:else}
+  <div class={mouseStripClass}>{@render bar()}</div>
+{/if}
+
+{#snippet bar()}
 <div data-bar="bottom" style:--visible-bottom={`${bottomInset}px`} class={$coarsePointer ? touchBarClass : mouseBarClass}>
   <!-- Whether walls, doors, windows and rooms ignore presses; another lane's message quotes "House: fixed". -->
   <button class="font-medium {$houseFixed ? 'text-emerald-700' : 'hover:text-gray-700'}" aria-pressed={$houseFixed} title={$t('bars.houseHint')} onclick={() => setHouseFixed(!$houseFixed)}>
     {$houseFixed ? $t('bars.houseFixed') : $t('bars.houseMoves')}
   </button>
   {#if !$coarsePointer}
+  <!-- When the bar runs out of room, counts wrap out of sight one whole item at a time; the buttons stay.
+       The zoom readout goes first: the zoom box shows the same percentage. -->
+  <span data-counts class="flex flex-wrap gap-x-3 h-4 min-w-0 shrink overflow-hidden">
   {#if rooms.length > 0}
     <span>{$t(rooms.length === 1 ? 'canvasStatus.roomsOne' : 'canvasStatus.roomsMany', { count: rooms.length })}</span>
     <span>{formatArea(rooms.reduce((s, r) => s + r.area, 0), $projectSettings.units)}</span>
@@ -53,12 +71,15 @@
     <span class="text-blue-600 font-medium">{$t('canvasStatus.selected', { count: selectedCount })}</span>
     <span class="text-gray-300">|</span>
   {/if}
-  {/if}
   <span>{$t('canvasStatus.zoom', { value: Math.round(zoom * 100) })}</span>
-  <button class="hover:text-gray-700" onclick={onfit} title={$t('canvasZoom.fitHint')}>⊞ {$t('canvasDisplay.fit')}</button>
+  </span>
+  {:else}
+  <span>{$t('canvasStatus.zoom', { value: Math.round(zoom * 100) })}</span>
+  {/if}
+  <button class="hover:text-gray-700" onclick={onfit} title={$t('canvasZoom.fitHint')}>⊞ <span class={narrowWord}>{$t('canvasDisplay.fit')}</span></button>
   {#if !$coarsePointer}
   <button class="hover:text-gray-700" onclick={() => showGrid = !showGrid} title={$t('canvasDisplay.gridHint')} aria-pressed={showGrid}>
-    {showGrid ? '▦' : '▢'} {$t('canvasDisplay.grid')}
+    {showGrid ? '▦' : '▢'} <span class={viewWord}>{$t('canvasDisplay.grid')}</span>
   </button>
   {/if}
   <!-- Snap (S) picks the step snapping rounds to and shows it; the top-bar Snap to Grid turns snapping off, and then this reads "Snap off". -->
@@ -67,7 +88,7 @@
   </button>
   {#if !$coarsePointer}
   <button class="hover:text-gray-700" onclick={() => layerVisibility.update(v => ({ ...v, furniture: !v.furniture }))} title={$t('canvasDisplay.furnitureHint')} aria-pressed={layerVis.furniture}>
-    {layerVis.furniture ? '🪑' : '👻'} {$t('canvasDisplay.furniture')}
+    {layerVis.furniture ? '🪑' : '👻'} <span class={viewWord}>{$t('canvasDisplay.furniture')}</span>
   </button>
   {/if}
   <!-- "Layers" names only the list of everything on the plan; this popup shows and hides kinds of thing. -->
@@ -76,13 +97,14 @@
   </button>
   {#if !$coarsePointer}
   <button class="hover:text-gray-700" onclick={() => showRulers = !showRulers} title={$t('canvasDisplay.rulersHint')} aria-pressed={showRulers}>
-    {showRulers ? '📏' : '📐'} {$t('canvasDisplay.rulers')}
+    {showRulers ? '📏' : '📐'} <span class={viewWord}>{$t('canvasDisplay.rulers')}</span>
   </button>
   <button class="hover:text-gray-700" onclick={() => showMinimap = !showMinimap} title={$t('canvasDisplay.mapHint')} aria-pressed={showMinimap}>
-    {showMinimap ? '🗺' : '🗺'} {$t('canvasDisplay.map')}
+    {showMinimap ? '🗺' : '🗺'} <span class={viewWord}>{$t('canvasDisplay.map')}</span>
   </button>
   {/if}
 </div>
+{/snippet}
 <!-- Hidden things leave the plan without a word otherwise. -->
 {#if somethingHidden}
   <!-- Centred above the bar, clear of the zoom buttons at the left and the map at the right; on a touch screen
