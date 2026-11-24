@@ -33,6 +33,7 @@
   import { initVersionHistory, stopVersionHistory, snapshotOnAction } from '$lib/stores/versionHistory';
   import VersionHistoryPanel from './VersionHistoryPanel.svelte';
   import { coarsePointer } from '$lib/stores/pointer';
+  import { feedbackOpen } from '$lib/stores/ui';
 
   /** On a touch screen a picture button stacks its word under its picture; nothing hovers to explain it. */
   const stacked = $derived($coarsePointer ? 'flex flex-col items-center justify-center gap-0.5' : '');
@@ -722,6 +723,22 @@
   >
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
     <span class={$coarsePointer ? 'block text-[10px] leading-none' : ''}>{$t('bars.open')}</span>
+  </button>
+
+  <!-- Saying what is wrong, from inside the editor; the feedback sheet itself is another part's. -->
+  <button
+    onclick={() => feedbackOpen.set(true)}
+    data-feedback-open={$feedbackOpen}
+    class="px-2 py-1.5 text-sm text-white/90 hover:text-white hover:bg-white/10 rounded transition-colors {$coarsePointer ? stacked : 'flex items-center gap-1.5'}"
+    title={$t('bars.feedback')}
+    aria-label={$t('bars.feedback')}
+  >
+    <span aria-hidden="true">💬</span>
+    {#if $coarsePointer}
+      <span aria-hidden="true" class="block text-[10px] leading-none">{$t('bars.feedback')}</span>
+    {:else}
+      <span class="max-xl:hidden">{$t('bars.feedback')}</span>
+    {/if}
   </button>
 
   <!-- Export dropdown -->

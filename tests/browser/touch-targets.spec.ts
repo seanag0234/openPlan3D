@@ -89,6 +89,18 @@ for (const [name, device] of [['iPad landscape', ipadLandscape], ['iPad portrait
         expect(words, await control.getAttribute('aria-label') ?? 'Projects').not.toBe('');
       }
     });
+
+    test('the feedback button opens the feedback sheet', async ({ page }) => {
+      await openPlan(page, PLAN);
+      const feedback = page.locator('[data-bar="top"]').getByRole('button', { name: 'Feedback', exact: true });
+      await expect(feedback).toBeVisible();
+      await expect(feedback).toContainText('Feedback');
+      await expect(feedback).toHaveAttribute('data-feedback-open', 'false');
+      await feedback.click();
+      await expect(feedback).toHaveAttribute('data-feedback-open', 'true');
+      const top = await page.locator('[data-bar="top"]').evaluate(bar => ({ scroll: bar.scrollWidth, client: bar.clientWidth }));
+      expect(top.scroll).toBeLessThanOrEqual(top.client);
+    });
   });
 }
 
@@ -100,4 +112,16 @@ test('with a mouse the bars keep their sizes', async ({ page }) => {
   expect((await fit.boundingBox())!.height).toBeLessThan(30);
   await expect(page.locator('[data-bar="bottom"]').getByRole('button', { name: /Grid/ })).toBeVisible();
   await expect(page.locator('[data-bar="bottom"]').getByText(/walls$/)).toBeVisible();
+});
+
+test('with a mouse the feedback button is a picture below 1280 px and says Feedback from 1280 px', async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 800 });
+  await openPlan(page, PLAN);
+  const feedback = page.locator('[data-bar="top"]').getByRole('button', { name: 'Feedback', exact: true });
+  await expect(feedback).toBeVisible();
+  await expect(feedback.getByText('Feedback', { exact: true })).toBeHidden();
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await expect(feedback.getByText('Feedback', { exact: true })).toBeVisible();
+  await feedback.click();
+  await expect(feedback).toHaveAttribute('data-feedback-open', 'true');
 });
