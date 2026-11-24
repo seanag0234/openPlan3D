@@ -22,6 +22,9 @@ import { getRoomPolygon, roomCentroid, roomLabelPosition } from '$lib/utils/room
 import { getWallTextureCanvas, getFloorTextureCanvas } from '$lib/utils/textureGenerator';
 import { getEntourageDef } from '$lib/utils/entourageCatalog';
 import type { EntourageItem, CustomEntourageDef } from '$lib/models/types';
+
+/** The smallest text size in screen px: 12 inside the editor's frame, `otherwise` in the picture, the PDF and the print page. */
+const textFloor = (otherwise: number) => captionFrameOpen() ? Math.max(12, otherwise) : otherwise;
 import { interiorRoomExtent } from '$lib/utils/interiorArea';
 
 // ── Wall geometry helpers ────────────────────────────────────────────
@@ -204,7 +207,7 @@ export function drawWall(
       const midTan = wallTangentAt(w, 0.5);
       const offsetDist = thickness / 2 + 16;
       ctx.fillStyle = dimSettings.dimensionLineColor;
-      const fontSize = Math.max(10, 11 * zoom);
+      const fontSize = Math.max(textFloor(10), 11 * zoom);
       ctx.font = `${fontSize}px sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -349,7 +352,7 @@ export function drawWall(
   const dimMy = (ds.y + de.y) / 2;
 
   ctx.fillStyle = dimSettings.dimensionLineColor;
-  const fontSize = Math.max(10, 11 * zoom);
+  const fontSize = Math.max(textFloor(10), 11 * zoom);
   ctx.font = `${fontSize}px sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -835,7 +838,7 @@ export function drawDoorDistanceDimensions(cs: CanvasState, wall: Wall, door: Do
     ctx.setLineDash([]);
   }
 
-  const fontSize = Math.max(10, 11 * zoom);
+  const fontSize = Math.max(textFloor(10), 11 * zoom);
   ctx.font = `${fontSize}px sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -879,7 +882,7 @@ export function drawWindowDistanceDimensions(cs: CanvasState, wall: Wall, window
     ctx.setLineDash([]);
   }
 
-  const fontSize = Math.max(10, 11 * zoom);
+  const fontSize = Math.max(textFloor(10), 11 * zoom);
   ctx.font = `${fontSize}px sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -1056,7 +1059,7 @@ export function drawStair(cs: CanvasState, stair: Stair, selected: boolean): voi
 
   function drawStairLabelLocal() {
     ctx.fillStyle = '#374151';
-    ctx.font = `${Math.max(8, 10 * zoom)}px sans-serif`;
+    ctx.font = `${Math.max(textFloor(8), 10 * zoom)}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     const sType = stair.stairType || 'straight';
@@ -1156,7 +1159,7 @@ export function drawStair(cs: CanvasState, stair: Stair, selected: boolean): voi
     ctx.lineTo(ax2 - 6 * Math.cos(tangent + 0.4), ay2 - 6 * Math.sin(tangent + 0.4));
     ctx.lineTo(ax2 - 6 * Math.cos(tangent - 0.4), ay2 - 6 * Math.sin(tangent - 0.4));
     ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#374151'; ctx.font = `${Math.max(8, 10 * zoom)}px sans-serif`;
+    ctx.fillStyle = '#374151'; ctx.font = `${Math.max(textFloor(8), 10 * zoom)}px sans-serif`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(stair.direction === 'up' ? 'UP' : 'DN', 0, r + 12 * zoom);
   }
@@ -1287,7 +1290,7 @@ export function drawTextAnnotations(cs: CanvasState, floor: Floor, selectedTextA
   for (const ta of floor.textAnnotations) {
     const selected = ta.id === selectedTextAnnotationId || ta.id === currentSelectedId;
     const s = wts(cs, ta.x, ta.y);
-    const fontSize = Math.max(8, ta.fontSize * zoom);
+    const fontSize = Math.max(textFloor(8), ta.fontSize * zoom);
     ctx.save();
     ctx.translate(s.x, s.y);
     if (ta.rotation) ctx.rotate(ta.rotation * Math.PI / 180);
@@ -1353,7 +1356,7 @@ export function drawAnnotation(cs: CanvasState, a: Annotation, selected: boolean
 
   const dist = Math.hypot(a.x2 - a.x1, a.y2 - a.y1);
   const label = a.label || formatLength(dist, dimSettings.units);
-  const fontSize = Math.max(10, 11 * zoom);
+  const fontSize = Math.max(textFloor(10), 11 * zoom);
   ctx.font = `${fontSize}px sans-serif`;
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const textW = ctx.measureText(label).width;
@@ -1553,7 +1556,7 @@ export function drawRooms(
 
     const centroid = roomCentroid(poly);
     const sc = wts(cs, centroid.x, centroid.y);
-    const fontSize = Math.max(11, 13 * zoom);
+    const fontSize = Math.max(textFloor(11), 13 * zoom);
     if (showRoomLabels) {
       ctx.fillStyle = '#9ca3af';
       ctx.font = `${fontSize}px sans-serif`;
@@ -1572,7 +1575,7 @@ export function drawRooms(
       const roomW = (maxX - minX) / 100;
       const roomD = (maxY - minY) / 100;
       if (roomW > 0.1 && roomD > 0.1) {
-        const dimFontSize = Math.max(9, 10 * zoom);
+        const dimFontSize = Math.max(textFloor(9), 10 * zoom);
         ctx.fillStyle = '#b0b8c4'; ctx.font = `${dimFontSize}px sans-serif`;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(`${formatLength(roomW * 100, dimSettings.units)} × ${formatLength(roomD * 100, dimSettings.units)}`, sc.x, sc.y + fontSize + 2);

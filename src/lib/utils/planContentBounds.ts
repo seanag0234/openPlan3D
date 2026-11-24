@@ -35,6 +35,8 @@ export function planContentBounds(floor: Floor, options: {
   roomLabels?: { room: Room; polygon: Point[] }[];
   units?: 'metric' | 'imperial';
   zoom?: number;
+  /** The smallest size text is drawn at, in screen px: 12 in the editor, unset in the picture, the PDF and the print page. */
+  labelFloorPx?: number;
   backgroundSize?: { width: number; height: number };
 }): Bounds | null {
   let bounds: Bounds | null = null;
@@ -67,6 +69,8 @@ export function planContentBounds(floor: Floor, options: {
   options.context.save();
   try {
     const ctx = options.context, scale = options.zoom ?? 1;
+    // Each size mirrors its drawing twin in canvasRenderer, raised to the editor's floor when there is one.
+    const floorPx = (otherwise: number) => Math.max(options.labelFloorPx ?? 0, otherwise);
     function caption(text: string, x: number, y: number, font: string, size: number, bottom = false) {
       ctx.font = font; ctx.textAlign = 'center'; ctx.textBaseline = bottom ? 'bottom' : 'middle';
       const m = ctx.measureText(text);
@@ -79,7 +83,7 @@ export function planContentBounds(floor: Floor, options: {
       const localY = spiral ? Math.min(stair.width, stair.depth) / 2 + 12 : 0;
       const angle = stair.rotation * Math.PI / 180;
       add(textAnnotationBounds({ id: stair.id, text: label, fontSize: 10, color: '#374151', rotation: stair.rotation,
-        x: stair.position.x - localY * Math.sin(angle), y: stair.position.y + localY * Math.cos(angle) }, ctx, scale));
+        x: stair.position.x - localY * Math.sin(angle), y: stair.position.y + localY * Math.cos(angle) }, ctx, scale, floorPx(8)));
       if (spiral) {
         const r = Math.min(stair.width, stair.depth) / 2 + 6 / scale;
         rectangle(stair.position.x, stair.position.y, r * 2, r * 2, 0);
@@ -90,7 +94,7 @@ export function planContentBounds(floor: Floor, options: {
       if (length < 10) continue;
       const tangent = wallTangentAt(wall, .5), normal = { x: -tangent.y, y: tangent.x };
       const halfThickness = Math.max(wall.thickness * scale, 4) / (2 * scale);
-      const size = Math.max(10, 11 * scale);
+      const size = Math.max(floorPx(10), 11 * scale);
       if (wall.curvePoint) {
         const middle = wallPointAt(wall, .5), offset = halfThickness + 16 / scale;
         caption(formatLength(length, options.units ?? 'metric'), middle.x + normal.x * offset,
@@ -125,9 +129,9 @@ export function planContentBounds(floor: Floor, options: {
       const width = clear ? clear.maxX - clear.minX : Math.max(...polygon.map(p => p.x)) - Math.min(...polygon.map(p => p.x));
       const depth = clear ? clear.maxY - clear.minY : Math.max(...polygon.map(p => p.y)) - Math.min(...polygon.map(p => p.y));
       if (width <= 10 || depth <= 10) continue;
-      const center = roomCentroid(polygon), size = Math.max(9, 10 * scale);
+      const center = roomCentroid(polygon), size = Math.max(floorPx(9), 10 * scale);
       caption(`${formatLength(width, options.units ?? 'metric')} × ${formatLength(depth, options.units ?? 'metric')}`,
-        center.x, center.y + (Math.max(11, 13 * scale) + 2) / scale, `${size}px sans-serif`, size);
+        center.x, center.y + (Math.max(floorPx(11), 13 * scale) + 2) / scale, `${size}px sans-serif`, size);
     }
     if (options.measurementsVisible !== false) for (const m of floor.measurements ?? []) {
       for (const [x, y] of [[m.x1, m.y1], [m.x2, m.y2]]) rectangle(x, y, 6 / scale, 6 / scale, 0);
@@ -140,16 +144,16 @@ export function planContentBounds(floor: Floor, options: {
       point(a.x1, a.y1); point(a.x2, a.y2);
       const arrowExtent = (Math.max(6, 7 * scale) + Math.max(2.5, 3 * scale)) / scale;
       for (const p of [g.start, g.end]) rectangle(p.x, p.y, Math.max(4, arrowExtent) * 2, Math.max(4, arrowExtent) * 2, 0);
-      const size = Math.max(10, 11 * scale);
+      const size = Math.max(floorPx(10), 11 * scale);
       caption(a.label || formatLength(g.length, options.units ?? 'metric'), g.center.x, g.center.y, `${size}px sans-serif`, size);
     }
-    if (options.textAnnotationsVisible !== false) for (const note of floor.textAnnotations ?? []) add(textAnnotationBounds(note, options.context, options.zoom ?? 1));
+    if (options.textAnnotationsVisible !== false) for (const note of floor.textAnnotations ?? []) add(textAnnotationBounds(note, options.context, options.zoom ?? 1, floorPx(8)));
     const labels=options.roomLabels ?? [], holes=roomHoles(labels.map(r=>r.polygon));
     for (const [index, { room, polygon }] of labels.entries()) {
       if (polygon.length < 3) continue;
       const anchor = roomLabelPosition(room, polygon, holes[index]), ctx = options.context;
       const scale = options.zoom ?? 1;
-      const fontSize = Math.max(11, 13 * scale);
+      const fontSize = Math.max(floorPx(11), 13 * scale);
       ctx.font = `${fontSize}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       const m = ctx.measureText(`${room.name} (${formatArea(room.area, options.units ?? 'metric')})`);
       point(anchor.x - (m.actualBoundingBoxLeft ?? m.width / 2) / scale, anchor.y - (m.actualBoundingBoxAscent ?? fontSize) / scale);
