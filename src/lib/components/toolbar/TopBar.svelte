@@ -10,7 +10,7 @@
   import { modalDialog, hasOpenModal } from '$lib/utils/modalDialog';
   import { focusInlineEditor } from '$lib/utils/inlineEditorFocus';
   import { MAX_FLOOR_NAME_LENGTH } from '$lib/utils/floors';
-  import { openProject, openStoredProject } from '$lib/services/projectOpening';
+  import { openProject, openStoredProject, openPlanFile, readPlanFile } from '$lib/services/projectOpening';
   import { saveConflict, savingCopy, saveCurrentAsCopy } from '$lib/stores/saveStatus';
   import ImportError from '$lib/components/ImportError.svelte';
   import ProjectPackageDialog from '$lib/components/ProjectPackageDialog.svelte';
@@ -370,15 +370,16 @@
       const file = input.files?.[0];
       if (!file) return;
       try {
-        await openProject(async () => {
-          const data = /\.zip$/i.test(file.name)
-            ? await extractRoomJsonFromZip(file)
-            : JSON.parse(await file.text());
-          if (isLibraryBackup(data)) throw new LibraryBackupFileError();
-          return isRoomPlanJson(data)
-            ? createProjectFromRoomPlan(data, interchangeProjectName(data, file.name.replace(/\.(json|zip)$/i, '')))
-            : data;
-        }, 'import', openingLifetime.signal);
+        if (/\.zip$/i.test(file.name)) {
+          await openProject(async () => {
+            const data = await extractRoomJsonFromZip(file);
+            if (isLibraryBackup(data)) throw new LibraryBackupFileError();
+            return isRoomPlanJson(data) ? createProjectFromRoomPlan(data, interchangeProjectName(data, file.name.replace(/\.zip$/i, ''))) : data;
+          }, 'import', openingLifetime.signal);
+        } else {
+          // A plan already in the list opens as it is when the file matches it, and is asked about when it differs.
+          await openPlanFile(() => readPlanFile(file), openingLifetime.signal);
+        }
       } catch (e: any) {
         if (e instanceof LibraryBackupFileError) { restoreFile = file; return; }
         const message = e?.message ?? 'Could not read this file.';

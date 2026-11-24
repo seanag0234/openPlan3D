@@ -1,6 +1,6 @@
 import { savedProjects as library, storedRecords, failProjectWrites as failWrites } from './storage';
 import { expect, test, type Page } from '@playwright/test';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 const fixture = resolve('tests/fixtures/native-import.openplan.json');
@@ -56,7 +56,9 @@ for (const width of [1440, 390]) {
     await rename(page, 'Latest original edits');
     expect((await library(page))[source.id].name).toBe(source.name);
     await importJSON(page);
-    await expect(page.getByTitle('Click to rename', { exact: true })).toHaveText(`${source.name} (Imported copy)`);
+    // The saved plan was renamed, so the file differs from it and is asked about.
+    await page.getByRole('dialog', { name: 'You already have this plan' }).getByRole('button', { name: /Keep both/ }).click();
+    await expect(page.getByTitle('Click to rename', { exact: true })).toHaveText(`${source.name} (2)`);
     const copy = await exportJSON(page);
     expect(copy.id).not.toBe(source.id);
     expect(copy.floors).toEqual(normalized.floors);
@@ -101,17 +103,22 @@ test('a failed current save blocks import and New Project, with backup and retry
   await page.getByRole('button', { name: 'Retry save', exact: true }).click();
   await expect(page.getByRole('alert')).toHaveCount(0);
   await importJSON(page);
-  await expect(page.getByTitle('Click to rename', { exact: true })).toHaveText(`${source.name} (Imported copy)`);
+  await page.getByRole('dialog', { name: 'You already have this plan' }).getByRole('button', { name: /Keep both/ }).click();
+  await expect(page.getByTitle('Click to rename', { exact: true })).toHaveText(`${source.name} (2)`);
   expect((await library(page))[source.id].name).toBe('Unsaved work to recover');
   check();
 });
 
-test('a failed candidate save keeps the import in memory and its original safe in the library', async ({ page }) => {
+test('a failed candidate save keeps the import in memory and its original safe in the library', async ({ page }, testInfo) => {
   const check = observe(page), source = await seed(page);
   const normalized = await exportJSON(page);
+  // A file of the same plan under another name: the same file would just open the plan, with nothing to save.
+  const changed = testInfo.outputPath('changed-name.json');
+  await writeFile(changed, JSON.stringify({ ...source, name: 'Changed in the file' }));
   await failWrites(page);
-  await importJSON(page);
-  await expect(page.getByTitle('Click to rename', { exact: true })).toHaveText(`${source.name} (Imported copy)`);
+  await importJSON(page, changed);
+  await page.getByRole('dialog', { name: 'You already have this plan' }).getByRole('button', { name: /Keep both/ }).click();
+  await expect(page.getByTitle('Click to rename', { exact: true })).toHaveText('Changed in the file (2)');
   await expect(page.getByRole('alert')).toContainText('Browser storage is full');
   const copy = await exportJSON(page);
   expect(copy.id).not.toBe(source.id); expect(copy.floors).toEqual(normalized.floors);

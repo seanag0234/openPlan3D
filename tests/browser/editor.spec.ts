@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { savedProjects } from './storage';
 
 const fixture = resolve('tests/fixtures/handoff-roomplan.json');
 
@@ -304,8 +305,14 @@ for (const width of [1440, 390]) {
     await page.reload();
     expect((await exportJSON(page)).floors).toEqual(saved.floors);
     // JSON import must preserve the setting as well as local storage does.
+    const listed = Object.keys(await savedProjects(page)).sort();
     await importJSON(page, { name: 'elevations.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(saved)) });
-    await expect(page.getByRole('button', { name: `${saved.name} (Imported copy)`, exact: true })).toBeVisible();
+    // The file is the saved plan itself, so the plan opens as it is: no copy, no question.
+    await page.waitForTimeout(1000);
+    await expect(page.getByRole('button', { name: saved.name, exact: true })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'You already have this plan' })).toHaveCount(0);
+    expect(Object.keys(await savedProjects(page)).sort()).toEqual(listed);
+    expect((await exportJSON(page)).id).toBe(saved.id);
     await selectFloor('Curved Upper');
     await page.getByRole('button', { name: '3D', exact: true }).click();
     await expect(page.getByRole('region', { name: '3D floor plan viewer' }).locator('canvas').first()).toBeVisible({ timeout: 60_000 });
