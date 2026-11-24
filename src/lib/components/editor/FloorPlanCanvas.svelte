@@ -2324,6 +2324,8 @@
   let furnitureGestureStarted = false;
   let geometryGestureStarted = false;
   let selectionPress: { floorId: string; x: number; y: number; world: Point } | null = null;
+  /** A mouse press on a locked label or piece with nothing else under it: picked on release if the pointer has not moved. */
+  let lockedPress: (() => void) | null = null;
 
   function sameSelectionPress(e: MouseEvent) {
     return currentTool === 'select' && selectionPress !== null && selectionPress.floorId === currentFloor?.id &&
@@ -2364,6 +2366,7 @@
     // the now-shifted pixel before the dblclick handler runs.
     if (e.button === 0 && e.detail >= 2 && sameSelectionPress(e)) return;
     selectionPress = null;
+    lockedPress = null;
     canvasGestureActive = true;
     canvasPressPosition = { x: e.clientX, y: e.clientY };
     if (e.button === 0 && e.shiftKey && currentTool === 'select' && currentFloor && !spaceDown && !$panMode) {
@@ -2790,13 +2793,15 @@
       if (wall) {
         if (selectElement(wall.id, e.shiftKey)) return;
       } else {
-        // A tap reaches a locked label or piece when nothing else is under the finger; a drag
-        // still passes through it. Everything found here is locked: the rest was found above.
-        if (touchPress === 'tap' && currentFloor) {
+        // A tap or a click reaches a locked label or piece when nothing else is under it; a drag still passes through it.
+        // Everything found here is locked: the rest was found above. A mouse press cannot tell a click from a drag yet,
+        // so it carries on as before and the release picks the locked thing if the pointer has not moved.
+        if (touchPress !== 'drag' && currentFloor && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
           const label = hitTestTextAnnotation(wp, currentFloor);
-          if (label) { selectAuxiliary('text', label); return; }
-          const piece = _findFurnitureAt(wp, currentFloor.furniture) ?? findEntourageAt(wp, currentFloor.entourage, d => entourageAspect(d, customEntourageDefs));
-          if (piece) { selectElement(piece.id, false); return; }
+          const piece = label ? null : _findFurnitureAt(wp, currentFloor.furniture) ?? findEntourageAt(wp, currentFloor.entourage, d => entourageAspect(d, customEntourageDefs));
+          const pick = label ? () => selectAuxiliary('text', label) : piece ? () => { selectElement(piece.id, false); } : null;
+          if (pick && touchPress === 'tap') { pick(); return; }
+          lockedPress = pick;
         }
         // Check if clicking on a room label (for dragging)
         const labelRoom = fixed ? null : findRoomLabelAt(wp);
@@ -3283,6 +3288,12 @@
       }
       marqueeStart = null;
       marqueeEnd = null;
+    }
+
+    // A click that began on a locked label or piece, with nothing else under it, picks it.
+    if (lockedPress) {
+      const pick = lockedPress; lockedPress = null;
+      if (canvasPressPosition && Math.hypot(e.clientX - canvasPressPosition.x, e.clientY - canvasPressPosition.y) <= 4) { selectedRoomId.set(null); pick(); }
     }
 
     if (furnitureGestureStarted) {
