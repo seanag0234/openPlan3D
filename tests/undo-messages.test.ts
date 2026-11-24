@@ -87,3 +87,8 @@ it('has a Portuguese entry for every fixed description the editor records', () =
   expect(descriptions.filter(value => undoMessage(value, 'pt') === value)).toEqual([]);
   expect(descriptions.filter(value => undoMessage(value, 'en') !== value)).toEqual([]);
 });
+
+it('names an added plain box in the Undo list', () => {
+  expect(undoMessage('Added a box', 'pt')).toBe('Caixa adicionada');
+  expect(undoMessage('Added a box', 'en')).toBe('Added a box');
+});
