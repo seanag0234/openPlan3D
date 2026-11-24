@@ -2183,6 +2183,28 @@
     return null;
   }
 
+  /**
+   * A selected measuring line, dimension or text label, for the bar at the selection to offer
+   * removing it: its kind, id and screen point in canvas px. Null when none is selected, or when
+   * the label is the single selected element the bar already anchors to.
+   */
+  function selectedExtra(): { kind: 'measurement' | 'annotation' | 'text'; id: string; x: number; y: number } | null {
+    const f = currentFloor;
+    if (!f) return null;
+    const line = (kind: 'measurement' | 'annotation', id: string | null, list: { id: string; x1: number; y1: number; x2: number; y2: number }[] | undefined) => {
+      const item = id ? list?.find(m => m.id === id) : undefined;
+      if (!item) return null;
+      const p = worldToScreen((item.x1 + item.x2) / 2, (item.y1 + item.y2) / 2);
+      return { kind, id: item.id, x: p.x, y: p.y };
+    };
+    const extra = line('measurement', selectedMeasurementId, f.measurements) ?? line('annotation', selectedAnnotationId, f.annotations);
+    if (extra) return extra;
+    const label = selectedTextAnnotationId ? f.textAnnotations?.find(item => item.id === selectedTextAnnotationId) : undefined;
+    if (!label || (currentSelectedId === label.id && currentSelectedIds.size === 0 && selectionAnchor())) return null;
+    const p = worldToScreen(label.x, label.y);
+    return { kind: 'text', id: label.id, x: p.x, y: p.y };
+  }
+
   /** The selection's bounds on screen, in canvas px, or null when nothing is selected. */
   function selectionScreenBox(): { left: number; top: number; right: number; bottom: number } | null {
     if (!currentFloor) return null;
@@ -4060,7 +4082,7 @@
 
 <svelte:window on:keydown={onKeyDown} on:keyup={onKeyUp} onmousemove={onWindowMouseMove} onmouseup={onWindowMouseUp} onblur={onWindowBlur} />
 
-<div class="w-full h-full relative overflow-hidden" role="application">
+<div class="w-full h-full relative overflow-hidden" role="application" data-extra-kind={selectedExtra()?.kind}>
   <canvas
     bind:this={canvas}
     class="block w-full h-full touch-none"
@@ -4214,9 +4236,9 @@
   <StatusBar rooms={detectedRooms} floor={currentFloor} {floorBelow} selectedCount={currentSelectedIds.size} {zoom} {snapControl} snapEnabled={currentSnapEnabled} {layerVis} {showRoomLabels} {showDimensions} bottomInset={zoomControlsBottom} bind:showGrid bind:showRulers bind:showMinimap onfit={onFitPressed} />
 
   <!-- Contextual Toolbar (hidden while the integrated elevation view covers the canvas) -->
-  {#if (currentSelectedId || currentSelectedIds.size > 0) && currentFloor && currentTool === 'select' && !elevationOpen}
+  {#if (currentSelectedId || currentSelectedIds.size > 0 || selectedExtra()) && currentFloor && currentTool === 'select' && !elevationOpen}
     <SelectionToolbar anchor={selectionAnchor()} box={selectionScreenBox()} selectedId={currentSelectedId} selectedIds={currentSelectedIds}
-      floorId={currentFloor.id} locked={allLocked(currentFloor, deleteTargetIds())} extra={null}
+      floorId={currentFloor.id} locked={allLocked(currentFloor, deleteTargetIds())} extra={selectedExtra()}
       onsplit={() => {
         if (currentSelectedId) {
           const newId = trySplitWall(currentSelectedId, 0.5);
