@@ -11,6 +11,7 @@ import { getFurnitureSize } from '$lib/utils/furnitureCatalog';
 import { getRoomPolygon, roomLabelPosition } from '$lib/utils/roomDetection';
 import { wallPointAt, wallTangentAt } from '$lib/utils/canvasRenderer';
 import type { HandleType } from '$lib/utils/canvasInteraction';
+import { FINE_HANDLE, type HandleGeometry } from '$lib/utils/handleGeometry';
 import { projectOntoWall } from './wallProjection';
 
 export function pointInPolygon(p: Point, poly: Point[]): boolean {
@@ -73,15 +74,22 @@ export function findWallAt(p: Point, walls: Wall[], zoom: number): Wall | null {
   return nearest;
 }
 
+/**
+ * The selected piece's handle under `p`. Handles sit `geometry.outset` screen px outside the
+ * piece's corners and edges and answer within `geometry.reach` px. A mouse's handles (outset 0)
+ * are squares on the corners; a finger's sit outside, never answer inside the piece, and the
+ * nearest one wins. A locked piece has none.
+ */
 export function findHandleAt(
   p: Point,
   selectedId: string | null,
   furniture: FurnitureItem[],
-  zoom: number
+  zoom: number,
+  geometry: HandleGeometry = FINE_HANDLE
 ): HandleType | null {
   if (!selectedId) return null;
   const fi = furniture.find(f => f.id === selectedId);
-  if (!fi) return null;
+  if (!fi || fi.locked) return null;
   const dx = p.x - fi.position.x;
   const dy = p.y - fi.position.y;
   const angle = -(fi.rotation * Math.PI) / 180;
@@ -90,23 +98,38 @@ export function findHandleAt(
   const size = getFurnitureSize(fi);
   const hw = size.width / 2;
   const hd = size.depth / 2;
-  const ht = 8 / zoom;
+  const o = geometry.outset / zoom;
+  const ht = geometry.reach / zoom;
+  const rotHandleDist = (18 + 3 * geometry.outset) / zoom;
+  // In order: the turn handle first, then the corners, then the edges.
+  const centres: [HandleType, number, number][] = [
+    ['rotate', 0, -hd - rotHandleDist],
+    ['resize-tl', -(hw + o), -(hd + o)],
+    ['resize-tr', hw + o, -(hd + o)],
+    ['resize-bl', -(hw + o), hd + o],
+    ['resize-br', hw + o, hd + o],
+    ['resize-t', 0, -(hd + o)],
+    ['resize-b', 0, hd + o],
+    ['resize-l', -(hw + o), 0],
+    ['resize-r', hw + o, 0],
+  ];
 
-  const rotHandleDist = 18 / zoom;
-  if (Math.abs(rx) < ht && Math.abs(ry - (-hd - rotHandleDist)) < ht) return 'rotate';
+  if (geometry.outset === 0) {
+    for (const [handle, cx, cy] of centres) {
+      if (Math.abs(rx - cx) < ht && Math.abs(ry - cy) < ht) return handle;
+    }
+    return null;
+  }
 
-  if (Math.abs(rx - (-hw)) < ht && Math.abs(ry - (-hd)) < ht) return 'resize-tl';
-  if (Math.abs(rx - hw) < ht && Math.abs(ry - (-hd)) < ht) return 'resize-tr';
-  if (Math.abs(rx - (-hw)) < ht && Math.abs(ry - hd) < ht) return 'resize-bl';
-  if (Math.abs(rx - hw) < ht && Math.abs(ry - hd) < ht) return 'resize-br';
-
-  // Edge midpoint handles
-  if (Math.abs(rx) < ht && Math.abs(ry - (-hd)) < ht) return 'resize-t';
-  if (Math.abs(rx) < ht && Math.abs(ry - hd) < ht) return 'resize-b';
-  if (Math.abs(rx - (-hw)) < ht && Math.abs(ry) < ht) return 'resize-l';
-  if (Math.abs(rx - hw) < ht && Math.abs(ry) < ht) return 'resize-r';
-
-  return null;
+  // A finger inside the piece means the piece, never a handle.
+  if (Math.abs(rx) < hw && Math.abs(ry) < hd) return null;
+  let nearest: HandleType | null = null, best = Infinity;
+  for (const [handle, cx, cy] of centres) {
+    const distance = Math.hypot(rx - cx, ry - cy);
+    // Only a strictly nearer handle takes over, so on a tie the turn handle wins.
+    if (distance <= ht && distance < best) { nearest = handle; best = distance; }
+  }
+  return nearest;
 }
 
 export function findFurnitureAt(p: Point, furniture: FurnitureItem[]): FurnitureItem | null {

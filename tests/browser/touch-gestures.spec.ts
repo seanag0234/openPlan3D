@@ -151,3 +151,37 @@ test('a tap on bare paper still clears the selection', async ({ page }) => {
   await hand.tap(a.x, a.y - 260 * scale);
   await expect(fitSelection(page)).toBeDisabled();
 });
+
+/** Box A's centre on screen: the "Reading corner" label is drawn at (300, 60) cm, Box A stands at (150, 200). */
+async function boxACentre(page: Page, a: { x: number }, scale: number) {
+  const label = await where(page, 'Reading corner');
+  return { x: a.x, y: label.y + 140 * scale };
+}
+
+test('a finger 15 px outside the corner of the selected Box A resizes it and moves no wall', async ({ page }) => {
+  const { hand, before, a, scale } = await open(page);
+  await hand.tap(a.x, a.y);
+  const c = await boxACentre(page, a, scale);
+  const corner = { x: c.x + 60 * scale, y: c.y + 45 * scale };
+  const off = 15 / Math.SQRT2;
+  await hand.drag([corner.x + off, corner.y + off], [corner.x + off + 40, corner.y + off + 30]);
+  const after = await savedPlan(page);
+  const drawnWidth = (piece: any) => piece.width * Math.abs(piece.scale?.x ?? 1);
+  expect(drawnWidth(item(after, 'box-a'))).toBeGreaterThan(drawnWidth(item(before, 'box-a')) + 10);
+  expect(after.floors[0].walls).toEqual(before.floors[0].walls);
+  expect(after.floors[0].windows).toEqual(before.floors[0].windows);
+});
+
+test('a finger 6 px inside the corner of the selected Box A moves it', async ({ page }) => {
+  const { hand, before, a, scale } = await open(page);
+  await hand.tap(a.x, a.y);
+  const c = await boxACentre(page, a, scale);
+  const corner = { x: c.x + 60 * scale, y: c.y + 45 * scale };
+  const off = 6 / Math.SQRT2;
+  await hand.drag([corner.x - off, corner.y - off], [corner.x - off + 50 * scale, corner.y - off]);
+  const after = await savedPlan(page);
+  expect(item(after, 'box-a').width).toBe(item(before, 'box-a').width);
+  expect(item(after, 'box-a').scale).toEqual(item(before, 'box-a').scale);
+  expect(item(after, 'box-a').position.x).toBe(item(before, 'box-a').position.x + 50);
+  expect(after.floors[0].walls).toEqual(before.floors[0].walls);
+});

@@ -44,6 +44,7 @@
   import { detailsOpen, multiSelectMode, noteTarget, planObstruction, revealSelection } from '$lib/stores/ui';
   import { shiftToReveal } from '$lib/utils/viewShift';
   import { coarsePointer } from '$lib/stores/pointer';
+  import { handleGeometry } from '$lib/utils/handleGeometry';
   import { gridLineStepCm, resizeStep, snapPieceMove, snapValue, stopAtWalls, type SnapContext } from '$lib/utils/snapPolicy';
   import { furnitureSizeLabel } from '$lib/utils/furnitureCaption';
   import { createTouchGestures, type TouchSample } from '$lib/utils/touchGestures';
@@ -2258,7 +2259,7 @@
 
   function findHandleAt(p: Point): HandleType | null {
     if (!currentFloor) return null;
-    return _findHandleAt(p, currentSelectedId, currentFloor.furniture, zoom);
+    return _findHandleAt(p, currentSelectedId, currentFloor.furniture, zoom, handleGeometry(currentCoarse));
   }
 
   function findFurnitureAt(p: Point): FurnitureItem | null {
