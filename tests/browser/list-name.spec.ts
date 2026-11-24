@@ -7,7 +7,7 @@ test.beforeEach(async ({ context }) => {
   });
 });
 
-for (const [locale, list, layers, opener] of [['en', 'Everything on the plan', 'Layers', 'Layers Panel (L)'], ['pt', 'Tudo na planta', 'Camadas', 'Painel de camadas (L)']] as const) {
+for (const [locale, list, layers, opener] of [['en', 'Everything on the plan', 'Layers', 'Everything on the plan (L)'], ['pt', 'Tudo na planta', 'Camadas', 'Tudo na planta (L)']] as const) {
   test(`${locale}: the list of everything on the plan is not called by the bottom bar's Layers name`, async ({ page }) => {
     await page.addInitScript(value => localStorage.setItem('o3d_locale', value), locale);
     await page.goto('/editor');

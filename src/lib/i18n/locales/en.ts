@@ -1090,7 +1090,7 @@ export const en = {
   "editorPanels.tools": "Toggle tools panel",
   "editorPanels.layers": "Toggle Layers Panel",
   "editorPanels.history": "Toggle Undo History",
-  "editorPanels.layersTitle": "Layers Panel (L)",
+  "editorPanels.layersTitle": "Everything on the plan (L)",
   "viewerNav.region": "3D floor plan viewer",
   "viewerNav.webglUnavailable": "The 3D view needs WebGL, which this browser could not start. Turn on hardware acceleration or try another browser. The 2D plan still works.",
   "viewerNav.activeFloor": "Active Floor Only",

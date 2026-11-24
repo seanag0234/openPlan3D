@@ -1090,7 +1090,7 @@ export const pt = {
   "editorPanels.tools": "Alternar painel de ferramentas",
   "editorPanels.layers": "Alternar painel de camadas",
   "editorPanels.history": "Alternar histórico de ações",
-  "editorPanels.layersTitle": "Painel de camadas (L)",
+  "editorPanels.layersTitle": "Tudo na planta (L)",
   "viewerNav.region": "Visualizador 3D da planta",
   "viewerNav.webglUnavailable": "A vista 3D precisa do WebGL, que este navegador não conseguiu iniciar. Ative a aceleração de hardware ou use outro navegador. A planta 2D continua funcionando.",
   "viewerNav.activeFloor": "Somente pavimento ativo",
