@@ -88,7 +88,7 @@ test('a copy that takes no feedback lets the words be saved as a file', async ({
 test('the list of plans has a Feedback link, and its sheet offers no picture', async ({ page }) => {
   await feedbackRoute(page, true, route => route.fulfill({ status: 201, body: '{"ok":true}' }));
   await page.addInitScript(() => localStorage.setItem('hasSeenWelcome', 'true'));
-  await page.goto('/');
+  await openList(page);
   await page.getByRole('button', { name: 'Feedback', exact: true }).tap();
   const sheet = page.getByRole('dialog', { name: 'What is wrong, or what do you wish for?' });
   await expect(sheet).toBeVisible();

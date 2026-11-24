@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { openPlan, savedPlan } from './touch';
 import { savedProjects } from './storage';
+import { openList } from './list';
 
 const notAPlan = { name: 'hello.json', mimeType: 'application/json', buffer: Buffer.from('{"hello":1}') };
 /** A saved plan cut short, as half a download is: each browser words it its own way. */
@@ -50,7 +51,7 @@ for (const [what, file, technical] of [
   test(`${what}, given to Open a plan file on the list, gets a plain answer`, async ({ page }) => {
     await openPlan(page, 'tests/fixtures/room-with-boxes.openplan.json');
     await expect.poll(async () => Object.keys(await savedProjects(page))).toContain('room-with-boxes');
-    await page.goto('/');
+    await openList(page);
     const before = await savedProjects(page);
     const chooser = page.waitForEvent('filechooser');
     await page.getByRole('button', { name: 'Open a plan file' }).click();

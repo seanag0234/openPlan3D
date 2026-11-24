@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { ipadLandscape, recordLabels, where } from './touch';
 import { savedProjects, storedRecords } from './storage';
+import { openList } from './list';
 
 const fixture = resolve('tests/fixtures/room-with-boxes.openplan.json');
 const ID = 'room-with-boxes';
@@ -25,8 +26,7 @@ for (const [device, use] of [['mouse at 1366 px', { viewport: { width: 1366, hei
 
       /** On the list: Open a plan file, with the made-up room. */
       async function openFile() {
-        await page.goto('/');
-        await expect(page.getByRole('heading', { name: 'Floor Plan Editor' })).toBeVisible();
+        await openList(page);
         const chooser = page.waitForEvent('filechooser');
         await press(page.getByRole('button', { name: 'Open a plan file' }));
         await (await chooser).setFiles({ name: 'room-with-boxes.openplan.json', mimeType: 'application/json', buffer: Buffer.from(text) });
