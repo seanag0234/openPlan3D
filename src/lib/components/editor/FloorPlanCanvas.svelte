@@ -41,7 +41,8 @@
   import { beginCaptions, drawCaptions } from '$lib/utils/captionPlan';
   import { fitIds } from '$lib/utils/fitBounds';
   import { drawNoteMarks, noteMarkAt } from '$lib/utils/noteMarks';
-  import { noteTarget } from '$lib/stores/ui';
+  import { noteTarget, planObstruction, revealSelection } from '$lib/stores/ui';
+  import { shiftToReveal } from '$lib/utils/viewShift';
   import { coarsePointer } from '$lib/stores/pointer';
   import { gridLineStepCm, resizeStep, snapPieceMove, snapValue, stopAtWalls, type SnapContext } from '$lib/utils/snapPolicy';
   import { furnitureSizeLabel } from '$lib/utils/furnitureCaption';
@@ -1897,6 +1898,10 @@
     const unsub_snapgrid = projectSettings.subscribe((s) => { currentSnapToGrid = s.snapToGrid; currentSnapToWalls = s.snapToWalls; currentGridSize = s.gridSize; markDirty(); });
     const unsub_house = houseFixed.subscribe((value) => { currentHouseFixed = value; markDirty(); });
     const unsub_coarse = coarsePointer.subscribe((value) => { currentCoarse = value; markDirty(); });
+    // A sheet opening over the plan, or a request to show the selection, slides the plan; the first call is the starting value.
+    let obstruction = { right: 0, bottom: 0 }, sheetsReady = false, revealReady = false;
+    const unsub_obstruction = planObstruction.subscribe((value) => { obstruction = value; if (sheetsReady) revealSelectionClear(obstruction); sheetsReady = true; });
+    const unsub_reveal = revealSelection.subscribe(() => { if (revealReady) revealSelectionClear(obstruction); revealReady = true; });
     const unsub11 = placingStair.subscribe((v) => { isPlacingStair = v; markDirty(); });
     const unsubEnt1 = placingEntourageId.subscribe((id) => { currentEntourageDefId = id; if (id) { placingStair.set(false); placingColumn.set(false); } markDirty(); });
     const unsubEnt2 = currentProject.subscribe((pr) => {
@@ -1989,7 +1994,7 @@
     canvas.addEventListener('touchend', onTouchEnd, { passive: false });
     canvas.addEventListener('touchcancel', onTouchEnd, { passive: false });
 
-    return () => { mounted = false; drawing?.stop(); stopTextures(); resizeObs.disconnect(); unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsub13(); unsub_multi(); unsub_elevopen(); unsub_elevpick(); unsub_join(); unsub14(); unsub_col(); unsub_cols(); unsub_layers(); unsub_snapgrid(); unsub_house(); unsub_coarse(); unsubEnt1(); unsubEnt2(); document.removeEventListener('paste', handlePaste); canvas.removeEventListener('touchstart', onTouchStart); canvas.removeEventListener('touchmove', onTouchMove); canvas.removeEventListener('touchend', onTouchEnd); canvas.removeEventListener('touchcancel', onTouchEnd); };
+    return () => { mounted = false; drawing?.stop(); stopTextures(); resizeObs.disconnect(); unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsub13(); unsub_multi(); unsub_elevopen(); unsub_elevpick(); unsub_join(); unsub14(); unsub_col(); unsub_cols(); unsub_layers(); unsub_snapgrid(); unsub_house(); unsub_coarse(); unsub_obstruction(); unsub_reveal(); unsubEnt1(); unsubEnt2(); document.removeEventListener('paste', handlePaste); canvas.removeEventListener('touchstart', onTouchStart); canvas.removeEventListener('touchmove', onTouchMove); canvas.removeEventListener('touchend', onTouchEnd); canvas.removeEventListener('touchcancel', onTouchEnd); };
   });
 
   /** Compute world bounding box of all elements */
@@ -2181,6 +2186,18 @@
     else if (kind === 'annotation') removeAnnotation(id);
     else removeTextAnnotation(id);
     clearAuxiliarySelection();
+  }
+
+  /** Slide the plan so the selection is clear of what covers its right and bottom edges (CSS px). */
+  function revealSelectionClear(obstruction: { right: number; bottom: number }) {
+    const box = selectionScreenBox();
+    const cssWidth = canvas?.getBoundingClientRect().width;
+    if (!box || !cssWidth) return;
+    const toCanvas = width / cssWidth;
+    const { dx, dy } = shiftToReveal(box, { width, height }, { right: obstruction.right * toCanvas, bottom: obstruction.bottom * toCanvas });
+    if (!dx && !dy) return;
+    camX -= dx / zoom; camY -= dy / zoom;
+    markDirty();
   }
 
   let lastFitPress = 0;
