@@ -107,7 +107,36 @@ describe('placing captions', () => {
     expect(linesOf(placed, 'A')).toHaveLength(1);
   });
 
+  it('gives every piece its name before any piece its size', () => {
+    // A's lines go under it at 331.5 and 346.5; B's name belongs at 346.5, so A's size gives way.
+    const placed = placeCaptions([piece('A', c, 40, 40), piece('B', { x: 300, y: 354 }, 200, 100)], measure);
+    expect(linesOf(placed, 'A')).toEqual([{ id: 'A', text: 'A', x: 300, y: 331.5 }]);
+    expect(linesOf(placed, 'B')).toEqual([{ id: 'B', text: 'B', x: 300, y: 346.5 }, { id: 'B', text: '120 × 90 cm', x: 300, y: 361.5 }]);
+  });
+
   it('shortens the name of a piece with every place around it taken', () => {
+    // Tight round a 60 by 40 piece: the whole name crosses a label everywhere, the short one fits on the piece.
+    const taken = [
+      label('under', { left: 200, top: 324, right: 400, bottom: 400 }),
+      label('over', { left: 200, top: 200, right: 400, bottom: 276 }),
+      label('right', { left: 334, top: 250, right: 600, bottom: 350 }),
+      label('left', { left: 0, top: 250, right: 266, bottom: 350 }),
+    ];
+    const placed = placeCaptions([...taken, piece('Long sofa name', c, 60, 40)], measure);
+    expect(placed).toEqual([{ id: 'Long sofa name', text: 'Long so…', x: 300, y: 300 }]);
+    expect(measure('Long so…')).toBeLessThanOrEqual(60 - 8);
+  });
+
+  it('puts a shortened name under the piece when the piece itself is taken', () => {
+    const taken = [
+      label('in', { left: 200, top: 250, right: 400, bottom: 320 }),
+      label('under', { left: 200, top: 324, right: 270, bottom: 400 }),
+    ];
+    const placed = placeCaptions([...taken, piece('Long sofa name', c, 60, 40)], measure);
+    expect(placed).toEqual([{ id: 'Long sofa name', text: 'Long so…', x: 300, y: 331.5 }]);
+  });
+
+  it('draws no caption for a piece with no clear place', () => {
     const taken = [
       label('in', { left: 200, top: 250, right: 400, bottom: 350 }),
       label('under', { left: 200, top: 350, right: 400, bottom: 400 }),
@@ -115,13 +144,18 @@ describe('placing captions', () => {
       label('right', { left: 400, top: 250, right: 600, bottom: 350 }),
       label('left', { left: 0, top: 250, right: 200, bottom: 350 }),
     ];
-    const placed = placeCaptions([...taken, piece('Long sofa name', c, 60, 40)], measure);
-    expect(placed).toEqual([{ id: 'Long sofa name', text: 'Long so…', x: 300, y: 300 }]);
-    expect(measure('Long so…')).toBeLessThanOrEqual(60 - 8);
+    expect(placeCaptions([...taken, piece('Long sofa name', c, 60, 40)], measure)).toEqual([]);
   });
 
   it('keeps at least one character of a name it shortens', () => {
-    const placed = placeCaptions([label('all', { left: 0, top: 0, right: 600, bottom: 600 }), piece('Wardrobe', c, 4, 4)], measure);
+    // Tight round a 4 by 4 piece, leaving only its middle clear.
+    const taken = [
+      label('under', { left: 200, top: 308, right: 400, bottom: 400 }),
+      label('over', { left: 200, top: 200, right: 400, bottom: 292 }),
+      label('right', { left: 307, top: 250, right: 600, bottom: 350 }),
+      label('left', { left: 0, top: 250, right: 293, bottom: 350 }),
+    ];
+    const placed = placeCaptions([...taken, piece('Wardrobe', c, 4, 4)], measure);
     expect(placed).toEqual([{ id: 'Wardrobe', text: 'W…', x: 300, y: 300 }]);
   });
 

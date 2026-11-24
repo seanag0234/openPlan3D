@@ -129,19 +129,20 @@ test('nested rooms export one slab at each point on active and stacked floors', 
     if (format==='PDF') expect(bytes.subarray(0,5).toString()).toBe('%PDF-');
     const url=format==='PDF' ? await page.evaluate(()=>(window as any).__pdfImage as string)
       : `data:image/${format==='SVG'?'svg+xml':'png'};base64,${bytes.toString('base64')}`;
-    const counts=await page.evaluate(async url=> {
+    const counts=await page.evaluate(async ({url,vector})=> {
       const image=new Image();
       await new Promise<void>((resolve,reject)=>{image.onload=()=>resolve();image.onerror=reject;image.src=url;});
       const canvas=document.createElement('canvas');canvas.width=image.width;canvas.height=image.height;
       const ctx=canvas.getContext('2d')!;ctx.fillStyle='white';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(image,0,0);
       const data=ctx.getImageData(0,0,canvas.width,canvas.height).data;
-      // Each palette color painted exactly once at 40% over white.
-      return [[191,219,254],[253,230,138],[187,247,208]].map(color=> {
-        const target=color.map(c=>Math.round(c*.4+255*.6));let count=0;
+      // Each room's colour painted exactly once over white: the screen's tints at 7% in the picture and the PDF, the palette at 40% in the SVG.
+      const [palette,alpha]=(vector ? [[[191,219,254],[253,230,138],[187,247,208]],.4] : [[[167,139,250],[96,165,250],[52,211,153]],.07]) as [number[][],number];
+      return palette.map(color=> {
+        const target=color.map(c=>Math.round(c*alpha+255*(1-alpha)));let count=0;
         for(let i=0;i<data.length;i+=4) if(target.every((c,j)=>Math.abs(data[i+j]-c)<=1)) count++;
         return count;
       });
-    },url);
+    },{url,vector:format==='SVG'});
     for (const count of counts) expect(count,`${format} unblended room color`).toBeGreaterThan(100);
   }
   const inner=(await anchors())['Nested room 2'];

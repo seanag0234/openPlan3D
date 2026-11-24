@@ -64,3 +64,43 @@ test('a turned piece reads its name upright', async ({ page }, testInfo) => {
   expect(transform.b).toBe(0);
   expect(transform.c).toBe(0);
 });
+
+test('zoomed far out, a row of small pieces draws no caption over another', async ({ page }, testInfo) => {
+  await recordLabels(page);
+  const names = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'].map(n => `Box number ${n}`);
+  // Eight boxes 60 cm wide, 5 cm apart in one row, each with a name of a dozen letters.
+  await openPlan(page, await planWith(testInfo, plan => {
+    plan.floors[0].furniture = names.map((name, i) => ({
+      id: `box-${i}`, name, catalogId: 'imported_object', position: { x: 50 + 65 * i, y: 200 }, rotation: 0,
+      scale: { x: 1, y: 1, z: 1 }, width: 60, depth: 60,
+    }));
+  }));
+  await page.keyboard.press('Escape');
+  const percent = page.getByRole('button', { name: 'Zoom to 100%', exact: true });
+  // Zoom is screen px per cm: the boxes are under 30 px wide below 50%.
+  for (let i = 0; i < 20 && Number.parseFloat((await percent.textContent()) ?? '100') >= 50; i++) {
+    await page.getByRole('button', { name: 'Zoom out', exact: true }).click();
+  }
+  expect(Number.parseFloat((await percent.textContent()) ?? '100')).toBeLessThan(50);
+  const frame = () => page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  await frame(); await frame();
+  const isCaption = (text: string) => names.includes(text) || text.includes(' × ')
+    || (text.endsWith('…') && names.some(name => name.startsWith(text.slice(0, -1))));
+  const drawn = (await labels(page)).filter(line => isCaption(line.text));
+  expect(drawn.length).toBeGreaterThan(0);
+  // Placing measures each line as drawn, so read the same widths here: 6.6 px a letter is wider than these names.
+  const widths: Record<string, number> = await page.evaluate(texts => {
+    const ctx = document.createElement('canvas').getContext('2d')!;
+    ctx.font = '12px sans-serif';
+    return Object.fromEntries(texts.map(text => [text, ctx.measureText(text).width]));
+  }, drawn.map(line => line.text));
+  const boxOf = (line: { text: string; x: number; y: number }) => {
+    const half = widths[line.text] / 2;
+    return { left: line.x - half, right: line.x + half, top: line.y - 7.5, bottom: line.y + 7.5 };
+  };
+  for (let i = 0; i < drawn.length; i++) for (let j = i + 1; j < drawn.length; j++) {
+    const a = boxOf(drawn[i]), b = boxOf(drawn[j]);
+    const across = Math.min(a.right, b.right) - Math.max(a.left, b.left), down = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+    expect(across > 1 && down > 1, `"${drawn[i].text}" and "${drawn[j].text}" overlap`).toBe(false);
+  }
+});

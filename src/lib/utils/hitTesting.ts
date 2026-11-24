@@ -312,9 +312,11 @@ export function hitTestTextAnnotation(wp: Point, floor: Floor, ctx: CanvasRender
       const ry = dx * Math.sin(angle) + dy * Math.cos(angle);
       dx = rx; dy = ry;
     }
-    ctx.font = `${ta.fontSize}px sans-serif`;
+    // Measured as drawn in the editor, never under 12 px on screen.
+    const px = Math.max(12, ta.fontSize * zoom);
+    ctx.font = `${px}px sans-serif`;
     const lines = ta.text.split('\n');
-    const lineHeight = ta.fontSize * 1.2;
+    const lineHeight = px * 1.2 / zoom; // plan units
     const totalHeight = lines.length * lineHeight;
     let maxW = 0;
     for (const line of lines) {

@@ -2063,6 +2063,7 @@
           ? detectedRooms.map(room => ({ room, polygon: roomPolygons.get(room.id) ?? [] })) : undefined,
         units: dimSettings.units,
         zoom: fittedZoom,
+        labelFloorPx: 12,
         entourageAspect: id => entourageAspect(id, customEntourageDefs) || 1,
         backgroundSize: floor === currentFloor && bgImage ? bgImage : undefined,
       };

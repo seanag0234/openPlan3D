@@ -22,9 +22,15 @@ import { getRoomPolygon, roomCentroid, roomLabelPosition } from '$lib/utils/room
 import { getWallTextureCanvas, getFloorTextureCanvas } from '$lib/utils/textureGenerator';
 import { getEntourageDef } from '$lib/utils/entourageCatalog';
 import type { EntourageItem, CustomEntourageDef } from '$lib/models/types';
+
+/** The smallest text size in screen px: 12 inside the editor's frame, `otherwise` in the picture, the PDF and the print page. */
+const textFloor = (otherwise: number) => captionFrameOpen() ? Math.max(12, otherwise) : otherwise;
 import { interiorRoomExtent } from '$lib/utils/interiorArea';
 
 // ── Wall geometry helpers ────────────────────────────────────────────
+
+/** The plan's wall colours on screen, which the saved picture and the print page share. */
+export const WALL_FILL = '#404040', WALL_EDGE = '#333333';
 
 export function wallLength(w: Wall): number {
   if (w.curvePoint) {
@@ -186,8 +192,8 @@ export function drawWall(
       innerPts.push({ x: px - nx, y: py - ny });
     }
 
-    ctx.fillStyle = selected ? '#93c5fd' : '#404040';
-    ctx.strokeStyle = selected ? '#3b82f6' : '#333333';
+    ctx.fillStyle = selected ? '#93c5fd' : WALL_FILL;
+    ctx.strokeStyle = selected ? '#3b82f6' : WALL_EDGE;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(outerPts[0].x, outerPts[0].y);
@@ -204,7 +210,7 @@ export function drawWall(
       const midTan = wallTangentAt(w, 0.5);
       const offsetDist = thickness / 2 + 16;
       ctx.fillStyle = dimSettings.dimensionLineColor;
-      const fontSize = Math.max(10, 11 * zoom);
+      const fontSize = Math.max(textFloor(10), 11 * zoom);
       ctx.font = `${fontSize}px sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -256,8 +262,8 @@ export function drawWall(
   const nx = (-dy / len) * thickness / 2;
   const ny = (dx / len) * thickness / 2;
 
-  ctx.fillStyle = selected ? '#93c5fd' : '#404040';
-  ctx.strokeStyle = selected ? '#3b82f6' : '#333333';
+  ctx.fillStyle = selected ? '#93c5fd' : WALL_FILL;
+  ctx.strokeStyle = selected ? '#3b82f6' : WALL_EDGE;
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(s.x + nx, s.y + ny);
@@ -349,7 +355,7 @@ export function drawWall(
   const dimMy = (ds.y + de.y) / 2;
 
   ctx.fillStyle = dimSettings.dimensionLineColor;
-  const fontSize = Math.max(10, 11 * zoom);
+  const fontSize = Math.max(textFloor(10), 11 * zoom);
   ctx.font = `${fontSize}px sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -835,7 +841,7 @@ export function drawDoorDistanceDimensions(cs: CanvasState, wall: Wall, door: Do
     ctx.setLineDash([]);
   }
 
-  const fontSize = Math.max(10, 11 * zoom);
+  const fontSize = Math.max(textFloor(10), 11 * zoom);
   ctx.font = `${fontSize}px sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -879,7 +885,7 @@ export function drawWindowDistanceDimensions(cs: CanvasState, wall: Wall, window
     ctx.setLineDash([]);
   }
 
-  const fontSize = Math.max(10, 11 * zoom);
+  const fontSize = Math.max(textFloor(10), 11 * zoom);
   ctx.font = `${fontSize}px sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -1056,7 +1062,7 @@ export function drawStair(cs: CanvasState, stair: Stair, selected: boolean): voi
 
   function drawStairLabelLocal() {
     ctx.fillStyle = '#374151';
-    ctx.font = `${Math.max(8, 10 * zoom)}px sans-serif`;
+    ctx.font = `${Math.max(textFloor(8), 10 * zoom)}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     const sType = stair.stairType || 'straight';
@@ -1156,7 +1162,7 @@ export function drawStair(cs: CanvasState, stair: Stair, selected: boolean): voi
     ctx.lineTo(ax2 - 6 * Math.cos(tangent + 0.4), ay2 - 6 * Math.sin(tangent + 0.4));
     ctx.lineTo(ax2 - 6 * Math.cos(tangent - 0.4), ay2 - 6 * Math.sin(tangent - 0.4));
     ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#374151'; ctx.font = `${Math.max(8, 10 * zoom)}px sans-serif`;
+    ctx.fillStyle = '#374151'; ctx.font = `${Math.max(textFloor(8), 10 * zoom)}px sans-serif`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(stair.direction === 'up' ? 'UP' : 'DN', 0, r + 12 * zoom);
   }
@@ -1287,7 +1293,7 @@ export function drawTextAnnotations(cs: CanvasState, floor: Floor, selectedTextA
   for (const ta of floor.textAnnotations) {
     const selected = ta.id === selectedTextAnnotationId || ta.id === currentSelectedId;
     const s = wts(cs, ta.x, ta.y);
-    const fontSize = Math.max(8, ta.fontSize * zoom);
+    const fontSize = Math.max(textFloor(8), ta.fontSize * zoom);
     ctx.save();
     ctx.translate(s.x, s.y);
     if (ta.rotation) ctx.rotate(ta.rotation * Math.PI / 180);
@@ -1353,7 +1359,7 @@ export function drawAnnotation(cs: CanvasState, a: Annotation, selected: boolean
 
   const dist = Math.hypot(a.x2 - a.x1, a.y2 - a.y1);
   const label = a.label || formatLength(dist, dimSettings.units);
-  const fontSize = Math.max(10, 11 * zoom);
+  const fontSize = Math.max(textFloor(10), 11 * zoom);
   ctx.font = `${fontSize}px sans-serif`;
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const textW = ctx.measureText(label).width;
@@ -1553,7 +1559,7 @@ export function drawRooms(
 
     const centroid = roomCentroid(poly);
     const sc = wts(cs, centroid.x, centroid.y);
-    const fontSize = Math.max(11, 13 * zoom);
+    const fontSize = Math.max(textFloor(11), 13 * zoom);
     if (showRoomLabels) {
       ctx.fillStyle = '#9ca3af';
       ctx.font = `${fontSize}px sans-serif`;
@@ -1572,7 +1578,7 @@ export function drawRooms(
       const roomW = (maxX - minX) / 100;
       const roomD = (maxY - minY) / 100;
       if (roomW > 0.1 && roomD > 0.1) {
-        const dimFontSize = Math.max(9, 10 * zoom);
+        const dimFontSize = Math.max(textFloor(9), 10 * zoom);
         ctx.fillStyle = '#b0b8c4'; ctx.font = `${dimFontSize}px sans-serif`;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(`${formatLength(roomW * 100, dimSettings.units)} × ${formatLength(roomD * 100, dimSettings.units)}`, sc.x, sc.y + fontSize + 2);
@@ -1600,8 +1606,8 @@ export function drawWallJoints(cs: CanvasState, floor: Floor, selId: string | nu
     const maxThickness = Math.max(...entries.map(e => e.thickness));
     const s = wts(cs, entries[0].x, entries[0].y);
     const r = Math.max(maxThickness * zoom, 4) / 2 + 0.5;
-    ctx.fillStyle = anySelected ? '#93c5fd' : '#404040';
-    ctx.strokeStyle = anySelected ? '#3b82f6' : '#333333';
+    ctx.fillStyle = anySelected ? '#93c5fd' : WALL_FILL;
+    ctx.strokeStyle = anySelected ? '#3b82f6' : WALL_EDGE;
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
   }
