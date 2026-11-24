@@ -1269,17 +1269,7 @@ export function pasteSelection(source: Floor, ids: ReadonlySet<string>, step = 1
 
 /** Duplicate furniture */
 export function duplicateFurniture(id: string): string | null {
-  const p = get(currentProject);
-  if (!p) return null;
-  const floor = p.floors.find(f => f.id === p.activeFloorId);
-  if (!floor) return null;
-  const fi = floor.furniture.find(fi => fi.id === id);
-  if (!fi) return null;
-  const newId = uid();
-  mutate(f => {
-    f.furniture.push({ ...fi, id: newId, position: { x: fi.position.x + 30, y: fi.position.y + 30 } });
-  });
-  return newId;
+  return duplicateSelection(new Set([id]))[0] ?? null;
 }
 
 /** Move a wall parallel to itself (both endpoints shift by the same perpendicular offset) without undo snapshot (for dragging) */
