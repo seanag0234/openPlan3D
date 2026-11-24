@@ -129,3 +129,25 @@ test('while picking several, a drag that starts outside the picked pieces slides
   expect(item(after, 'box-a').position.x).toBe(item(before, 'box-a').position.x);
   expect(after.floors[0].walls).toEqual(before.floors[0].walls);
 });
+
+test('one finger on bare paper slides the view and keeps the selection', async ({ page }) => {
+  const { hand, before, a, scale } = await open(page);
+  await hand.tap(a.x, a.y);
+  await expect(fitSelection(page)).toBeEnabled();
+  // 60 cm above the room's top wall, outside the room.
+  const from: [number, number] = [a.x, a.y - 260 * scale];
+  await hand.drag(from, [from[0] + 120, from[1]]);
+  const now = await where(page, 'Box A');
+  expect(Math.abs(now.x - (a.x + 120))).toBeLessThanOrEqual(3);
+  expect(Math.abs(now.y - a.y)).toBeLessThanOrEqual(3);
+  await expect(fitSelection(page)).toBeEnabled();
+  expect((await savedPlan(page)).floors).toEqual(before.floors);
+});
+
+test('a tap on bare paper still clears the selection', async ({ page }) => {
+  const { hand, a, scale } = await open(page);
+  await hand.tap(a.x, a.y);
+  await expect(fitSelection(page)).toBeEnabled();
+  await hand.tap(a.x, a.y - 260 * scale);
+  await expect(fitSelection(page)).toBeDisabled();
+});

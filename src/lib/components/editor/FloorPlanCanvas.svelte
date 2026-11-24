@@ -2793,6 +2793,11 @@
             const w = currentFloor!.walls.find(wall => wall.id === wid);
             if (w) roomDragStartPositions.set(wid, wallGeometryOf(w));
           }
+        } else if (touchPress === 'drag') {
+          // A finger dragged across bare paper slides the view and leaves the selection alone.
+          isPanning = true;
+          panStartX = e.clientX;
+          panStartY = e.clientY;
         } else {
           // Empty space — start marquee selection
           marqueeStart = { ...wp };
