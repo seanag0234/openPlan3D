@@ -6,4 +6,6 @@ export const addingEn = {
   "adding.boxName": "Box",
   "adding.boxNamed": "＋ Add a plain box named “{name}”",
   "adding.houseFixed": "The house is fixed, so walls, doors, windows and rooms cannot be added. To change the house, press “House: fixed” in the bar under the plan.",
+  "adding.modelInUse": "This is on the plan once. Take it off the plan first, then remove the model.",
+  "adding.modelInUseMany": "This is on the plan {count} times. Take those off the plan first, then remove the model.",
 } as const;
