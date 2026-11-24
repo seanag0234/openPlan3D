@@ -517,7 +517,7 @@ export const en = {
   "layers.textAnnotations": "Text notes",
   "layers.rooms": "Rooms",
   "layers.empty": "Empty",
-  "layers.none": "No elements",
+  "layers.none": "Nothing here yet",
   "layers.unnamed": "Unnamed room",
   "layers.emptyNote": "Empty note",
   "layers.selectRoom": "Select room {name}",

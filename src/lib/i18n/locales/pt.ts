@@ -517,7 +517,7 @@ export const pt = {
   "layers.textAnnotations": "Notas de texto",
   "layers.rooms": "Ambientes",
   "layers.empty": "Vazio",
-  "layers.none": "Nenhum elemento",
+  "layers.none": "Nada aqui ainda",
   "layers.unnamed": "Ambiente sem nome",
   "layers.emptyNote": "Nota vazia",
   "layers.selectRoom": "Selecionar ambiente {name}",
