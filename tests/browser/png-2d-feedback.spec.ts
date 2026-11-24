@@ -20,13 +20,13 @@ for (const locale of ['en', 'pt']) test(`${locale}: 2D PNG uses the plan rendere
   };
  });
  await page.getByRole('button',{name: /^(?:Export|Exportar)$/,exact:true}).click();
- const pending=page.waitForEvent('download');await page.getByRole('button',{name: /^(?:Export\ 2D\ as\ PNG|Exportar\ 2D\ como\ PNG)$/,exact:true}).click();
+ const pending=page.waitForEvent('download');await page.getByRole('button',{name: /^(?:Save the plan as a picture \(PNG\)|Salvar a planta como imagem \(PNG\))$/,exact:true}).click();
  const png=await readFile((await(await pending).path())!);
  expect(png.subarray(1,4).toString()).toBe('PNG');expect(png.readUInt32BE(16)).toBeGreaterThan(1000);
  await page.evaluate(()=>{HTMLCanvasElement.prototype.toBlob=callback=>callback(null);});
  let downloads=0;page.on('download',()=>downloads++);
  await page.getByRole('button',{name: /^(?:Export|Exportar)$/,exact:true}).click();
- await page.getByRole('button',{name: /^(?:Export\ 2D\ as\ PNG|Exportar\ 2D\ como\ PNG)$/,exact:true}).click();
+ await page.getByRole('button',{name: /^(?:Save the plan as a picture \(PNG\)|Salvar a planta como imagem \(PNG\))$/,exact:true}).click();
  await expect(page.getByRole('alert')).toContainText(locale === 'pt' ? 'Não foi possível exportar o PNG 2D' : "Couldn't export 2D PNG");
  await page.getByRole('button',{name:locale === 'pt' ? 'Fechar aviso de exportação' : 'Dismiss export notice'}).click();
  await page.getByRole('button',{name: /^(?:Save|Salvar)$/,exact:true}).press('ControlOrMeta+k');
