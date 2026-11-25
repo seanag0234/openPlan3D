@@ -525,7 +525,7 @@
   <div class="flex-1"></div>
 
   <!-- Never disabled: pressing either with nothing left is harmless; they only look switched off. -->
-  <button onclick={undo} aria-disabled={$undoHistoryStore.entries.length === 0} class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors {stacked} {$undoHistoryStore.entries.length === 0 ? 'opacity-40' : ''}" title={$t('projectToolbar.undoHint')} aria-label={$t('projectToolbar.undo')}>
+  <button onclick={undo} data-tour="undo" aria-disabled={$undoHistoryStore.entries.length === 0} class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors {stacked} {$undoHistoryStore.entries.length === 0 ? 'opacity-40' : ''}" title={$t('projectToolbar.undoHint')} aria-label={$t('projectToolbar.undo')}>
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
     {#if $coarsePointer}<span aria-hidden="true" class="block text-xs leading-none max-sm:hidden">{$t('projectToolbar.undo')}</span>{/if}
   </button>
@@ -618,6 +618,7 @@
     >2D</button>
     <button
       onclick={() => setMode('3d')}
+      data-tour="3d"
       class="px-3 max-xl:px-2 py-1 text-xs font-semibold rounded-full transition-colors {mode === '3d' ? 'bg-white text-slate-800' : 'text-white/80 hover:text-white'}"
     >3D</button>
   </div>
@@ -647,6 +648,7 @@
   <!-- Settings button -->
   <button
     onclick={() => settingsOpen = true}
+    data-tour="more"
     class="px-2 py-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors max-xl:hidden"
     title={$t('settings.title')}
     aria-label={$t('settings.title')}
@@ -658,6 +660,7 @@
   <div class="relative xl:hidden" bind:this={moreRef}>
     <button
       bind:this={moreButton}
+      data-tour="more"
       onclick={() => moreOpen = !moreOpen}
       class="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors {stacked}"
       title={$t('toolbarView.more')}
@@ -748,6 +751,7 @@
   <button
     onclick={() => feedbackOpen.set(true)}
     data-feedback-open={$feedbackOpen}
+    data-tour="feedback"
     class="px-2 py-1.5 text-sm text-white/90 hover:text-white hover:bg-white/10 rounded transition-colors {$coarsePointer ? `${stacked} max-sm:hidden` : 'flex items-center gap-1.5'}"
     title={$t('bars.feedback')}
     aria-label={$t('bars.feedback')}

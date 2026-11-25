@@ -32,6 +32,7 @@
   import NoteSheet from '$lib/components/editor/NoteSheet.svelte';
   import NotesList from '$lib/components/editor/NotesList.svelte';
   import OnboardingTooltip from '$lib/components/OnboardingTooltip.svelte';
+  import GuidedTour from '$lib/components/editor/GuidedTour.svelte';
   import { coarsePointer } from '$lib/stores/pointer';
   import { buildPanelFolded } from '$lib/stores/ui';
 
@@ -52,6 +53,8 @@
   let mode = $state<'2d' | '3d'>('2d');
   let ready = $state(false);
   let showHelp = $state(false);
+  let showTour = $state(false);
+  function startTour() { showHelp = false; showTour = true; }
   let shortcutCopyState = $state<'idle' | 'copying' | 'copied' | 'failed'>('idle');
   let shortcutCopyGeneration = 0;
   $effect(() => {
@@ -365,6 +368,7 @@
         </ul>
         <div class="flex items-center gap-2">
           <a href={USER_GUIDE_URL} target="_blank" rel="noopener" class="min-h-[44px] px-3 flex items-center rounded-lg text-sm text-slate-600 bg-slate-100">{$t('help.userGuide')}</a>
+          <button class="min-h-[44px] px-3 rounded-lg text-sm font-medium text-blue-700 bg-blue-50 active:bg-blue-100" onclick={startTour}>{$t('panels.tour')}</button>
           <button class="ml-auto min-h-[44px] px-6 rounded-lg bg-blue-600 text-white text-sm font-medium active:bg-blue-700" onclick={() => showHelp = false}>{$t('panels.done')}</button>
         </div>
       </div>
@@ -386,6 +390,7 @@
               href={USER_GUIDE_URL} target="_blank" rel="noopener"
               class="text-xs px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 transition-colors"
             >{$t('help.userGuide')}</a>
+            <button class="text-xs px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium transition-colors" onclick={startTour}>{$t('panels.tour')}</button>
             <button
               class="text-xs px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 transition-colors flex items-center gap-1.5"
               disabled={shortcutCopyState === 'copying'}
@@ -560,6 +565,7 @@
   <PrintLayout bind:open={printOpen} />
   <NoteSheet />
   <OnboardingTooltip />
+  <GuidedTour bind:open={showTour} />
 {:else}
   <div class="h-screen flex flex-col items-center justify-center gap-3">
     {#if loadError}
