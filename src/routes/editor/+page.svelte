@@ -3,7 +3,7 @@
   import { projectServiceMessage } from '$lib/i18n/projectServiceMessages';
   import { CaptureImportError } from '$lib/i18n/captureImportError';
   import { modalDialog, hasOpenModal } from '$lib/utils/modalDialog';
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { get } from 'svelte/store';
   import { base } from '$app/paths';
   import { replaceState } from '$app/navigation';
@@ -34,7 +34,22 @@
   import OnboardingTooltip from '$lib/components/OnboardingTooltip.svelte';
   import GuidedTour from '$lib/components/editor/GuidedTour.svelte';
   import { coarsePointer } from '$lib/stores/pointer';
-  import { buildPanelFolded } from '$lib/stores/ui';
+  import { buildPanelFolded, detailsOpen, noteTarget } from '$lib/stores/ui';
+  import { activeFloor, undoHistoryStore } from '$lib/stores/project';
+  import { triggerPlanTip, triggerTipNearTouch, tipsOn, setTipsOn } from '$lib/stores/onboarding.svelte';
+
+  // Tips as she goes: each says what to do next with what she just did.
+  $effect(() => { if (ready) untrack(() => triggerPlanTip('new-tour') || triggerPlanTip('welcome')); });
+  onMount(() => {
+    let changes = get(undoHistoryStore).entries.length;
+    const stops = [
+      selectedElementId.subscribe(id => { if (id && get(activeFloor)?.furniture.some(piece => piece.id === id)) triggerTipNearTouch('pick'); }),
+      undoHistoryStore.subscribe(history => { if (history.entries.length > changes) triggerTipNearTouch('changed'); changes = history.entries.length; }),
+      detailsOpen.subscribe(open => { if (open) triggerTipNearTouch('details'); }),
+      noteTarget.subscribe(target => { if (target) triggerTipNearTouch('note'); }),
+    ];
+    return () => stops.forEach(stop => stop());
+  });
 
   let commandPaletteOpen = $state(false);
   let printOpen = $state(false);
@@ -366,6 +381,7 @@
           <li>{$t('panels.touchHelp5')}</li>
           <li>{$t('panels.touchHelp6')}</li>
         </ul>
+        <label class="flex items-center gap-3 min-h-[44px] text-base text-gray-700"><input type="checkbox" class="w-5 h-5" checked={tipsOn()} onchange={(e) => setTipsOn(e.currentTarget.checked)}>{$t('panels.tipsOn')}</label>
         <div class="flex items-center gap-2">
           <a href={USER_GUIDE_URL} target="_blank" rel="noopener" class="min-h-[44px] px-3 flex items-center rounded-lg text-sm text-slate-600 bg-slate-100">{$t('help.userGuide')}</a>
           <button class="min-h-[44px] px-3 rounded-lg text-sm font-medium text-blue-700 bg-blue-50 active:bg-blue-100" onclick={startTour}>{$t('panels.tour')}</button>
@@ -390,6 +406,7 @@
               href={USER_GUIDE_URL} target="_blank" rel="noopener"
               class="text-xs px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 transition-colors"
             >{$t('help.userGuide')}</a>
+            <label class="flex items-center gap-1.5 text-xs text-slate-600"><input type="checkbox" checked={tipsOn()} onchange={(e) => setTipsOn(e.currentTarget.checked)}>{$t('panels.tipsOn')}</label>
             <button class="text-xs px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium transition-colors" onclick={startTour}>{$t('panels.tour')}</button>
             <button
               class="text-xs px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 transition-colors flex items-center gap-1.5"
@@ -564,7 +581,7 @@
   <CommandPalette bind:open={commandPaletteOpen} />
   <PrintLayout bind:open={printOpen} />
   <NoteSheet />
-  <OnboardingTooltip />
+  <OnboardingTooltip paused={showTour} />
   <GuidedTour bind:open={showTour} />
 {:else}
   <div class="h-screen flex flex-col items-center justify-center gap-3">

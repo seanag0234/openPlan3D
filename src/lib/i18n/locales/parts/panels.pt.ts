@@ -32,6 +32,7 @@ export const panelsPt = {
   "panels.fit": "Ajustar",
   "panels.fitThis": "Ajustar isto",
   "panels.tour": "Fazer o tour",
+  "panels.tipsOn": "Mostrar dicas enquanto uso",
   "panels.tourStep": "Passo {n} de {count}",
   "panels.tourBack": "Voltar",
   "panels.tourNext": "Próximo",

@@ -82,7 +82,7 @@ test('the one-time 3D tip waits for a working 3D view instead of being used up w
   test.setTimeout(90_000); // Three viewer visits, the first also downloading the lazy bundle.
   // WebGL stays blocked until the test allows it, as when hardware acceleration is turned back on.
   await page.addInitScript(() => {
-    localStorage.setItem('o3d_tips_seen', JSON.stringify(['first-wall', 'first-furniture', 'first-export', 'first-door']));
+    localStorage.setItem('o3d_tips_seen', JSON.stringify(['first-wall', 'first-furniture', 'first-export', 'first-door', 'welcome', 'new-tour']));
     (window as any).__blockWebGL = true;
     const getContext = HTMLCanvasElement.prototype.getContext;
     HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, type: string, ...args: any[]) {
@@ -111,9 +111,8 @@ test('the one-time 3D tip waits for a working 3D view instead of being used up w
   expect([Math.round(box.x), Math.round(box.y)]).toEqual([200, 80]);
   await tip.getByRole('button', { name: 'Got it', exact: true }).click();
   await expect(tip).toHaveCount(0);
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('o3d_tips_seen')!))).toContain('first-3d');
 
-  // Shown once: the next 3D view starts without it.
+  // Shown once a visit: the next 3D view starts without it.
   await page.getByRole('button', { name: '2D', exact: true }).click();
   await page.getByRole('button', { name: '3D', exact: true }).click();
   await expect(main).toBeVisible({ timeout: 30_000 });

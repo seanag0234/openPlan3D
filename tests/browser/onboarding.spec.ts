@@ -54,11 +54,18 @@ test('an open onboarding hint stays readable and dismissible through resizing', 
 
   await tip(page).getByRole('button', { name: 'Got it', exact: true }).click();
   await expect(tip(page)).not.toBeVisible();
+  // Tips come back on later visits until they are turned off, from the tip itself.
+  await page.reload();
+  await page.getByRole('button', { name: 'Export', exact: true }).click();
+  await page.clock.runFor(400);
+  await expect(tip(page)).toContainText(exportMessage);
+  await tip(page).getByRole('button', { name: 'Turn off tips', exact: true }).click();
+  await expect(tip(page)).not.toBeVisible();
   await page.reload();
   await page.getByRole('button', { name: 'Export', exact: true }).click();
   await page.clock.runFor(400);
   await expect(tip(page)).not.toBeVisible();
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('o3d_tips_seen')!))).toContain('first-export');
+  expect(await page.evaluate(() => localStorage.getItem('o3d_tips_off'))).toBe('1');
   expect(errors).toEqual([]);
 });
 
@@ -82,7 +89,8 @@ test('replacement hints get their own timer and resizing does not delay auto-dis
   await page.setViewportSize({ width: 844, height: 390 });
   await page.clock.runFor(600);
   await expect(tip(page)).not.toBeVisible();
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('o3d_tips_seen')!))).toContain('first-3d');
+  // A guide tip is closed for this visit only; nothing records it.
+  expect(await page.evaluate(() => localStorage.getItem('o3d_tips_seen') ?? '')).not.toContain('first-3d');
 
   await page.getByRole('button', { name: '2D', exact: true }).click();
   await page.getByRole('button', { name: '3D', exact: true }).click();

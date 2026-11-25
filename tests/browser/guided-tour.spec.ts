@@ -25,12 +25,25 @@ test('the tour starts from Help, goes forward and back, and rings the control ea
   expect(around.y).toBeLessThan(undo.y);
   expect(around.x + around.width).toBeGreaterThan(undo.x + undo.width);
   expect(around.y + around.height).toBeGreaterThan(undo.y + undo.height);
+  // The card sits under a control in the top bar, reaching across it.
+  await expect.poll(async () => {
+    const card = (await tour.boundingBox())!;
+    return card.y >= around.y + around.height && card.y <= around.y + around.height + 40
+      && card.x <= undo.x + undo.width / 2 && undo.x + undo.width / 2 <= card.x + card.width;
+  }).toBe(true);
 
   await tour.getByRole('button', { name: /Back/ }).tap();
   await expect(tour).toContainText('Step 3 of 10');
   await expect(ring).toHaveCount(0);
 
-  for (let step = 4; step <= 10; step++) await tour.getByRole('button', { name: /Next/ }).tap();
+  for (let step = 4; step <= 8; step++) await tour.getByRole('button', { name: /Next/ }).tap();
+  await expect(tour.getByRole('heading')).toHaveText('Leave yourself notes');
+  // Beside Notes in the bottom-left corner, the card opens to its right.
+  await expect.poll(async () => {
+    const card = (await tour.boundingBox())!, notes = (await ring.boundingBox())!;
+    return card.x >= notes.x + notes.width && card.x <= notes.x + notes.width + 40 && card.y + card.height >= notes.y;
+  }).toBe(true);
+  for (let step = 9; step <= 10; step++) await tour.getByRole('button', { name: /Next/ }).tap();
   await expect(tour.getByRole('heading')).toHaveText("Tell Sean what's wrong");
   await expect(ring).toBeVisible();
   for (const name of [/Back/, 'Done']) expect((await tour.getByRole('button', { name }).boundingBox())!.height).toBeGreaterThanOrEqual(44);

@@ -32,6 +32,7 @@ export const panelsEn = {
   "panels.fit": "Fit",
   "panels.fitThis": "Fit this",
   "panels.tour": "Take the tour",
+  "panels.tipsOn": "Show tips as I go",
   "panels.tourStep": "Step {n} of {count}",
   "panels.tourBack": "Back",
   "panels.tourNext": "Next",
