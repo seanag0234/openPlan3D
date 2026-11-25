@@ -32,7 +32,22 @@
   });
 
   const go = (to: number) => { at = Math.max(0, Math.min(steps.length - 1, to)); };
+
+  // The card sits beside the ringed control: under one in the top bar, otherwise to its open side.
+  let vw = $state(1200), vh = $state(800), cardW = $state(416), cardH = $state(320);
+  const gap = 16, edge = 8, belowBar = 64;
+  const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(v, Math.max(lo, hi)));
+  const place = $derived.by(() => {
+    if (!ring) return null;
+    if (ring.bottom < 80) return { left: clamp(ring.x + ring.width / 2 - cardW / 2, edge, vw - cardW - edge), top: ring.bottom + gap };
+    const top = clamp(ring.y + ring.height / 2 - cardH / 2, belowBar, vh - cardH - edge);
+    return ring.x + ring.width / 2 < vw / 2
+      ? { left: clamp(ring.right + gap, edge, vw - cardW - edge), top }
+      : { left: clamp(ring.x - gap - cardW, edge, vw - cardW - edge), top };
+  });
 </script>
+
+<svelte:window bind:innerWidth={vw} bind:innerHeight={vh} />
 
 {#if open}
   {#if ring}
@@ -44,7 +59,9 @@
   {/if}
   <div
     role="dialog" aria-modal="false" aria-label={$t('panels.tour')}
-    class="fixed z-[60] top-16 left-1/2 -translate-x-1/2 w-[26rem] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl border border-gray-200 p-5 flex flex-col gap-3"
+    bind:offsetWidth={cardW} bind:offsetHeight={cardH}
+    class="fixed z-[60] w-[26rem] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl border border-gray-200 p-5 flex flex-col gap-3 motion-safe:transition-[left,top] motion-safe:duration-200 {place ? '' : 'top-16 left-1/2 -translate-x-1/2'}"
+    style={place ? `left: ${place.left}px; top: ${place.top}px;` : ''}
   >
     <div class="flex items-center justify-between">
       <p class="text-sm text-gray-500">{$t('panels.tourStep', { n: at + 1, count: steps.length })}</p>

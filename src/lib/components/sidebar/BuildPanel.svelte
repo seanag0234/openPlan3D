@@ -27,6 +27,7 @@
   import { interchangeProjectName } from '$lib/utils/interchange';
   import { coarsePointer } from '$lib/stores/pointer';
   import { buildPanelFolded } from '$lib/stores/ui';
+  import { triggerTipNearTouch } from '$lib/stores/onboarding.svelte';
   import { projectSettings } from '$lib/stores/settings';
   import { sizeText } from '$lib/utils/sizeText';
   import { matchesCatalogSearch } from '$lib/utils/catalogSearch';
@@ -453,7 +454,7 @@
     >{$t('buildTools.rooms')}</button>
     <button
       class="flex-1 py-2.5 text-xs font-semibold uppercase tracking-wide {activeTab === 'objects' ? 'text-slate-800 border-b-2 border-blue-500 bg-blue-50' : 'text-gray-500 hover:text-gray-700'}"
-      onclick={() => activeTab = 'objects'}
+      onclick={() => { activeTab = 'objects'; triggerTipNearTouch('things'); }}
       data-tour="things"
     >{$t('buildTools.objects')}</button>
   </div>
