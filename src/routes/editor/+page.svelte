@@ -36,10 +36,21 @@
   import { coarsePointer } from '$lib/stores/pointer';
   import { buildPanelFolded, detailsOpen, noteTarget } from '$lib/stores/ui';
   import { activeFloor, undoHistoryStore } from '$lib/stores/project';
-  import { triggerPlanTip, triggerTipNearTouch, tipsOn, setTipsOn } from '$lib/stores/onboarding.svelte';
+  import { triggerPlanTip, triggerTipNearTouch, tipsOn, setTipsOn, markTipSeen } from '$lib/stores/onboarding.svelte';
 
   // Tips as she goes: each says what to do next with what she just did.
-  $effect(() => { if (ready) untrack(() => triggerPlanTip('new-tour') || triggerPlanTip('welcome')); });
+  $effect(() => {
+    if (!ready) return;
+    untrack(() => {
+      const url = new URL(location.href);
+      if (!url.searchParams.has('tour')) return void (triggerPlanTip('new-tour') || triggerPlanTip('welcome'));
+      // Once: a reload or a shared address does not start it again.
+      url.searchParams.delete('tour');
+      replaceState(url, page.state);
+      markTipSeen('new-tour');
+      startTour();
+    });
+  });
   onMount(() => {
     let changes = get(undoHistoryStore).entries.length;
     const stops = [
