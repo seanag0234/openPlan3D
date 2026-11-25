@@ -31,6 +31,7 @@
   import PrintLayout from '$lib/components/editor/PrintLayout.svelte';
   import NoteSheet from '$lib/components/editor/NoteSheet.svelte';
   import NotesList from '$lib/components/editor/NotesList.svelte';
+  import ClaudeHelper from '$lib/components/editor/ClaudeHelper.svelte';
   import OnboardingTooltip from '$lib/components/OnboardingTooltip.svelte';
   import GuidedTour from '$lib/components/editor/GuidedTour.svelte';
   import { coarsePointer } from '$lib/stores/pointer';
@@ -375,6 +376,7 @@
       aria-expanded={showUndoHistory}
     >{#if $coarsePointer}{@render cornerPicture('⟲', $t('panels.history'))}{:else}⟲{/if}</button>
     <NotesList />
+    <ClaudeHelper />
   </div>
 
   <UndoHistoryPanel bind:visible={showUndoHistory} returnFocusTo={historyTrigger} />

@@ -55,5 +55,27 @@ export function setGeminiKey(key: string): void {
   else localStorage.removeItem('o3d_gemini_key');
 }
 export function hasGeminiKey(): boolean { return !!getGeminiKey(); }
+
+/** The Claude helper's key and model: an Anthropic key (sk-ant-…) goes to Anthropic, an OpenRouter key (sk-or-…) to OpenRouter. */
+export interface ClaudeSettings { apiKey: string; model: 'opus' | 'sonnet' }
+export const viaOpenRouter = (key: string) => key.trim().startsWith('sk-or-');
+const CLAUDE_KEY = 'o3d_claude_settings';
+function readClaude(): ClaudeSettings {
+  if (typeof window === 'undefined') return { apiKey: '', model: 'opus' };
+  try {
+    const value = JSON.parse(localStorage.getItem(CLAUDE_KEY) ?? '{}');
+    return { apiKey: typeof value.apiKey === 'string' ? value.apiKey : '', model: value.model === 'sonnet' ? 'sonnet' : 'opus' };
+  } catch { return { apiKey: '', model: 'opus' }; }
+}
+export const claudeSettings = writable<ClaudeSettings>(readClaude());
+/** Throws when storage refuses, so callers can say so; a blank key removes it. */
+export function saveClaudeSettings(settings: ClaudeSettings): void {
+  const value = { apiKey: settings.apiKey.trim(), model: settings.model };
+  if (typeof window !== 'undefined') {
+    if (value.apiKey) localStorage.setItem(CLAUDE_KEY, JSON.stringify(value));
+    else localStorage.removeItem(CLAUDE_KEY);
+  }
+  claudeSettings.set(value);
+}
 export function getOpenAIKey(): string | null { return get(openAISettings).apiKey || null; }
 export function hasOpenAIKey(): boolean { return !!getOpenAIKey(); }
