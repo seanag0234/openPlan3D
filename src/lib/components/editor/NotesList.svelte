@@ -39,6 +39,7 @@
   class="max-md:hidden pointer-events-auto relative {$coarsePointer ? 'w-11 min-h-[44px] rounded-lg flex flex-col items-center justify-center' : 'w-8 h-8 rounded-full text-sm'} shadow-lg transition-colors {$notesListOpen ? 'bg-blue-600 text-white' : 'bg-slate-700 text-gray-100 hover:bg-slate-600'}"
   aria-label={$t('panels.notes')} title={$t('panels.notes')} aria-expanded={$notesListOpen}
   data-note-marks={noted.length}
+  data-tour="notes"
   onclick={() => notesListOpen.update(open => !open)}
 >{#if $coarsePointer}<span class="text-lg leading-none" aria-hidden="true">📝</span><span class="text-xs leading-tight tracking-tight">{$t('panels.notes')}</span>{:else}📝{/if}{#if noted.length + (planNote ? 1 : 0)}<span class="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-amber-400 text-xs leading-5 font-bold text-amber-950">{noted.length + (planNote ? 1 : 0)}</span>{/if}</button>
 
