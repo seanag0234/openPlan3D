@@ -9,6 +9,7 @@
   import { themePreference, lessMotion, COMFORT_LOOKS, type ThemePreference } from '$lib/stores/theme';
   import { getGeminiKey, setGeminiKey } from '$lib/stores/aiKeys';
   import OpenAISettings from '$lib/components/ai/OpenAISettings.svelte';
+  import ClaudeSettings from '$lib/components/ai/ClaudeSettings.svelte';
   import FloorElevations from './FloorElevations.svelte';
 
   let { open = $bindable(false) }: { open: boolean } = $props();
@@ -322,7 +323,8 @@
           </div>
         {:else if activeTab === 'ai'}
           <div class="space-y-4">
-            <div>
+            <ClaudeSettings />
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
               <span class="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">{$t('settings.geminiApiKey')}</span>
               <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">{$t('settings.geminiApiKeyDesc')}</p>
               <div class="flex gap-2">
