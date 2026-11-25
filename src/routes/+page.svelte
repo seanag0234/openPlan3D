@@ -83,7 +83,8 @@
       const project = await openPlanFile(() => JSON.parse(text), openingLifetime.signal);
       if (!project) return false;
       try { localStorage.setItem(START_PLAN_OPENED, 'true'); } catch {}
-      goto(`${base}/editor?id=${encodeURIComponent(project.id)}`);
+      // A first visit landing in the plan by itself starts the tour; asking for the plan again does not.
+      goto(`${base}/editor?id=${encodeURIComponent(project.id)}${report ? '' : '&tour=1'}`);
       return true;
     } catch (error) {
       if (report && !openingLifetime.signal.aborted) openError = error instanceof Error ? error.message : String(error);

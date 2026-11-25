@@ -51,3 +51,27 @@ test('the starting plan opens by itself on a first visit, once', async ({ page }
   await expect(page).toHaveURL(/\/$/);
   expect(Object.keys(await savedProjects(page))).toEqual([]);
 });
+
+test('landing in the starting plan on a first visit starts the tour, once', async ({ page }) => {
+  await serveStartPlan(page);
+  await page.goto('/');
+  const tour = page.getByRole('dialog', { name: 'Take the tour' });
+  await expect(tour).toContainText('Step 1 of 10');
+  await expect(page).toHaveURL(/\/editor\?id=room-with-boxes$/);
+  // The tour said what is new, so the hint announcing it never comes.
+  await expect(page.getByRole('region', { name: 'Getting started tip', exact: true })).toHaveCount(0);
+  await tour.getByRole('button', { name: 'End the tour' }).click();
+  await expect(tour).toHaveCount(0);
+
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Room with boxes', exact: true })).toBeVisible();
+  await page.waitForTimeout(500);
+  await expect(tour).toHaveCount(0);
+
+  // Asking for the starting plan again from the list does not start it either.
+  await openList(page);
+  await page.getByRole('button', { name: 'Get the starting plan' }).click();
+  await expect(page.getByRole('button', { name: 'Room with boxes', exact: true })).toBeVisible();
+  await page.waitForTimeout(500);
+  await expect(tour).toHaveCount(0);
+});
