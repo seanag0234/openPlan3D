@@ -1,5 +1,6 @@
 import { dev } from '$app/environment';
 import { base } from '$app/paths';
+import { env } from '$env/dynamic/public';
 import { get } from 'svelte/store';
 import type { Project } from '$lib/models/types';
 import { currentProject, applyExternalProject, afterUndoGroup } from '$lib/stores/project';
@@ -82,7 +83,8 @@ export async function answerAgentRequest(req: Pick<AgentRequest, 'kind' | 'args'
  * completed saves (mirrored to a folder when the server has OPENPLAN3D_MIRROR_DIR). Inactive in production builds.
  */
 export function startAgentBridge(): () => void {
-  if (!dev || typeof window === 'undefined' || typeof EventSource === 'undefined') return () => {};
+  // A built server opts in with PUBLIC_OPENPLAN3D_AGENT_BRIDGE=1 beside the server's own OPENPLAN3D_AGENT_BRIDGE=1.
+  if (!(dev || env.PUBLIC_OPENPLAN3D_AGENT_BRIDGE === '1') || typeof window === 'undefined' || typeof EventSource === 'undefined') return () => {};
   const tab = (crypto.randomUUID?.() ?? `${Date.now()}${Math.random()}`).replace(/[^A-Za-z0-9]/g, '').slice(0, 32);
   const post = (path: string, body: unknown) =>
     fetch(`${base}/agent-bridge/${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).catch(() => {});

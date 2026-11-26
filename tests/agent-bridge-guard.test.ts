@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { bridgeGuard, checkBridgeRequest } from '$lib/server/agentBridgeGuard';
+import { bridgeGuard, bridgeHosts, checkBridgeRequest } from '$lib/server/agentBridgeGuard';
 import * as mcpRoute from '../src/routes/agent-bridge/mcp/+server';
 import * as eventsRoute from '../src/routes/agent-bridge/events/+server';
 import * as replyRoute from '../src/routes/agent-bridge/reply/+server';
@@ -97,6 +97,16 @@ describe('agent bridge guard: allowed', () => {
 
   it('allows an address typed into the browser (Sec-Fetch-Site: none)', () => {
     expect(bridgeGuard(event(MCP, { headers: { 'sec-fetch-site': 'none' } }))).toBeNull();
+  });
+
+  it('lets in a tab on a listed private name, as a local proxy forwards it, and only that name', () => {
+    const tailnet = 'https://home.tailnet.ts.net:8448/agent-bridge/reply';
+    const tab = { ...json, origin: 'https://home.tailnet.ts.net:8448', 'sec-fetch-site': 'same-origin' };
+    const hosts = bridgeHosts({ OPENPLAN3D_AGENT_BRIDGE_HOSTS: ' Home.Tailnet.ts.net:8448 , ' });
+    expect(hosts).toEqual(['home.tailnet.ts.net:8448']);
+    expect(checkBridgeRequest(post(tab, '{}', tailnet), true, hosts)).toBeNull();
+    expect(checkBridgeRequest(post(tab, '{}', tailnet), true)?.status).toBe(403);
+    expect(checkBridgeRequest(post({ ...tab, origin: 'https://evil.example' }, '{}', tailnet), true, hosts)?.status).toBe(403);
   });
 });
 
