@@ -36,6 +36,8 @@ export const panelsEn = {
   "panels.askClose": "Close",
   "panels.askNoKey": "Claude can answer questions about the plan and move things for you. Add a Claude key under Settings, then AI.",
   "panels.askDisclosure": "What you write and the plan's pieces go to {provider}, billed to your key.",
+  "panels.askDisclosureServer": "What you write and the plan's pieces go to Anthropic, billed to this home server's key.",
+  "panels.claudeServerKey": "This home server has a Claude key, so you don't need one here. A key you add here is used instead.",
   "panels.askHint": "Ask whether something fits, or ask Claude to move things. You say yes before anything changes.",
   "panels.askPlaceholder": "Will a 9 × 8 bounce house fit in the park?",
   "panels.askSend": "Send",

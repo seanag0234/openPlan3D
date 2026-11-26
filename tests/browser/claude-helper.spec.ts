@@ -67,6 +67,23 @@ test('Claude reads the plan, proposes a move, and it happens only after Do it, a
   await expect.poll(async () => (await savedPlan(page)).floors[0].furniture.find((f: any) => f.id === 'box-a').position.x).toBe(150);
 });
 
+test("with no key on the device, questions go to the home server, which adds its own key", async ({ page }) => {
+  await page.route('**/api/claude', route => route.fulfill({ status: 200, contentType: 'application/json', body: '{"available":true}' }));
+  const sent = await fakeProvider(page, '**/api/claude/v1/messages*');
+  await page.addInitScript(() => localStorage.setItem('o3d_claude_settings', JSON.stringify({ apiKey: '', model: 'sonnet' })));
+  await openPlan(page, 'tests/fixtures/room-with-boxes.openplan.json');
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Ask Claude', exact: true }).tap();
+  const panel = page.getByRole('region', { name: 'Ask Claude' });
+  await expect(panel).toContainText("billed to this home server's key");
+  await panel.getByRole('textbox').fill('Put Box A next to Box B');
+  await panel.getByRole('button', { name: 'Send' }).tap();
+  await expect(panel.getByTestId('claude-change')).toContainText('Move Box A next to Box B.');
+  expect(sent[0].body.model).toBe('claude-sonnet-5-5');
+  expect(sent[0].headers.authorization).toBeUndefined();
+  expect(sent[0].headers['x-api-key']).toBeUndefined();
+});
+
 test('No leaves the plan as it was, and an OpenRouter key goes to OpenRouter', async ({ page }) => {
   const sent = await fakeProvider(page, 'https://openrouter.ai/api/v1/messages*');
   const panel = await ask(page, 'sk-or-test', 'Put Box A next to Box B');

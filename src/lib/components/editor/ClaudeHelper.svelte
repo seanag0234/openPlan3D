@@ -2,7 +2,7 @@
   import type Anthropic from '@anthropic-ai/sdk';
   import { t } from '$lib/i18n';
   import { coarsePointer } from '$lib/stores/pointer';
-  import { claudeSettings, viaOpenRouter } from '$lib/stores/aiKeys';
+  import { claudeSettings, serverClaude, viaOpenRouter } from '$lib/stores/aiKeys';
   import { runTurn, pendingChange, type ChatEntry } from '$lib/services/claudeHelper';
 
   let open = $state(false);
@@ -12,6 +12,7 @@
   let error = $state<string | null>(null);
   let list = $state<HTMLElement>();
   let controller: AbortController | null = null;
+  const canAsk = $derived(!!$claudeSettings.apiKey || $serverClaude);
   // The conversation as the API sees it, tool calls included; the chat shows only what she needs.
   const history: Anthropic.Beta.BetaMessageParam[] = [];
 
@@ -36,7 +37,7 @@
 
   async function send() {
     const text = draft.trim();
-    if (!text || busy || !$claudeSettings.apiKey) return;
+    if (!text || busy || !canAsk) return;
     draft = ''; error = null; busy = true;
     entries.push({ kind: 'user', text });
     scrollDown();
@@ -72,10 +73,12 @@
       <h2 class="text-sm font-semibold text-gray-800">{$t('panels.askTitle')}</h2>
       <button class="min-w-[44px] min-h-[44px] -mr-2 text-gray-400 hover:text-gray-600 text-lg" aria-label={$t('panels.askClose')} onclick={() => open = false}>✕</button>
     </header>
-    {#if !$claudeSettings.apiKey}
+    {#if !canAsk}
       <p class="px-3 pb-3 text-sm text-gray-700">{$t('panels.askNoKey')}</p>
     {:else}
-      <p class="px-3 text-xs text-gray-500">{$t('panels.askDisclosure', { provider: viaOpenRouter($claudeSettings.apiKey) ? 'OpenRouter' : 'Anthropic' })}</p>
+      <p class="px-3 text-xs text-gray-500">{$claudeSettings.apiKey
+        ? $t('panels.askDisclosure', { provider: viaOpenRouter($claudeSettings.apiKey) ? 'OpenRouter' : 'Anthropic' })
+        : $t('panels.askDisclosureServer')}</p>
       <div bind:this={list} class="flex-1 min-h-0 overflow-y-auto px-3 py-2 flex flex-col gap-2" aria-live="polite">
         {#if !entries.length}<p class="text-sm text-gray-500">{$t('panels.askHint')}</p>{/if}
         {#each entries as entry, i (i)}

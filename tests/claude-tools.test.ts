@@ -10,8 +10,8 @@ const piece = (project: any, id: string) => project.floors[0].furniture.find((f:
 describe('what Claude reads', () => {
   it('gives every piece by name, centre and size in feet, and marks locked ones', () => {
     const read = planForClaude(plan());
-    expect(read.pieces.find(p => p.id === 'box-a')).toEqual({ id: 'box-a', name: 'Box A', x: 4.9, y: 6.6, width: 3.9, depth: 3, height: expect.any(Number), rotation: 0 });
-    expect(read.pieces.find(p => p.id === 'rug')).toMatchObject({ name: 'Rug', locked: true });
+    expect(read.pieces.find((p: { id: string }) => p.id === 'box-a')).toEqual({ id: 'box-a', name: 'Box A', x: 4.9, y: 6.6, width: 3.9, depth: 3, height: expect.any(Number), rotation: 0 });
+    expect(read.pieces.find((p: { id: string }) => p.id === 'rug')).toMatchObject({ name: 'Rug', locked: true });
     expect(read.house).toMatchObject({ left: expect.any(Number), right: expect.any(Number) });
   });
 });
