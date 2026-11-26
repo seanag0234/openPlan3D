@@ -53,7 +53,7 @@ address alone does not keep them out. A request is refused when:
 | Check | Answer | Why |
 | --- | --- | --- |
 | bridge off, or the client address is not loopback | 404 | the bridge does not exist for it |
-| `Host` is not `localhost`, `127.0.0.1` or `[::1]` (any port) | 403 | DNS rebinding: a rebound page sends its own hostname |
+| `Host` is not `localhost`, `127.0.0.1` or `[::1]` (any port), nor listed in `OPENPLAN3D_AGENT_BRIDGE_HOSTS` | 403 | DNS rebinding: a rebound page sends its own hostname |
 | `Origin` is sent and its host and port differ from `Host` | 403 | another site, or another server on this machine |
 | `Sec-Fetch-Site` is sent and is not `same-origin` (or `none`) | 403 | cross-site requests that carry no `Origin`, e.g. `<script src>` |
 | a POST without `Content-Type: application/json` | 415 | other sites can send `text/plain` without a preflight |
@@ -63,6 +63,14 @@ same-origin requests. The port is not checked: a browser never lets a page send 
 hostname, so the hostname alone defeats rebinding, and the dev server may move to another port. Under `npm run dev`,
 Vite's own `server.allowedHosts` check already answers most foreign hostnames with 403 before the bridge sees them;
 the bridge's check also covers a server started with `OPENPLAN3D_AGENT_BRIDGE=1`.
+
+## On a built server behind a proxy
+
+A built server (`node build`) runs the bridge with `OPENPLAN3D_AGENT_BRIDGE=1`; `PUBLIC_OPENPLAN3D_AGENT_BRIDGE=1`
+also makes its editor tabs connect. A local proxy (Tailscale serve, a Cloudflare Tunnel's `cloudflared`) connects
+from loopback, so the address check passes. Tabs loaded through the proxy's own name need that name, with its port, in
+`OPENPLAN3D_AGENT_BRIDGE_HOSTS` (comma-separated). A tunnel that reaches the MCP endpoint from the internet sets its
+`Host` to `localhost`, exposes only `/agent-bridge/mcp`, and must require a sign-in (Cloudflare Access) before it.
 
 ## MCP endpoint
 

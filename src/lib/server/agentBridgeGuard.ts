@@ -19,13 +19,13 @@ const forbidden = (reason: string) => new Response(`Agent bridge: ${reason}`, { 
  *   carry no Origin, such as a `<script src>` pointing at the events stream. Other local ports are `same-site`.
  * - A POST must be `Content-Type: application/json`, which no page can send cross-origin without a preflight.
  */
-export function checkBridgeRequest(event: BridgeRequestEvent, enabled: boolean): Response | null {
+export function checkBridgeRequest(event: BridgeRequestEvent, enabled: boolean, hosts: string[] = []): Response | null {
   let address = '';
   try { address = event.getClientAddress(); } catch { /* adapters without an address */ }
   if (!enabled || !isLocalClient(address)) return new Response('Not found', { status: 404 });
   const headers = event.request.headers;
   const host = headers.get('host')?.toLowerCase() ?? '';
-  if (!LOOPBACK_HOST.test(host)) return forbidden('the Host header must be localhost, 127.0.0.1 or [::1].');
+  if (!LOOPBACK_HOST.test(host) && !hosts.includes(host)) return forbidden('the Host header must be localhost, 127.0.0.1 or [::1].');
   const origin = headers.get('origin');
   if (origin !== null && !sameHostOrigin(origin, host)) return forbidden('requests from other origins are refused.');
   const site = headers.get('sec-fetch-site');
@@ -52,5 +52,14 @@ function isJson(contentType: string | null): boolean {
 /** The agent bridge answers only in dev (or OPENPLAN3D_AGENT_BRIDGE=1), only to loopback clients (otherwise 404),
  *  and only to this server's own pages or to clients outside a browser (otherwise 403/415): see checkBridgeRequest. */
 export function bridgeGuard(event: BridgeRequestEvent): Response | null {
-  return checkBridgeRequest(event, bridgeEnabled(dev));
+  return checkBridgeRequest(event, bridgeEnabled(dev), bridgeHosts());
+}
+
+/**
+ * OPENPLAN3D_AGENT_BRIDGE_HOSTS: more `Host` values (host:port, comma-separated) whose pages may use the bridge, for
+ * a server that a local proxy (Tailscale serve) puts on a private name. Only names no stranger can point at this
+ * machine belong here: a browser sends the name of the page's own site, so another site cannot send one of them.
+ */
+export function bridgeHosts(env: Record<string, string | undefined> = process.env): string[] {
+  return (env.OPENPLAN3D_AGENT_BRIDGE_HOSTS ?? '').split(',').map(h => h.trim().toLowerCase()).filter(Boolean);
 }
