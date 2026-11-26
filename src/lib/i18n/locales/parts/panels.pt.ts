@@ -36,6 +36,8 @@ export const panelsPt = {
   "panels.askClose": "Fechar",
   "panels.askNoKey": "O Claude pode responder perguntas sobre a planta e mover coisas para você. Adicione uma chave do Claude em Configurações, depois IA.",
   "panels.askDisclosure": "O que você escreve e as peças da planta vão para {provider}, cobrados na sua chave.",
+  "panels.askDisclosureServer": "O que você escreve e as peças da planta vão para a Anthropic, cobrados na chave deste servidor de casa.",
+  "panels.claudeServerKey": "Este servidor de casa tem uma chave do Claude, então você não precisa de uma aqui. Uma chave adicionada aqui é usada no lugar.",
   "panels.askHint": "Pergunte se algo cabe, ou peça ao Claude para mover coisas. Você confirma antes de qualquer mudança.",
   "panels.askPlaceholder": "Um pula-pula de 9 × 8 cabe no parque?",
   "panels.askSend": "Enviar",

@@ -1,5 +1,6 @@
 import type Anthropic from '@anthropic-ai/sdk';
 import { get, writable } from 'svelte/store';
+import { base } from '$app/paths';
 import { viaOpenRouter, type ClaudeSettings } from '$lib/stores/aiKeys';
 import { currentProject, applyExternalProject, afterUndoGroup } from '$lib/stores/project';
 import { applyAgentOps, AgentOpError } from '$lib/utils/agentOps';
@@ -26,7 +27,9 @@ async function client(settings: ClaudeSettings) {
   const key = settings.apiKey.trim();
   // Loaded on the first question, so the editor carries none of it for people who never ask.
   const { default: Anthropic } = await import('@anthropic-ai/sdk');
-  // The key is theirs, held in this browser only; the request goes from the browser straight to the provider.
+  // With no key here, the home server adds its own key (/api/claude), which never reaches the browser.
+  if (!key) return new Anthropic({ apiKey: null, baseURL: new URL(`${base}/api/claude`, location.href).href, defaultHeaders: { authorization: null }, dangerouslyAllowBrowser: true });
+  // A key here is theirs, held in this browser only; the request goes from the browser straight to the provider.
   return viaOpenRouter(key)
     ? new Anthropic({ apiKey: null, authToken: key, baseURL: 'https://openrouter.ai/api', dangerouslyAllowBrowser: true })
     : new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true });
