@@ -163,6 +163,7 @@ export const pt = {
   "library.duplicating": "Duplicando projeto…",
   "library.duplicated": "Duplicado como “{name}”.",
   "library.local": "Os projetos e o histórico de versões são salvos neste navegador.",
+  "library.online": "Os projetos são salvos online, então todo navegador conectado a este site os vê. O histórico de versões fica neste navegador.",
   "library.backup": "Baixar um backup de todas as plantas",
   "library.restore": "Recuperar um backup de todas as plantas",
   "library.package": "Abrir uma planta com as imagens",

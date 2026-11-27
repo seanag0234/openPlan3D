@@ -163,6 +163,7 @@ export const en = {
   "library.duplicating": "Duplicating project…",
   "library.duplicated": "Duplicated as “{name}”.",
   "library.local": "Projects and version history are saved in this browser.",
+  "library.online": "Projects are saved online, so every browser signed in to this site sees them. Version history stays in this browser.",
   "library.backup": "Download a backup of all plans",
   "library.restore": "Bring back a backup of all plans",
   "library.package": "Open a plan with its pictures",
