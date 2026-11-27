@@ -879,7 +879,8 @@
 
 {#if $saveError}
   <div role="alert" class="flex flex-wrap items-center gap-3 bg-red-50 border-b border-red-200 px-4 py-3 text-sm text-red-900">
-    <span class="flex-1 min-w-48">{$t('saveControls.error')} {projectServiceMessage($saveError, $locale)}</span>
+    <!-- A saved plan with an error is one the online library did not take; its message says where it is kept. -->
+    <span class="flex-1 min-w-48">{$saveState === 'saved' ? '' : `${$t('saveControls.error')} `}{projectServiceMessage($saveError, $locale)}</span>
     {#if $saveConflict}
       <button class="font-semibold underline disabled:opacity-50" disabled={$savingCopy} onclick={saveCurrentAsCopy}>{$savingCopy ? $t('saveControls.savingCopy') : $t('saveControls.copy')}</button>
     {:else}

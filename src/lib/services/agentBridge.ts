@@ -5,7 +5,7 @@ import { get } from 'svelte/store';
 import type { Project } from '$lib/models/types';
 import { currentProject, applyExternalProject, afterUndoGroup } from '$lib/stores/project';
 import { saveState } from '$lib/stores/saveStatus';
-import { localStore } from '$lib/services/datastore';
+import { dataStore } from '$lib/services/datastore';
 import { openProject } from '$lib/services/projectOpening';
 import { applyAgentOps, leanProject, listElements, summarizeProject } from '$lib/utils/agentOps';
 import { readProject } from '$lib/utils/projectValidation';
@@ -46,14 +46,14 @@ export async function answerAgentRequest(req: Pick<AgentRequest, 'kind' | 'args'
         return { applied: applyExternalProject(next, description), changed };
       }, GESTURE_WAIT_MS);
     }
-    case 'library': return localStore.list();
+    case 'library': return dataStore.list();
     case 'delete': {
       const ids: string[] = (req.args.ids ?? []).map(String);
       if (ids.includes(project.id)) throw new Error(`"${project.id}" is open in this tab; it can't be deleted here.`);
-      const known = new Set((await localStore.list()).map(p => p.id));
+      const known = new Set((await dataStore.list()).map(p => p.id));
       const missing = ids.filter(id => !known.has(id));
       if (missing.length) throw new Error(`Not in the library: ${missing.join(', ')}. Nothing was deleted.`);
-      for (const id of ids) await localStore.delete(id);
+      for (const id of ids) await dataStore.delete(id);
       return { deleted: ids };
     }
     case 'replace': {

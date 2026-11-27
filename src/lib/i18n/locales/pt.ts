@@ -1234,6 +1234,8 @@ export const pt = {
   "projectService.storageUnavailable": "O armazenamento do navegador está indisponível. Permita o armazenamento do site ou baixe seu projeto em JSON.",
   "projectService.storageFailed": "Não foi possível salvar no armazenamento do navegador. Baixe seu projeto em JSON para manter uma cópia.",
   "projectService.conflict": "Esta planta foi alterada ou excluída em outra aba. Salve sua versão como uma cópia, ou baixe uma cópia dela, para manter as duas.",
+  "projectService.libraryTooLarge": "Este projeto é grande demais para a biblioteca online, então fica guardado só neste navegador. Baixe um backup JSON para levá-lo a outro dispositivo.",
+  "projectService.libraryUnreachable": "Não foi possível acessar a biblioteca online, então esta alteração fica guardada só neste navegador. Tente novamente quando estiver online.",
   "projectService.openUnsaved": "Não foi possível salvar sua planta atual.",
   "projectService.openRetry": "Tente salvar novamente, ou baixe uma cópia desta planta, antes de abrir outra planta.",
   "projectService.newId": "Não foi possível escolher um novo identificador para o projeto. Tente abrir o arquivo novamente.",

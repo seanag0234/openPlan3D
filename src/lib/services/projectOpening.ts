@@ -4,7 +4,7 @@ import { currentProject, loadProject } from '$lib/stores/project';
 import { autoSave, markClean, saveError, saveState } from '$lib/stores/saveStatus';
 import { applyDisplaySettings } from '$lib/stores/settings';
 import { readProject } from '$lib/utils/projectValidation';
-import { localStore, ProjectConflictError } from './datastore';
+import { dataStore, ProjectConflictError } from './datastore';
 import { prepareToLeave } from './deployment';
 import { isLibraryBackup, LibraryBackupFileError } from './libraryRestore';
 import { isRoomPlanJson } from '$lib/utils/roomplanValidation';
@@ -15,8 +15,8 @@ let latestRequest = 0;
 
 /** An ID the library lacks stays taken while this tab remembers a revision of it: the store refuses to recreate a deleted plan. */
 async function taken(id: string): Promise<boolean> {
-  if (await localStore.has(id)) return true;
-  try { await localStore.assertCurrent(id); return false; }
+  if (await dataStore.has(id)) return true;
+  try { await dataStore.assertCurrent(id); return false; }
   catch (error) { if (error instanceof ProjectConflictError) return true; throw error; }
 }
 
@@ -80,7 +80,7 @@ export async function openStoredProject(id: string, signal?: AbortSignal): Promi
   const request = ++latestRequest;
   const superseded = () => signal?.aborted || request !== latestRequest;
   try {
-    const project = await localStore.load(id);
+    const project = await dataStore.load(id);
     if (superseded()) return null;
     if (!project) throw new Error('This project is no longer in your library.');
     if (!await prepareToLeave()) {
@@ -123,7 +123,7 @@ function content(project: Project): string {
 /** "Room (2)" and "Room" both give "Room"; the first of "Room (2)", "Room (3)"… the list does not hold. */
 async function nextFreeName(name: string): Promise<string> {
   const base = (name || 'Untitled Project').replace(/ \(\d+\)$/, '');
-  const taken = new Set((await localStore.list()).map(item => item.name));
+  const taken = new Set((await dataStore.list()).map(item => item.name));
   let n = 2;
   while (taken.has(`${base} (${n})`)) n++;
   return `${base} (${n})`;
@@ -139,9 +139,9 @@ export async function openPlanFile(readCandidate: () => unknown | Promise<unknow
     throw new Error(`Your current plan could not be saved. ${get(saveError) ?? 'Retry saving, or download a copy of this plan, before opening another plan.'}`);
   }
   if (signal?.aborted) return null;
-  if (!(await localStore.has(candidate.id))) return openProject(() => candidate, 'import', signal);
+  if (!(await dataStore.has(candidate.id))) return openProject(() => candidate, 'import', signal);
 
-  const stored = await localStore.load(candidate.id);
+  const stored = await dataStore.load(candidate.id);
   if (!stored) return openProject(() => candidate, 'import', signal);
   if (content(stored) === content(candidate)) return openStoredProject(candidate.id, signal);
 

@@ -6,7 +6,7 @@
   import { onMount, onDestroy, tick } from 'svelte';
   import { goto } from '$app/navigation';
   import { base } from '$app/paths';
-  import { localStore, storageErrorMessage, downloadLibraryBackup } from '$lib/services/datastore';
+  import { dataStore, storageErrorMessage, downloadLibraryBackup } from '$lib/services/datastore';
   import { openPlanFile, openProject, readPlanFile } from '$lib/services/projectOpening';
   import { LibraryBackupFileError } from '$lib/services/libraryRestore';
   import ImportError from '$lib/components/ImportError.svelte';
@@ -55,9 +55,9 @@
   async function refreshProjects() {
     loading = true;
     try {
-      projects = await localStore.list();
+      projects = await dataStore.list();
       projects.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-      thumbnails = await localStore.getThumbnails();
+      thumbnails = await dataStore.getThumbnails();
     } finally { loading = false; }
   }
 
@@ -156,7 +156,7 @@
     duplicating = true; duplicatedId = null;
     let copyId: string | null = null;
     await withLibraryError(async () => {
-      const dup = await localStore.duplicate(id);
+      const dup = await dataStore.duplicate(id);
       if (!dup) throw new Error($t('library.gone'));
       copyId = dup.id;
     });
@@ -180,13 +180,13 @@
     if (!action || actionBusy || (action.type === 'rename' && !name)) return;
     actionBusy = true; actionError = null;
     try {
-      if (action.type === 'delete') await localStore.delete(action.id);
+      if (action.type === 'delete') await dataStore.delete(action.id);
       else {
-        const project = await localStore.load(action.id);
+        const project = await dataStore.load(action.id);
         if (!project) throw new Error($t('library.goneAction'));
         project.name = name;
         project.updatedAt = new Date();
-        await localStore.save(project);
+        await dataStore.save(project);
       }
     } catch (error) {
       actionError = storageErrorMessage(error);

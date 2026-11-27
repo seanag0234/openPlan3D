@@ -1,7 +1,7 @@
 import { writable, get } from 'svelte/store';
 import { currentProject, historyForJournal, loadProject, restoreHistory } from './project';
 import { buildJournal, journalFor, readUndoJournal, writeUndoJournal } from '$lib/services/undoJournal';
-import { localStore, storageErrorMessage, ProjectConflictError, PROJECTS_STORAGE_KEY, LIBRARY_CHANGE_KEY } from '$lib/services/datastore';
+import { dataStore, storageErrorMessage, ProjectConflictError, LibraryLocalOnlyError, PROJECTS_STORAGE_KEY, LIBRARY_CHANGE_KEY } from '$lib/services/datastore';
 import { saveSnapshot } from '$lib/stores/versionHistory';
 import type { Project } from '$lib/models/types';
 
@@ -45,7 +45,7 @@ export function initAutoSave() {
     const project = get(currentProject);
     if (!project) return;
     const attempt = saveAttempt;
-    try { await localStore.assertCurrent(project.id); }
+    try { await dataStore.assertCurrent(project.id); }
     catch (error) {
       if (disposed || get(currentProject) !== project || attempt !== saveAttempt) return;
       clearSaveTimer();
@@ -65,7 +65,7 @@ export function initAutoSave() {
     try {
       const project = get(currentProject);
       if (!project || get(saveState) === 'saved' || get(saveConflict)) return;
-      localStore.stashUnsaved(project);
+      dataStore.stashUnsaved(project);
     } catch {}
   };
   // A tab that comes back with no change of its own catches up with a plan another tab saved meanwhile. A tab
@@ -75,7 +75,7 @@ export function initAutoSave() {
     await checkCurrent();
     const project = get(currentProject);
     if (disposed || !project || !get(saveConflict) || ownEdits) return;
-    const stored = await localStore.load(project.id);
+    const stored = await dataStore.load(project.id);
     // A plan deleted in another tab keeps the bar.
     if (!stored || disposed || get(currentProject) !== project || ownEdits) return;
     loadProject(stored);
@@ -140,7 +140,7 @@ function captureThumbnail(projectId: string) {
     if (!ctx) return;
     ctx.drawImage(canvas, 0, 0, tmp.width, tmp.height);
     const dataUrl = tmp.toDataURL('image/jpeg', 0.6);
-    localStore.saveThumbnail(projectId, dataUrl);
+    dataStore.saveThumbnail(projectId, dataUrl);
   } catch {}
 }
 
@@ -169,7 +169,10 @@ async function persist(manual: boolean): Promise<boolean> {
   const attempt = ++saveAttempt;
   saveState.set('saving');
   try {
-    await localStore.save(p);
+    // The browser copy is saved even when the online library is not; the next save uploads it.
+    let notice: string | null = null;
+    try { await dataStore.save(p); }
+    catch (e) { if (!(e instanceof LibraryLocalOnlyError)) throw e; notice = e.message; }
     // A completed write must not mark newer edits or another project as saved.
     if (attempt === saveAttempt && savingRevision === revision && get(currentProject) === p) {
       // The canvas may still show the previous plan immediately after an import.
@@ -178,7 +181,7 @@ async function persist(manual: boolean): Promise<boolean> {
       scheduleThumbnail(p);
       if (manual) saveSnapshot(p, 'Manual save', true);   // true: skip a plan equal to the newest version
       saveState.set('saved');
-      saveError.set(null);
+      saveError.set(notice);
       saveConflict.set(false);
       lastSavedAt.set(new Date());
       ownEdits = false;
@@ -210,7 +213,7 @@ export async function saveCurrentAsCopy(): Promise<boolean> {
   const copyingRevision = revision;
   savingCopy.set(true);
   try {
-    const copy = await localStore.saveCopy(project);
+    const copy = await dataStore.saveCopy(project);
     if (get(currentProject)?.id !== project.id) return false;
     if (revision !== copyingRevision || get(currentProject) !== project) {
       if (get(saveState) !== 'saved') saveError.set('A copy was saved, but you made more edits while it was saving. Save another copy to keep the latest version.');
