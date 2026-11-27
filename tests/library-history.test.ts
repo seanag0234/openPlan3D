@@ -83,14 +83,18 @@ describe('online history', () => {
     expect(await (await s.call('')).json()).toEqual([]);
   });
 
-  it('gives each signed-in person their own starting plan, and everyone sees them all', async () => {
+  it('gives each signed-in person their own starting plan, which only they see', async () => {
     const s = site();
     s.env.ASSETS = { fetch: async () => new Response(JSON.stringify({ id: 'town', name: 'Little Georgetown' }), { headers: { 'Content-Type': 'application/json' } }) };
     const as = (email: string) => ({ headers: { 'Cf-Access-Jwt-Assertion': `x.${Buffer.from(JSON.stringify({ email })).toString('base64url')}.y` } });
-    await s.call('', as('sean@example.com'));
-    await s.call('', as('sean@example.com'));
-    const names = (await (await s.call('', as('aubrey@example.com'))).json()).map((p: { name: string }) => p.name).sort();
-    expect(names).toEqual(['Little Georgetown (aubrey)', 'Little Georgetown (sean)']);
+    const listed = async (email: string) => (await (await s.call('', as(email))).json()) as { id: string; name: string; sharedBy: string | null }[];
+    await listed('sean@example.com');
+    const [sean] = await listed('sean@example.com');
+    const [aubrey, ...rest] = await listed('aubrey@example.com');
+    expect(rest).toEqual([]);
+    expect([sean.name, aubrey.name]).toEqual(['Little Georgetown', 'Little Georgetown']);
+    expect(aubrey.id).not.toBe(sean.id);
+    expect(aubrey.sharedBy).toBeNull();
   });
 
   it('starts the log of a plan saved before it existed, once', () => {

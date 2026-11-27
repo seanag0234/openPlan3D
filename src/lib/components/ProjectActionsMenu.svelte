@@ -2,16 +2,20 @@
   import { t } from '$lib/i18n';
   import { tick } from 'svelte';
 
-  let { name, disabled = false, onaction }: {
+  type Action = 'open' | 'rename' | 'duplicate' | 'share' | 'delete' | 'leave';
+  /** `share` adds Share; `leave` swaps Delete for removing someone else's plan from this list. */
+  let { name, disabled = false, share = false, leave = false, onaction }: {
     name: string;
     disabled?: boolean;
-    onaction: (action: 'open' | 'rename' | 'duplicate' | 'delete') => void;
+    share?: boolean;
+    leave?: boolean;
+    onaction: (action: Action) => void;
   } = $props();
   const id = $props.id();
   let open = $state(false);
   let trigger = $state<HTMLButtonElement>();
   let menu = $state<HTMLDivElement>();
-  const actions = ['open', 'rename', 'duplicate', 'delete'] as const;
+  const actions = $derived<Action[]>(['open', 'rename', 'duplicate', ...(share ? ['share' as const] : []), leave ? 'leave' : 'delete']);
 
   function close(restore = false) {
     open = false;
@@ -72,7 +76,7 @@
     {#each actions as action}
       <button type="button" role="menuitem" tabindex="-1"
         onclick={() => { close(true); onaction(action); }}
-        class="w-full px-3 py-2 [@media(pointer:coarse)]:py-3 text-sm text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue-500 {action === 'delete' ? 'text-red-500 hover:bg-red-50 focus:bg-red-50' : 'text-gray-700 hover:bg-gray-50 focus:bg-gray-50'}">
+        class="w-full px-3 py-2 [@media(pointer:coarse)]:py-3 text-sm text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue-500 {action === 'delete' || action === 'leave' ? 'text-red-500 hover:bg-red-50 focus:bg-red-50' : 'text-gray-700 hover:bg-gray-50 focus:bg-gray-50'}">
         {$t(`library.${action}`)}
       </button>
     {/each}

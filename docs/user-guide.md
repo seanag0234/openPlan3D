@@ -568,6 +568,12 @@ plan** on the library page lists deleted plans and returns one as its last save.
 a plan are stored once however many saves use them, so a save costs about the size of the plan without
 its pictures.
 
+In the online library each plan is private to the person who saved it. **Share** in a plan's menu adds
+people by the email they sign in with; they can then open and change it, and their list says who
+shared it. On a plan shared with you, **Remove from my list** takes it off your list only. Plans saved
+before plans were private say **Everyone can open this** until someone uses **Make it private** in
+the Share dialog, which makes it theirs. Only a plan's owner can delete it or bring it back.
+
 Version history is separate from **Undo** / **Redo** (Ctrl+Z / Ctrl+Y), which
 keeps up to 50 steps for the current session; the **Undo History** panel lists
 them by name ("Added wall", "Moved furniture", …).

@@ -16,6 +16,7 @@
   import ProjectPackageDialog from '$lib/components/ProjectPackageDialog.svelte';
   import LibraryStorageNote from '$lib/components/LibraryStorageNote.svelte';
   import DeletedPlans from '$lib/components/DeletedPlans.svelte';
+  import SharePlan from '$lib/components/SharePlan.svelte';
   import { onlineHistory } from '$lib/services/onlineHistory';
   import ProjectActionsMenu from '$lib/components/ProjectActionsMenu.svelte';
   import { houseTemplates } from '$lib/utils/houseTemplates';
@@ -27,14 +28,16 @@
   // Same link as USER_GUIDE_URL in $lib/stores/exportNotice, which would pull the editor's export code into this page.
   const USER_GUIDE_URL = 'https://github.com/laanlabs/openPlan3D/blob/main/docs/user-guide.md';
 
-  let projects = $state<{ id: string; name: string; updatedAt: string }[]>([]);
+  let projects = $state<{ id: string; name: string; updatedAt: string; sharedBy?: string | null; everyone?: boolean }[]>([]);
+  let sharing = $state<{ id: string; name: string } | null>(null);
   let thumbnails = $state<Record<string, string | null>>({});
   let showWelcome = $state(false);
   let restoreOpen = $state(false);
   let restoreFile = $state.raw<File | null>(null);
   let packageOpen = $state(false);
   let loading = $state(true);
-  let actionDialog = $state<{ type: 'rename' | 'delete'; id: string; name: string } | null>(null);
+  /** `owner` is set when deleting only takes someone else's plan off this person's list. */
+  let actionDialog = $state<{ type: 'rename' | 'delete'; id: string; name: string; owner?: string | null } | null>(null);
   let renameValue = $state('');
   let actionError = $state<string | null>(null);
   let actionBusy = $state(false);
@@ -171,8 +174,8 @@
     (libraryError ? libraryAlert : duplicateStatus)?.scrollIntoView?.({ block: 'nearest' });
   }
 
-  function openAction(type: 'rename' | 'delete', project: { id: string; name: string }) {
-    actionDialog = { type, id: project.id, name: project.name || 'Untitled Project' };
+  function openAction(type: 'rename' | 'delete', project: { id: string; name: string; sharedBy?: string | null }) {
+    actionDialog = { type, id: project.id, name: project.name || 'Untitled Project', owner: project.sharedBy };
     renameValue = project.name;
     actionError = null;
   }
@@ -333,13 +336,17 @@
                 <h3 class="font-semibold text-gray-800 text-sm truncate">{project.name || $t('library.untitled')}</h3>
               </a>
               <p class="text-xs text-gray-400 mt-1">{formatDate(project.updatedAt, $locale)}</p>
+              {#if project.sharedBy}<p class="text-xs text-blue-600 mt-1 truncate">{$t('library.sharedBy', { owner: project.sharedBy })}</p>
+              {:else if project.everyone}<p class="text-xs text-amber-700 mt-1">{$t('library.everyone')}</p>{/if}
             </div>
 
             <ProjectActionsMenu name={project.name} disabled={duplicating}
+              share={onlineHistory && project.sharedBy !== undefined} leave={!!project.sharedBy}
               onaction={(action) => {
                 if (action === 'open') goto(`${base}/editor?id=${encodeURIComponent(project.id)}`);
                 else if (action === 'duplicate') void duplicateProject(project.id);
-                else openAction(action, project);
+                else if (action === 'share') sharing = { id: project.id, name: project.name };
+                else openAction(action === 'leave' ? 'delete' : action, project);
               }} />
           </div>
         {/each}
@@ -353,9 +360,10 @@
       onclose={(event) => reconcileNativeClose(event, actionBusy, closeAction)}
       class="m-auto w-[28rem] max-w-[calc(100vw-2rem)] max-h-[85vh] overflow-y-auto rounded-2xl bg-white p-5 text-gray-800 shadow-2xl backdrop:bg-black/50">
       <form onsubmit={(event) => { event.preventDefault(); void submitAction(); }}>
-        <h2 id="library-action-title" class="text-lg font-semibold">{actionDialog.type === 'rename' ? $t('library.renameTitle') : $t('library.deleteTitle')}</h2>
+        <h2 id="library-action-title" class="text-lg font-semibold">{actionDialog.type === 'rename' ? $t('library.renameTitle') : actionDialog.owner ? $t('library.leaveTitle') : $t('library.deleteTitle')}</h2>
         <p id="library-action-description" class="mt-2 break-words text-sm text-gray-500">
           {#if actionDialog.type === 'rename'}{$t('library.renameHelp', { name: actionDialog.name })}
+          {:else if actionDialog.owner}{$t('library.leaveHelp', { name: actionDialog.name, owner: actionDialog.owner })}
           {:else}{$t(onlineHistory ? 'library.deleteHelpOnline' : 'library.deleteHelp', { name: actionDialog.name, back: $t('library.deleted') })}{/if}
         </p>
         {#if actionDialog.type === 'rename'}
@@ -369,11 +377,15 @@
           <button type="button" onclick={closeAction} disabled={actionBusy} class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold disabled:opacity-40">{$t('library.cancel')}</button>
           <button type="submit" disabled={actionBusy || (actionDialog.type === 'rename' && !renameValue.trim())}
             class="rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-40 {actionDialog.type === 'rename' ? 'bg-blue-600' : 'bg-red-600'}">
-            {actionDialog.type === 'rename' ? $t('library.saveName') : $t('library.deleteTitle')}
+            {actionDialog.type === 'rename' ? $t('library.saveName') : actionDialog.owner ? $t('library.leaveTitle') : $t('library.deleteTitle')}
           </button>
         </div>
       </form>
     </dialog>
+  {/if}
+
+  {#if sharing}
+    <SharePlan id={sharing.id} name={sharing.name} onclose={() => sharing = null} onchanged={() => withLibraryError(refreshProjects)} />
   {/if}
 
   <!-- Template Modal -->

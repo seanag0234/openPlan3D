@@ -8,8 +8,8 @@ import type { Assets } from './library/_shared';
 const headers = { 'Cache-Control': 'no-store' };
 
 /**
- * The starting plan as the signed-in person's own copy: an id and a name of their own, so each person
- * gets one, and dates when the file has none. Null when the build has no plan.
+ * The starting plan as the signed-in person's own copy: an id of their own, so each person gets one,
+ * and dates when the file has none. Null when the build has no plan.
  */
 export async function startPlanFor(assets: Assets, request: Request): Promise<{ id: string; body: string } | null> {
   const file = await assets.fetch(new URL('/start-plan.json', request.url));
@@ -19,10 +19,7 @@ export async function startPlanFor(assets: Assets, request: Request): Promise<{ 
   try { plan = JSON.parse(await file.text()); } catch { return null; }
   if (typeof plan?.id !== 'string' || typeof plan.name !== 'string') return null;
   const email = tokenEmail(request.headers.get('Cf-Access-Jwt-Assertion'));
-  if (email) {
-    plan.id = `${plan.id}-${(await sha256(email)).slice(0, 12)}`;
-    plan.name = `${plan.name} (${email.split('@')[0]})`;
-  }
+  if (email) plan.id = `${plan.id}-${(await sha256(email)).slice(0, 12)}`;
   // The editor fills missing dates in on opening, and compares plans without them.
   if (typeof plan.updatedAt !== 'string') plan.updatedAt = new Date().toISOString();
   if (typeof plan.createdAt !== 'string') plan.createdAt = plan.updatedAt;

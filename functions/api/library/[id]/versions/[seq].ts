@@ -1,7 +1,9 @@
 import { unpack, versionStatements } from '../../_history';
+import { caller, roleOf } from '../../_people';
 import { status, type Context } from '../../_shared';
 
-async function version({ env, params }: Context<'id' | 'seq'>) {
+async function version({ request, env, params }: Context<'id' | 'seq'>) {
+  if (!await roleOf(env.LIBRARY, params.id, caller(request))) return undefined;
   const row = await env.LIBRARY.prepare('SELECT body FROM versions WHERE project_id = ? AND seq = ? AND body IS NOT NULL')
     .bind(params.id, Number(params.seq)).first<{ body: string }>();
   return row ? unpack(env.LIBRARY, row.body) : undefined;
@@ -17,7 +19,8 @@ export async function onRequestGet(context: Context<'id' | 'seq'>) {
 
 /** Bring a deleted plan back as this version. Refused while the plan exists: an open plan is restored in the editor. */
 export async function onRequestPost(context: Context<'id' | 'seq'>) {
-  const { env, params } = context;
+  const { request, env, params } = context;
+  if (await roleOf(env.LIBRARY, params.id, caller(request)) === 'editor') return status(403, 'Only the owner can bring this plan back');
   const body = await version(context);
   if (body === undefined) return status(404, 'No such version');
   if (body === null) return status(500, 'A picture this version uses is missing');

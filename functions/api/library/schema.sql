@@ -26,6 +26,16 @@ CREATE TABLE IF NOT EXISTS blobs (
   data TEXT NOT NULL
 );
 
+-- Who may use each plan: its owner, and an editor row per person it is shared with (_people.ts).
+-- A plan with no rows is everyone's. Rows outlive a delete, so only the owner can bring a plan back.
+CREATE TABLE IF NOT EXISTS access (
+  project_id TEXT NOT NULL,
+  email TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('owner', 'editor')),
+  PRIMARY KEY (project_id, email)
+);
+CREATE INDEX IF NOT EXISTS access_by_email ON access (email);
+
 -- A plan saved before the log existed starts its log with the copy it has now.
 INSERT INTO versions (project_id, revision, saved_at, name, body)
   SELECT id, revision, updated_at, name, body FROM projects p

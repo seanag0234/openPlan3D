@@ -11,7 +11,8 @@ export interface DataStore {
   saveCopy(project: Project, suffix?: string): Promise<Project>;
   save(project: Project): Promise<void>;
   load(id: string): Promise<Project | null>;
-  list(): Promise<{ id: string; name: string; updatedAt: string }[]>;
+  /** `sharedBy` names who shared a plan with this person; `everyone` marks one nobody owns. Online library only. */
+  list(): Promise<{ id: string; name: string; updatedAt: string; sharedBy?: string | null; everyone?: boolean }[]>;
   delete(id: string): Promise<void>;
   duplicate(id: string): Promise<Project | null>;
   saveThumbnail(id: string, dataUrl: string): Promise<void>;
@@ -269,6 +270,7 @@ export function createLocalStore(): DataStore {
 export const localStore = createLocalStore();
 
 export const LIBRARY_TOO_LARGE = 'This plan is too large for the online library, so it is kept in this browser only. Download a JSON backup to move it to another device.';
+export const LIBRARY_NOT_SHARED = 'This plan is no longer shared with you, so this change is kept in this browser only. Duplicate it to keep your own copy online.';
 export const LIBRARY_UNREACHABLE = 'The online library could not be reached, so this change is kept in this browser only. Retry when you are online.';
 
 /** The browser copy is saved; the online library did not take the change. */
@@ -276,7 +278,7 @@ export class LibraryLocalOnlyError extends Error {
   constructor(message: string) { super(message); this.name = 'LibraryLocalOnlyError'; }
 }
 
-type RemoteEntry = { id: string; name: string; updatedAt: string; revision: number; thumbnail: string | null };
+type RemoteEntry = { id: string; name: string; updatedAt: string; revision: number; thumbnail: string | null; sharedBy?: string | null; everyone?: boolean };
 /** Per plan: the library revision this browser's copy came from, and whether it holds edits the library lacks. */
 type Sync = Record<string, { revision?: number; pending?: boolean }>;
 const LIBRARY_SYNC_KEY = 'o3d_library_sync';
@@ -345,7 +347,7 @@ export function createLibraryStore(local: DataStore, options: {
     if (response?.ok) { remember(project.id, { revision: revisionOf(response) }); return; }
     remember(project.id, { revision: known, pending: true });
     if (response?.status === 412) throw new ProjectConflictError();
-    throw new LibraryLocalOnlyError(response?.status === 413 ? LIBRARY_TOO_LARGE : LIBRARY_UNREACHABLE);
+    throw new LibraryLocalOnlyError(response?.status === 413 ? LIBRARY_TOO_LARGE : response?.status === 403 ? LIBRARY_NOT_SHARED : LIBRARY_UNREACHABLE);
   }
 
   return {
@@ -382,7 +384,9 @@ export function createLibraryStore(local: DataStore, options: {
       if (!remote) return mine;
       const merged = new Map(mine.map(entry => [entry.id, entry]));
       for (const entry of remote) {
-        if (remoteWins(entry.id, entry, merged.get(entry.id))) merged.set(entry.id, { id: entry.id, name: entry.name, updatedAt: entry.updatedAt });
+        const { sharedBy = null, everyone = false } = entry;
+        const shown = remoteWins(entry.id, entry, merged.get(entry.id)) ? { id: entry.id, name: entry.name, updatedAt: entry.updatedAt } : merged.get(entry.id)!;
+        merged.set(entry.id, { ...shown, sharedBy, everyone });
       }
       return [...merged.values()];
     },

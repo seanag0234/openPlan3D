@@ -23,7 +23,7 @@ describe('Pages starting plan', () => {
     const sean = await (await get('', json(), 'Sean@Example.com')).json();
     const again = await (await get('', json(), 'sean@example.com')).json();
     const aubrey = await (await get('', json(), 'aubrey@example.com')).json();
-    expect(sean.name).toBe('Starting plan (sean)');
+    expect(sean.name).toBe('Starting plan');
     expect(again.id).toBe(sean.id);
     expect(aubrey.id).not.toBe(sean.id);
     expect(sean.id).toMatch(/^town-[0-9a-f]{12}$/);

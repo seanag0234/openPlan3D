@@ -39,3 +39,19 @@ export async function bringBack(plan: DeletedPlan): Promise<void> {
   await call(`${at(plan.id)}/versions/${plan.seq}`, { method: 'POST' });
 }
 
+/** Who may open a plan (functions/api/library/[id]/people.ts); `owner` is null for a plan everyone sees. */
+export interface PlanPeople { you: string | null; owner: string | null; people: string[] }
+
+export async function listPeople(id: string): Promise<PlanPeople> {
+  return (await call(`${at(id)}/people`)).json();
+}
+
+/** Shares the plan with `email`; without one, makes a plan everyone sees the caller's own. */
+export async function sharePlan(id: string, email?: string): Promise<void> {
+  await call(`${at(id)}/people`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(email ? { email } : {}) });
+}
+
+export async function stopSharing(id: string, email: string): Promise<void> {
+  await call(`${at(id)}/people?email=${encodeURIComponent(email)}`, { method: 'DELETE' });
+}
+
