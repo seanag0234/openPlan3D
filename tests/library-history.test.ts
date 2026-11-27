@@ -71,6 +71,18 @@ describe('online history', () => {
     expect(rest.map((v: { name: string }) => v.name)).toEqual(['Save 0']);
   });
 
+  it('puts the starting plan in the library once, and leaves it deleted once deleted', async () => {
+    const s = site();
+    s.env.ASSETS = { fetch: async (url: URL) => url.pathname === '/start-plan.json'
+      ? new Response(JSON.stringify({ id: ID, name: 'Little Georgetown', floors: [] }), { headers: { 'Content-Type': 'application/json' } })
+      : new Response('<!doctype html>', { headers: { 'Content-Type': 'text/html' } }) };
+    expect((await (await s.call('')).json()).map((p: { name: string }) => p.name)).toEqual(['Little Georgetown']);
+    expect((await (await s.call('')).json())).toHaveLength(1);
+    expect(s.count('versions')).toBe(1);
+    expect((await s.call(`/${ID}`, { method: 'DELETE', headers: { 'If-Match': '"1"' } })).status).toBe(204);
+    expect(await (await s.call('')).json()).toEqual([]);
+  });
+
   it('starts the log of a plan saved before it existed, once', () => {
     const s = site();
     s.db.prepare("INSERT INTO projects (id, name, updated_at, revision, body) VALUES (?, 'Old', '2026-11-01T00:00:00Z', 5, ?)").run(ID, plan('Old'));
