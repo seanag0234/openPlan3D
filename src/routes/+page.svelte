@@ -269,7 +269,7 @@
       {#if copy}<p role="status" bind:this={duplicateStatus} class="mb-4 text-sm text-gray-600">{$t('library.duplicated', { name: copy.name || $t('library.untitled') })}</p>{/if}
     {/if}
     <div class="mb-5 flex flex-wrap items-center justify-between gap-3 text-sm text-gray-500">
-      <p>{$t('library.local')}</p>
+      <p>{$t(import.meta.env.PUBLIC_CLOUD_LIBRARY === 'true' ? 'library.online' : 'library.local')}</p>
       <div class="flex flex-wrap gap-4">
         {#if startPlanAvailable}<button class="font-semibold text-blue-600 underline" onclick={() => { openError = null; void openStartPlan(true); }}>{$t('home.startPlan')}</button>{/if}
         {#if !libraryError}<button class="font-semibold text-blue-600 underline" onclick={backupLibrary}>{$t('library.backup')}</button>{/if}
