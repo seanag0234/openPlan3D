@@ -18,7 +18,11 @@ export interface Env {
   ACCESS_TEAM_DOMAIN?: string;
   /** The Access application's audience tag. */
   ACCESS_AUD?: string;
+  /** The site's own files, which Pages always binds. */
+  ASSETS?: Assets;
 }
+
+export interface Assets { fetch(input: URL): Promise<Response> }
 
 export interface Context<P extends string = never> {
   request: Request;

@@ -39,8 +39,10 @@ as it is on each request: replacing it changes what browsers that have not yet o
 
 On Cloudflare Pages (`npm run build:static`) there is no server to read `START_PLAN_FILE`. The plan is the
 file `build/start-plan.json`, copied in after the build, and `functions/api/start-plan.ts` answers the same
-three ways. Changing the plan there needs a new deploy. With the online library on, the plan a first visit
-opens is saved online like any other, so every browser signed in to the site lists it from then on.
+three ways. Changing the plan there needs a new deploy. With the online library on, the plan joins the
+library the first time anyone lists it (`functions/api/library/index.ts`), so every browser signed in to
+the site lists it, plans or not. It joins once: a plan with that id that was deleted later stays deleted,
+and **Bring back a deleted plan** returns it. A plan file without dates gets the time it joined.
 
 ## Feedback
 
