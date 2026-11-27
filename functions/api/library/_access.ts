@@ -8,6 +8,14 @@ const bytes = (part: string) => {
 };
 const decode = (part: string) => JSON.parse(new TextDecoder().decode(bytes(part)));
 
+/** The lowercased email a sign-in token names, read without checking it: only for what a person's own copies are called. */
+export function tokenEmail(token: string | null): string | null {
+  try {
+    const email = token ? decode(token.split('.')[1]).email : null;
+    return typeof email === 'string' && email.includes('@') ? email.toLowerCase() : null;
+  } catch { return null; }
+}
+
 let cache: { url: string; at: number; keys: Jwk[] } | null = null;
 
 async function signingKey(url: string, kid: unknown, now: number): Promise<Jwk | undefined> {

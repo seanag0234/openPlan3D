@@ -83,6 +83,16 @@ describe('online history', () => {
     expect(await (await s.call('')).json()).toEqual([]);
   });
 
+  it('gives each signed-in person their own starting plan, and everyone sees them all', async () => {
+    const s = site();
+    s.env.ASSETS = { fetch: async () => new Response(JSON.stringify({ id: 'town', name: 'Little Georgetown' }), { headers: { 'Content-Type': 'application/json' } }) };
+    const as = (email: string) => ({ headers: { 'Cf-Access-Jwt-Assertion': `x.${Buffer.from(JSON.stringify({ email })).toString('base64url')}.y` } });
+    await s.call('', as('sean@example.com'));
+    await s.call('', as('sean@example.com'));
+    const names = (await (await s.call('', as('aubrey@example.com'))).json()).map((p: { name: string }) => p.name).sort();
+    expect(names).toEqual(['Little Georgetown (aubrey)', 'Little Georgetown (sean)']);
+  });
+
   it('starts the log of a plan saved before it existed, once', () => {
     const s = site();
     s.db.prepare("INSERT INTO projects (id, name, updated_at, revision, body) VALUES (?, 'Old', '2026-11-01T00:00:00Z', 5, ?)").run(ID, plan('Old'));

@@ -4,7 +4,7 @@ import type { D1, D1Statement } from './_shared';
 const BLOB_MIN = 10_000;
 const REF = 'o3d-blob:sha256:';
 
-async function sha256(text: string): Promise<string> {
+export async function sha256(text: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
 }
