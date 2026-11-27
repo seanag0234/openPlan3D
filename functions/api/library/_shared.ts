@@ -5,7 +5,11 @@ export interface D1Statement {
   all<T>(): Promise<{ results: T[] }>;
   run(): Promise<{ meta: { changes: number } }>;
 }
-export interface D1 { prepare(sql: string): D1Statement }
+export interface D1 {
+  prepare(sql: string): D1Statement;
+  /** Runs the statements in order as one transaction: all of them take effect or none. */
+  batch(statements: D1Statement[]): Promise<{ meta: { changes: number } }[]>;
+}
 
 /** Bindings set on the Pages project (Pulumi in production, command-line flags in `wrangler pages dev`). */
 export interface Env {

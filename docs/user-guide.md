@@ -560,6 +560,14 @@ snapshot ("Restore this version? The current version is kept in Version
 History."), and **Clear all versions** deletes them. If the history cannot be read, the dialog
 offers **Download version backup** (`openplan3d-version-history-backup.json`).
 
+On a copy with the online library (the Cloudflare build), the dialog also lists **Saved online**: every
+save of the plan from every browser, newest first, 100 at a time (**Show older saves**). Restoring one
+works as above and is itself logged as a new save, so a restore can be undone the same way. Nothing in
+the online log is ever changed or removed. Deleting a plan logs the delete too: **Bring back a deleted
+plan** on the library page lists deleted plans and returns one as its last save. Large pictures inside
+a plan are stored once however many saves use them, so a save costs about the size of the plan without
+its pictures.
+
 Version history is separate from **Undo** / **Redo** (Ctrl+Z / Ctrl+Y), which
 keeps up to 50 steps for the current session; the **Undo History** panel lists
 them by name ("Added wall", "Moved furniture", …).

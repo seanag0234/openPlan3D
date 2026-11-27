@@ -5,6 +5,7 @@ import type { Project } from '$lib/models/types';
 import { readRecord, updateRecord } from '$lib/services/localDatabase';
 import { storageErrorMessage } from '$lib/services/datastore';
 import { readSnapshotStorage, writeSnapshotStorage } from '$lib/utils/snapshotStorage';
+import { loadOnlineVersion } from '$lib/services/onlineHistory';
 
 export interface Snapshot {
   timestamp: number;
@@ -86,16 +87,33 @@ export async function restoreSnapshot(projectId: string, index: number, expected
     }
     const project = readProject(JSON.parse(snapshots[index].data));
     if (project.id !== projectId) throw new Error('This version belongs to a different project.');
-    // Loading clears Undo and the next autosave overwrites the library copy: keep the version being replaced first.
-    await appendSnapshot(before, 'Before restore', true);
-    if (get(currentProject) !== before) return false;
-    loadProject(project);
-    snapshotError.set(null);
-    return true;
+    return await replaceWith(before, project);
   } catch (error) {
     if (get(currentProject) === before) snapshotError.set(`${error instanceof Error ? error.message : 'Could not read this version.'} Your current plan has not changed.`);
     return false;
   }
+}
+
+/** Open a save from the online log in place of the current plan; its next autosave logs it as a new save. */
+export async function restoreOnlineVersion(projectId: string, seq: number): Promise<boolean> {
+  const before = get(currentProject);
+  try {
+    const project = await loadOnlineVersion(projectId, seq);
+    if (get(currentProject) !== before || before?.id !== projectId) return false;
+    return await replaceWith(before, project);
+  } catch (error) {
+    if (get(currentProject) === before) snapshotError.set(`${error instanceof Error ? error.message : 'Could not read this version.'} Your current plan has not changed.`);
+    return false;
+  }
+}
+
+async function replaceWith(before: Project, project: Project): Promise<boolean> {
+  // Loading clears Undo and the next autosave overwrites the library copy: keep the version being replaced first.
+  await appendSnapshot(before, 'Before restore', true);
+  if (get(currentProject) !== before) return false;
+  loadProject(project);
+  snapshotError.set(null);
+  return true;
 }
 
 export async function deleteAllSnapshots(projectId: string) {

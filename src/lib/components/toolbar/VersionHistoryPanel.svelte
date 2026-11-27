@@ -3,7 +3,9 @@
   import { projectServiceMessage } from '$lib/i18n/projectServiceMessages';
   import { modalDialog } from '$lib/utils/modalDialog';
   import { onDestroy } from 'svelte';
-  import { snapshotError, downloadSnapshotBackup, snapshotsStore, refreshSnapshots, restoreSnapshot, deleteAllSnapshots, type Snapshot } from '$lib/stores/versionHistory';
+  import { snapshotError, downloadSnapshotBackup, snapshotsStore, refreshSnapshots, restoreSnapshot, restoreOnlineVersion, deleteAllSnapshots, type Snapshot } from '$lib/stores/versionHistory';
+  import { onlineHistory, listOnlineVersions, type OnlineVersion } from '$lib/services/onlineHistory';
+  import { VERSIONS_PAGE } from '../../../../functions/api/library/[id]/versions';
   import { currentProject } from '$lib/stores/project';
   import { get } from 'svelte/store';
 
@@ -12,9 +14,34 @@
   let snapshots: Snapshot[] = $state([]);
   onDestroy(snapshotsStore.subscribe(v => { snapshots = v; }));
 
+  let online: OnlineVersion[] = $state([]);
+  let onlineMore = $state(false);
+  let onlineError = $state<string | null>(null);
+
+  async function loadOnline(older: boolean) {
+    const p = get(currentProject);
+    if (!p) return;
+    try {
+      const page = await listOnlineVersions(p.id, older ? online.at(-1)?.seq : undefined);
+      online = older ? [...online, ...page] : page;
+      onlineMore = page.length === VERSIONS_PAGE;
+      onlineError = null;
+    } catch (error) { onlineError = error instanceof Error ? error.message : String(error); }
+  }
+
   $effect(() => {
-    if (open) refreshSnapshots();
+    if (open) {
+      refreshSnapshots();
+      if (onlineHistory) void loadOnline(false);
+    }
   });
+
+  async function onRestoreOnline(version: OnlineVersion) {
+    const p = get(currentProject);
+    if (!p) return;
+    if (!confirm($t('versions.restoreConfirm'))) return;
+    if (await restoreOnlineVersion(p.id, version.seq)) open = false;
+  }
 
   function formatTime(ts: number, language: Locale): string {
     const d = new Date(ts);
@@ -88,6 +115,32 @@
             </div>
           {/each}
         </div>
+      {/if}
+      {#if onlineHistory}
+        <section aria-label={$t('versions.online')} class="mt-3 border-t border-gray-100 pt-3">
+          <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500">{$t('versions.online')}</h3>
+          <p class="text-xs text-gray-400 mb-1">{$t('versions.onlineNote')}</p>
+          {#if onlineError}<p role="alert" class="text-sm text-red-700 py-2">{projectServiceMessage(onlineError, $locale)}</p>{/if}
+          <div class="space-y-1">
+            {#each online as version (version.seq)}
+              <div role="group" aria-label={version.deleted ? $t('versions.onlineDeleted') : version.name} class="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-gray-50 group transition-colors">
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-medium text-gray-700 truncate">{version.deleted ? $t('versions.onlineDeleted') : version.name}</div>
+                  <div class="text-xs text-gray-400">{formatTime(Date.parse(version.savedAt), $locale)}</div>
+                </div>
+                {#if !version.deleted}
+                  <button
+                    onclick={() => onRestoreOnline(version)}
+                    class="text-xs px-2.5 py-1 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors opacity-100 [@media(hover:hover)]:md:opacity-0 [@media(hover:hover)]:md:group-hover:opacity-100 focus-visible:opacity-100 font-medium shrink-0 ml-2"
+                  >
+                    {$t('versions.restore')}
+                  </button>
+                {/if}
+              </div>
+            {/each}
+          </div>
+          {#if onlineMore}<button class="mt-1 text-xs font-semibold text-blue-600 underline" onclick={() => loadOnline(true)}>{$t('versions.older')}</button>{/if}
+        </section>
       {/if}
     </div>
 

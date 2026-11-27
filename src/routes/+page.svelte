@@ -15,6 +15,8 @@
   import LibraryRestoreDialog from '$lib/components/LibraryRestoreDialog.svelte';
   import ProjectPackageDialog from '$lib/components/ProjectPackageDialog.svelte';
   import LibraryStorageNote from '$lib/components/LibraryStorageNote.svelte';
+  import DeletedPlans from '$lib/components/DeletedPlans.svelte';
+  import { onlineHistory } from '$lib/services/onlineHistory';
   import ProjectActionsMenu from '$lib/components/ProjectActionsMenu.svelte';
   import { houseTemplates } from '$lib/utils/houseTemplates';
   import { feedbackOpen } from '$lib/stores/ui';
@@ -269,7 +271,7 @@
       {#if copy}<p role="status" bind:this={duplicateStatus} class="mb-4 text-sm text-gray-600">{$t('library.duplicated', { name: copy.name || $t('library.untitled') })}</p>{/if}
     {/if}
     <div class="mb-5 flex flex-wrap items-center justify-between gap-3 text-sm text-gray-500">
-      <p>{$t(import.meta.env.PUBLIC_CLOUD_LIBRARY === 'true' ? 'library.online' : 'library.local')}</p>
+      <p>{$t(onlineHistory ? 'library.online' : 'library.local')}</p>
       <div class="flex flex-wrap gap-4">
         {#if startPlanAvailable}<button class="font-semibold text-blue-600 underline" onclick={() => { openError = null; void openStartPlan(true); }}>{$t('home.startPlan')}</button>{/if}
         {#if !libraryError}<button class="font-semibold text-blue-600 underline" onclick={backupLibrary}>{$t('library.backup')}</button>{/if}
@@ -277,6 +279,7 @@
         <button class="font-semibold text-blue-600 underline" onclick={openPackage}>{$t('library.package')}</button>
         <a class="font-semibold text-blue-600 underline" href={USER_GUIDE_URL} target="_blank" rel="noopener">{$t('help.userGuide')}</a>
         <button class="font-semibold text-blue-600 underline" onclick={() => feedbackOpen.set(true)}>{$t('home.feedback')}</button>
+        {#if onlineHistory}<DeletedPlans onrestored={() => withLibraryError(refreshProjects)} />{/if}
       </div>
     </div>
     <LibraryStorageNote active={projects.length > 0 && !libraryError} />
@@ -353,7 +356,7 @@
         <h2 id="library-action-title" class="text-lg font-semibold">{actionDialog.type === 'rename' ? $t('library.renameTitle') : $t('library.deleteTitle')}</h2>
         <p id="library-action-description" class="mt-2 break-words text-sm text-gray-500">
           {#if actionDialog.type === 'rename'}{$t('library.renameHelp', { name: actionDialog.name })}
-          {:else}{$t('library.deleteHelp', { name: actionDialog.name })}{/if}
+          {:else}{$t(onlineHistory ? 'library.deleteHelpOnline' : 'library.deleteHelp', { name: actionDialog.name, back: $t('library.deleted') })}{/if}
         </p>
         {#if actionDialog.type === 'rename'}
           <label for="library-project-name" class="mt-4 block text-sm font-medium">{$t('library.name')}</label>
