@@ -1262,7 +1262,7 @@ export const en = {
   "projectService.storageFailed": "Could not save to browser storage. Download your project as JSON to keep a copy.",
   "projectService.conflict": "This plan changed or was deleted in another tab. Save your version as a copy, or download a copy of it, to keep both.",
   "projectService.libraryTooLarge": "This plan is too large for the online library, so it is kept in this browser only. Download a JSON backup to move it to another device.",
-  "projectService.libraryUnreachable": "The online library could not be reached, so this change is kept in this browser only. Retry when you are online.",
+  "projectService.librarySignIn": "Your sign-in to the online library has run out. This change is saved in this browser: reload the page to sign in again, and it goes online by itself.",
   "projectService.libraryWaiting": "No signal: this change is saved in this browser, and goes to the online library by itself when the signal is back.",
   "projectService.libraryNotShared": "This plan is no longer shared with you, so this change is kept in this browser only. Duplicate it to keep your own copy online.",
   "projectService.openUnsaved": "Your current plan could not be saved.",

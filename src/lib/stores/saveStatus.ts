@@ -1,7 +1,7 @@
 import { writable, get } from 'svelte/store';
 import { currentProject, historyForJournal, loadProject, restoreHistory } from './project';
 import { buildJournal, journalFor, readUndoJournal, writeUndoJournal } from '$lib/services/undoJournal';
-import { dataStore, storageErrorMessage, ProjectConflictError, LibraryLocalOnlyError, LIBRARY_WAITING, PROJECTS_STORAGE_KEY, LIBRARY_CHANGE_KEY } from '$lib/services/datastore';
+import { dataStore, storageErrorMessage, ProjectConflictError, LibraryLocalOnlyError, LIBRARY_WAITING, LIBRARY_SIGN_IN, PROJECTS_STORAGE_KEY, LIBRARY_CHANGE_KEY } from '$lib/services/datastore';
 import { saveSnapshot } from '$lib/stores/versionHistory';
 import type { Project } from '$lib/models/types';
 
@@ -25,6 +25,8 @@ let ownEdits = false;
 /** The last save is in this browser only because the online library could not be reached. */
 let waitingForSignal = false;
 const RETRY_UPLOAD_MS = 30_000;
+// Every edit restarts the wait, so a drag saves once it pauses rather than on every frame.
+export const AUTOSAVE_DELAY_MS = 250;
 
 /** One autosave owner per mounted editor. The caller must dispose on unmount. */
 export function initAutoSave() {
@@ -141,7 +143,7 @@ export function markDirty() {
   if (get(saveConflict)) return;
   debounceTimer = setTimeout(() => {
     void autoSave();
-  }, 1000);
+  }, AUTOSAVE_DELAY_MS);
 }
 
 function captureThumbnail(projectId: string) {
@@ -201,7 +203,7 @@ async function persist(manual: boolean): Promise<boolean> {
       saveConflict.set(false);
       lastSavedAt.set(new Date());
       ownEdits = false;
-      waitingForSignal = notice === LIBRARY_WAITING;
+      waitingForSignal = notice === LIBRARY_WAITING || notice === LIBRARY_SIGN_IN;
       keepUndoSteps(p);
     }
     return true;

@@ -116,7 +116,7 @@ test('a cancelled file read cannot replace a newer preview or affect another edi
   const check = observe(page), checkLibrary = observe(library);
   await page.addInitScript(() => {
     const timeout = window.setTimeout.bind(window);
-    window.setTimeout = ((handler: TimerHandler, delay?: number, ...args: any[]) => timeout(handler, delay === 1000 ? 60_000 : delay, ...args)) as typeof window.setTimeout;
+    window.setTimeout = ((handler: TimerHandler, delay?: number, ...args: any[]) => timeout(handler, delay === 250 ? 60_000 : delay, ...args)) as typeof window.setTimeout;
   });
   await page.goto(`/editor?id=${source.id}`);
   await page.getByTitle('Click to rename', { exact: true }).click();

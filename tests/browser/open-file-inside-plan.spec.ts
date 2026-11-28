@@ -15,7 +15,7 @@ async function seed(page: Page) {
     // Keep edits pending throughout UI actions, independent of CI machine speed.
     const timeout = window.setTimeout.bind(window);
     window.setTimeout = ((handler: TimerHandler, delay?: number, ...args: any[]) =>
-      timeout(handler, delay === 1000 ? 60_000 : delay, ...args)) as typeof window.setTimeout;
+      timeout(handler, delay === 250 ? 60_000 : delay, ...args)) as typeof window.setTimeout;
   }, source);
   await page.goto(`/editor?id=${source.id}`);
   await expect(page.getByRole('application')).toContainText('1 room');

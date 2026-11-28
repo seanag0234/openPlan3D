@@ -44,7 +44,7 @@ test('a tab with a change of its own keeps it and the bar when it comes back', a
   await context.addInitScript(() => {
     const timeout = window.setTimeout.bind(window);
     window.setTimeout = ((handler: TimerHandler, delay?: number, ...args: any[]) =>
-      timeout(handler, delay === 1000 ? 60_000 : delay, ...args)) as typeof window.setTimeout;
+      timeout(handler, delay === 250 ? 60_000 : delay, ...args)) as typeof window.setTimeout;
   });
   const { second } = await twoTabs(context, page);
   await rename(second, 'Second tab name');

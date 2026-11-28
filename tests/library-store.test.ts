@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { get } from 'svelte/store';
 import {
   createLibraryStore, createLocalStore, localStore, LibraryLocalOnlyError, ProjectConflictError,
-  LIBRARY_TOO_LARGE, LIBRARY_WAITING, type DataStore,
+  LIBRARY_SIGN_IN, LIBRARY_TOO_LARGE, LIBRARY_WAITING, type DataStore,
 } from '$lib/services/datastore';
 import { createDefaultProject, loadProject } from '$lib/stores/project';
 import { autoSave, markClean, saveError, saveState } from '$lib/stores/saveStatus';
@@ -14,11 +14,17 @@ import type { Project } from '$lib/models/types';
 let site: ReturnType<typeof librarySite>;
 let browser: DataStore;
 let device: DataStore;
+let remembered: Map<string, string>;
+/** Another page of the same browser: a reload, or a second tab. */
+const page = (fetch: typeof globalThis.fetch = site.fetch, waitMs?: number) => createLibraryStore(createLocalStore(), {
+  fetch, waitMs,
+  storage: { getItem: key => remembered.get(key) ?? null, setItem: (key, value) => { remembered.set(key, value); } },
+});
 
 beforeEach(() => {
   mockStorage();
   site = librarySite();
-  const remembered = new Map<string, string>();
+  remembered = new Map<string, string>();
   browser = createLocalStore();
   device = createLibraryStore(browser, {
     fetch: site.fetch,
@@ -164,6 +170,94 @@ describe('online plan library', () => {
     });
     await device.save({ ...project, name: 'Kept v3' });
     expect(await online(project.id)).toMatchObject({ revision: '"3"' });
+  });
+
+  it('sends a change whose tab closed before the upload, from the next page', async () => {
+    const project = plan('Closed', '2026-11-01T10:00:00Z');
+    await device.save(project);
+    // The browser copy changed and the page went away before any request left.
+    const closed = createLocalStore();
+    await closed.load(project.id);
+    await closed.save({ ...project, name: 'Closed mid-save' });
+    const next = page();
+    next.uploadPending!();
+    await vi.waitFor(async () => expect(await online(project.id)).toMatchObject({ project: { name: 'Closed mid-save' }, revision: '"2"' }));
+    await next.save({ ...(await next.load(project.id))!, name: 'Closed v3' });
+    expect(await online(project.id)).toMatchObject({ revision: '"3"' });
+  });
+
+  it('takes an upload whose answer was lost as done, not as a conflict', async () => {
+    const project = plan('Lost answer', '2026-11-01T10:00:00Z');
+    await device.save(project);
+    const lossy = page(async (input, init) => { await site.fetch(input, init); throw new TypeError('Failed to fetch'); });
+    await lossy.load(project.id);
+    await expect(lossy.save({ ...project, name: 'Got there' })).rejects.toThrow(LIBRARY_WAITING);
+    expect(await online(project.id)).toMatchObject({ project: { name: 'Got there' }, revision: '"2"' });
+    const next = page();
+    await next.save({ ...(await next.load(project.id))!, name: 'And again' });
+    expect(await online(project.id)).toMatchObject({ project: { name: 'And again' }, revision: '"3"' });
+  });
+
+  it('deletes with no signal in this browser, hides it, and deletes it online once the signal is back', async () => {
+    const gone = plan('Gone later', '2026-11-01T10:00:00Z');
+    await device.save(gone);
+    await device.list();
+    site.offline = true;
+    await expect(device.delete(gone.id)).rejects.toThrow(LIBRARY_WAITING);
+    site.offline = false;
+    const next = page(async (input, init) => init?.method === 'DELETE' ? Promise.reject(new TypeError('Failed to fetch')) : site.fetch(input, init));
+    expect((await next.list()).map(p => p.id)).not.toContain(gone.id);
+    page().uploadPending!();
+    await vi.waitFor(async () => expect(await online(gone.id)).toBeNull());
+    expect((await page().list()).map(p => p.id)).not.toContain(gone.id);
+  });
+
+  it('gives up on a request that hangs, and sends the change later', async () => {
+    const project = plan('Hung', '2026-11-01T10:00:00Z');
+    const hung = page((_input, init) => new Promise((_, reject) => init?.signal?.addEventListener('abort', () => reject(init.signal!.reason))), 30);
+    await expect(hung.save(project)).rejects.toThrow(LIBRARY_WAITING);
+    page().uploadPending!();
+    await vi.waitFor(async () => expect(await online(project.id)).toMatchObject({ revision: '"1"' }));
+  });
+
+  it('says the sign-in ran out when the library answers with a sign-in page, and sends the change after', async () => {
+    const project = plan('Signed out', '2026-11-01T10:00:00Z');
+    const signedOut = page(async () => new Response('<html>Sign in</html>', { status: 401 }));
+    await expect(signedOut.save(project)).rejects.toThrow(LIBRARY_SIGN_IN);
+    const loginPage = page(async () => new Response('<html>Sign in</html>', { status: 200 }));
+    expect((await loginPage.load(project.id))?.name).toBe('Signed out');
+    await expect(loginPage.save(project)).rejects.toThrow(LIBRARY_WAITING);
+    expect(await loginPage.list()).toHaveLength(1);
+    page().uploadPending!();
+    await vi.waitFor(async () => expect(await online(project.id)).toMatchObject({ revision: '"1"' }));
+  });
+
+  it('sends a refused copy again only once it changes', async () => {
+    const big = plan('x'.repeat(MAX_PLAN_BYTES), '2026-11-01T10:00:00Z');
+    let puts = 0;
+    const counting = page(async (input, init) => { if (init?.method === 'PUT') puts++; return site.fetch(input, init); });
+    await expect(counting.save(big)).rejects.toThrow(LIBRARY_TOO_LARGE);
+    counting.uploadPending!();
+    await counting.list();
+    await new Promise(resolve => setTimeout(resolve, 20));
+    expect(puts).toBe(1);
+    await counting.save({ ...big, name: 'Small now' });
+    expect(await online(big.id)).toMatchObject({ project: { name: 'Small now' }, revision: '"1"' });
+  });
+
+  it('reads the marks from before fingerprints: pending goes up, the rest counts as online until it changes', async () => {
+    const kept = plan('Kept', '2026-11-01T10:00:00Z'), waiting = plan('Waiting', '2026-11-01T10:00:00Z');
+    await device.save(kept);
+    await device.save(waiting);
+    await browser.save({ ...waiting, name: 'Waiting offline' });
+    remembered.set('o3d_library_sync', JSON.stringify({ [kept.id]: { revision: 1 }, [waiting.id]: { revision: 1, pending: true } }));
+    let puts = 0;
+    const next = page(async (input, init) => { if (init?.method === 'PUT') puts++; return site.fetch(input, init); });
+    next.uploadPending!();
+    await vi.waitFor(async () => expect(await online(waiting.id)).toMatchObject({ project: { name: 'Waiting offline' }, revision: '"2"' }));
+    expect(puts).toBe(1);
+    await next.save({ ...(await next.load(kept.id))!, name: 'Kept v2' });
+    expect(await online(kept.id)).toMatchObject({ project: { name: 'Kept v2' }, revision: '"2"' });
   });
 
   it('deletes from both, and refuses to delete a revision it has not seen', async () => {

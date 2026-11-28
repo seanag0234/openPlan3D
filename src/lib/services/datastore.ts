@@ -61,9 +61,11 @@ export class ProjectConflictError extends Error {
  *  The lock callback never rejects: Firefox reports a lock callback that rejects at once (indexedDB.open with
  *  site data blocked) as an uncaught error even though the request's promise is handled, so the outcome is
  *  carried out of the lock and rethrown here. */
-async function mutateLibrary<T>(change: () => Promise<T>): Promise<T> {
+const mutateLibrary = <T>(change: () => Promise<T>) => locked('openplan3d-project-library', change);
+
+async function locked<T>(name: string, change: () => Promise<T>): Promise<T> {
   if (typeof window !== 'undefined' && typeof navigator !== 'undefined' && navigator.locks?.request) {
-    const outcome = await navigator.locks.request('openplan3d-project-library', async () => {
+    const outcome = await navigator.locks.request(name, async () => {
       try { return { ok: true as const, value: await change() }; }
       catch (error) { return { ok: false as const, error }; }
     });
@@ -273,9 +275,8 @@ export const localStore = createLocalStore();
 
 export const LIBRARY_TOO_LARGE = 'This plan is too large for the online library, so it is kept in this browser only. Download a JSON backup to move it to another device.';
 export const LIBRARY_NOT_SHARED = 'This plan is no longer shared with you, so this change is kept in this browser only. Duplicate it to keep your own copy online.';
-export const LIBRARY_UNREACHABLE = 'The online library could not be reached, so this change is kept in this browser only. Retry when you are online.';
-/** A save, unlike a delete, goes online by itself once the signal is back. */
 export const LIBRARY_WAITING = 'No signal: this change is saved in this browser, and goes to the online library by itself when the signal is back.';
+export const LIBRARY_SIGN_IN = 'Your sign-in to the online library has run out. This change is saved in this browser: reload the page to sign in again, and it goes online by itself.';
 
 /** The browser copy is saved; the online library did not take the change. */
 export class LibraryLocalOnlyError extends Error {
@@ -283,19 +284,34 @@ export class LibraryLocalOnlyError extends Error {
 }
 
 type RemoteEntry = { id: string; name: string; updatedAt: string; revision: number; thumbnail: string | null; sharedBy?: string | null; everyone?: boolean };
-/** Per plan: the library revision this browser's copy came from, and whether it holds edits the library lacks. */
-type Sync = Record<string, { revision?: number; pending?: boolean }>;
+/**
+ * Per plan: the library revision this browser's copy came from, and `stamp`, the fingerprint of the stored text the
+ * library confirmed holding. A stored copy whose fingerprint differs is unsent, whatever wrote it (a save, a reload
+ * with no signal, a restored backup, a tab killed mid-upload), and nothing marks it first, so no write can slip
+ * past. `deleting`: deleted here, not yet online. `blocked`: the library refused this exact copy for a reason
+ * retrying cannot fix (a conflict, too large, not shared), so it is sent again only once it changes.
+ * `pending` is from before fingerprints, and is read once (`adopted`).
+ */
+type SyncState = {
+  revision?: number; stamp?: string; pending?: boolean; deleting?: boolean; blocked?: { stamp: string; reason: string };
+  /** Copies sent with no answer yet: [stamp, stamp of the plan as the library hands it back]. */
+  sent?: [string, string][];
+};
+type Sync = Record<string, SyncState>;
 const LIBRARY_SYNC_KEY = 'o3d_library_sync';
+// A request on a signal too weak to finish gives up after this long; its change stays unsent and goes later.
+const REQUEST_WAIT_MS = 20_000;
 
 const time = (value: unknown) => new Date(value as string).getTime();
 const revisionOf = (response: Response) => Number(response.headers.get('ETag')?.replaceAll('"', ''));
+const unsent = (state: SyncState | undefined, raw: string) => !state?.stamp || state.stamp !== stamp(raw);
 
 /**
  * The browser library plus the site's online library (functions/api/library). Every change lands in the
  * browser first, then online; a stale online save is a ProjectConflictError, as a stale tab's is.
  */
 export function createLibraryStore(local: DataStore, options: {
-  url?: string; fetch?: typeof fetch; storage?: Pick<Storage, 'getItem' | 'setItem'> | null;
+  url?: string; fetch?: typeof fetch; storage?: Pick<Storage, 'getItem' | 'setItem'> | null; waitMs?: number;
 } = {}): DataStore {
   const url = options.url ?? '/api/library';
   const send: typeof fetch = options.fetch ?? ((input, init) => fetch(input, init));
@@ -309,16 +325,19 @@ export function createLibraryStore(local: DataStore, options: {
     try { storage()?.setItem(LIBRARY_SYNC_KEY, JSON.stringify(all)); } catch {}
   };
 
-  /** null: the library could not be reached, or refused the sign-in. */
+  /** null: the library could not be reached in time. An expired Access sign-in answers with a redirect, kept unfollowed. */
   async function call(path: string, init?: RequestInit): Promise<Response | null> {
-    try { return await send(`${url}${path}`, { cache: 'no-store', ...init }); } catch { return null; }
+    const signal = typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(options.waitMs ?? REQUEST_WAIT_MS) : undefined;
+    try { return await send(`${url}${path}`, { cache: 'no-store', redirect: 'manual', signal, ...init }); } catch { return null; }
   }
   const at = (id: string) => `/${encodeURIComponent(id)}`;
 
   async function remoteList(): Promise<RemoteEntry[] | null> {
     const response = await call('');
     if (!response?.ok) return null;
-    const entries = (await response.json()) as RemoteEntry[];
+    // A sign-in page in place of the list counts as no answer.
+    const entries = await response.json().catch(() => null) as RemoteEntry[] | null;
+    if (!Array.isArray(entries)) return null;
     listed = new Map(entries.map(entry => [entry.id, entry]));
     return entries;
   }
@@ -328,60 +347,120 @@ export function createLibraryStore(local: DataStore, options: {
     const response = await call(at(id));
     if (response?.status === 404) return null;
     if (!response?.ok) return undefined;
-    const project = readProject(await response.json());
+    const body = await response.json().catch(() => undefined);
+    if (body === undefined || !Number.isFinite(revisionOf(response))) return undefined;
+    const project = readProject(body);
     if (project.id !== id) throw new Error('The saved project ID does not match its library entry. Download a library backup before recovery.');
     return { project, revision: revisionOf(response) };
   }
 
-  /** The newer copy wins, except that a browser copy with nothing new gives way to any later library revision. */
-  function remoteWins(id: string, remote: { revision: number; updatedAt: unknown }, mine?: { updatedAt: unknown }) {
+  /** The newer copy wins, except that a browser copy with nothing unsent gives way to any later library revision. */
+  function remoteWins(id: string, remote: { revision: number; updatedAt: unknown }, mine: { updatedAt: unknown } | undefined, raw: string | undefined) {
     if (!mine) return true;
     const state = sync()[id];
     if (state?.revision === remote.revision) return false;
-    return state && !state.pending ? true : time(remote.updatedAt) > time(mine.updatedAt);
+    return state && (raw === undefined || !unsent(state, raw)) ? true : time(remote.updatedAt) > time(mine.updatedAt);
   }
 
-  // One request to the library at a time, each sent with the revision the one before it got back: two saves
-  // in flight at once carry the same revision, and the library refuses the second as a conflict.
+  const storedPlans = () => withDatabase(db => transaction(db, ['projects'], 'readonly', tx => records(tx, 'projects')));
+
+  // Before fingerprints, a plan without `pending` was taken to match the library. Its fingerprint is that of the
+  // stored copy, taken once, before this page writes any plan.
+  let adoption: Promise<void> | undefined;
+  const adopted = () => adoption ??= (async () => {
+    const legacy = Object.entries(sync()).filter(([, state]) => Object.keys(state).every(key => key === 'revision' || key === 'pending'));
+    if (!legacy.length) return;
+    const plans: Record<string, string> = await storedPlans().catch(() => ({}));
+    // An empty stamp matches no copy: unsent.
+    for (const [id, { revision, pending }] of legacy) remember(id, { revision, stamp: pending || plans[id] === undefined ? '' : stamp(plans[id]) });
+  })();
+
+  // One request to the library at a time, in this tab and (by a Web Lock) across tabs, each sent with the
+  // revision the one before it got back: two in flight at once carry the same revision, and the second is refused.
   let queue: Promise<unknown> = Promise.resolve();
-  const newest = new Map<string, Project>();
   function serially<T>(work: () => Promise<T>): Promise<T> {
-    const run = queue.then(work);
+    const run = queue.then(adopted).then(() => locked('openplan3d-library-upload', work));
     queue = run.catch(() => {});
     return run;
   }
-  /** A save overtaken by a newer one of the same plan before its turn leaves the upload to that one. */
-  function upload(project: Project): Promise<void> {
-    newest.set(project.id, project);
-    return serially(async () => {
-      if (newest.get(project.id) !== project) return;
-      try { await putOnline(project); } finally { if (newest.get(project.id) === project) newest.delete(project.id); }
-    });
+
+  /** What a refusal means: try again later (no signal, sign-in run out), or not until the plan changes. */
+  function refusal(response: Response | null): Error {
+    if (!response) return new LibraryLocalOnlyError(LIBRARY_WAITING);
+    if (response.type === 'opaqueredirect' || response.status === 401) return new LibraryLocalOnlyError(LIBRARY_SIGN_IN);
+    if (response.status === 412) return new ProjectConflictError();
+    if (response.status === 413) return new LibraryLocalOnlyError(LIBRARY_TOO_LARGE);
+    if (response.status === 403) return new LibraryLocalOnlyError(LIBRARY_NOT_SHARED);
+    return new LibraryLocalOnlyError(LIBRARY_WAITING);
+  }
+  const retried = (error: unknown) => error instanceof Error && (error.message === LIBRARY_WAITING || error.message === LIBRARY_SIGN_IN);
+
+  /** The copy sent earlier that the library's newest revision is, when an answer was lost on the way back. */
+  async function landed(id: string, sent: [string, string][]) {
+    const remote = await remoteGet(id).catch(() => undefined);
+    if (!remote) return undefined;
+    const back = stamp(JSON.stringify(remote.project));
+    const copy = sent.find(([, readBack]) => readBack === back);
+    return copy && { revision: remote.revision, stamp: copy[0] };
   }
 
-  /** This browser's copy of a plan the library lacks or is behind on (edits made with no signal, a restored backup,
-   *  an imported package, a plan from before the library) goes up without waiting for an edit. Read at its turn,
-   *  so it is the newest copy; a plan the library already took, or one a save is uploading, is left alone. */
-  function uploadStored(id: string) {
-    void serially(async () => {
-      const state = sync()[id];
-      if (newest.has(id) || (state && !state.pending)) return;
-      const raw = await readRecord('projects', id);
-      if (raw !== null) await putOnline(readProject(JSON.parse(raw)));
-    }).catch(() => {});
-  }
-
-  async function putOnline(project: Project) {
-    const known = sync()[project.id]?.revision;
-    const response = await call(at(project.id), {
+  /**
+   * Sends one plan's unsent change, read from the browser at this moment: its newest copy, or its delete. Run
+   * serially. `retry` sends a copy the library refused before; otherwise that waits for the plan to change.
+   */
+  async function sendOne(id: string, retry = false): Promise<void> {
+    const state = sync()[id];
+    if (state?.deleting) {
+      if (state.revision === undefined) { remember(id, undefined); return; }
+      const response = await call(at(id), { method: 'DELETE', headers: { 'If-Match': `"${state.revision}"` } });
+      if (response?.ok || response?.status === 404) { listed.delete(id); remember(id, undefined); return; }
+      const error = refusal(response);
+      // Refused for good (changed or shared elsewhere): the library's plan shows in the list again.
+      if (!retried(error)) remember(id, { revision: state.revision, stamp: '' });
+      throw error;
+    }
+    const raw = await readRecord('projects', id);
+    if (raw === null || !unsent(state, raw)) return;
+    const mark = stamp(raw);
+    if (!retry && state?.blocked?.stamp === mark) throw new LibraryLocalOnlyError(state.blocked.reason);
+    const known = state?.revision;
+    // Kept until an answer comes back, so a copy that reached the library without one is known for ours.
+    const sent = [...(state?.sent ?? []), [mark, stamp(JSON.stringify(readProject(JSON.parse(raw))))] as [string, string]].slice(-5);
+    remember(id, { ...state, sent });
+    const response = await call(at(id), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', ...(known === undefined ? { 'If-None-Match': '*' } : { 'If-Match': `"${known}"` }) },
-      body: JSON.stringify(project),
+      body: raw,
     });
-    if (response?.ok) { remember(project.id, { revision: revisionOf(response) }); return; }
-    remember(project.id, { revision: known, pending: true });
-    if (response?.status === 412) throw new ProjectConflictError();
-    throw new LibraryLocalOnlyError(response?.status === 413 ? LIBRARY_TOO_LARGE : response?.status === 403 ? LIBRARY_NOT_SHARED : LIBRARY_WAITING);
+    const revision = response?.ok ? revisionOf(response) : NaN;
+    if (Number.isFinite(revision)) { remember(id, { revision, stamp: mark }); return; }
+    const error = response?.ok ? refusal(null) : refusal(response);
+    if (error instanceof ProjectConflictError) {
+      const ours = await landed(id, sent);
+      if (ours) {
+        remember(id, ours);
+        // The library has an earlier copy of ours; this one goes on top of it.
+        if (ours.stamp !== mark) await sendOne(id, retry);
+        return;
+      }
+    }
+    if (!retried(error)) remember(id, { ...state, blocked: { stamp: mark, reason: error.message } });
+    throw error;
+  }
+
+  /** Every unsent change in this browser, saves and deletes; stops at the first sign the library is out of reach. */
+  function drain(): Promise<void> {
+    return serially(async () => {
+      const plans = await storedPlans(), states = sync();
+      const waiting = new Set([
+        ...Object.entries(plans).filter(([id, raw]) => unsent(states[id], raw) && states[id]?.blocked?.stamp !== stamp(raw)).map(([id]) => id),
+        ...Object.entries(states).filter(([, state]) => state.deleting).map(([id]) => id),
+      ]);
+      for (const id of waiting) {
+        try { await sendOne(id); }
+        catch (error) { if (retried(error)) return; }
+      }
+    }).catch(() => {});
   }
 
   return {
@@ -390,73 +469,75 @@ export function createLibraryStore(local: DataStore, options: {
     assertCurrent: id => local.assertCurrent(id),
 
     async save(project) {
+      await adopted();
       await local.save(project);
-      await upload(project);
+      await serially(() => sendOne(project.id, true));
     },
 
-    uploadPending() {
-      for (const [id, state] of Object.entries(sync())) if (state.pending) uploadStored(id);
-    },
+    uploadPending() { void drain(); },
 
     async saveCopy(project, suffix) {
+      await adopted();
       const copy = await local.saveCopy(project, suffix);
       // The edits now live in the copy, so the original follows the library again on its next open.
-      const original = sync()[project.id];
-      if (original?.pending) remember(project.id, { revision: original.revision });
-      // shortcut: a copy the library did not take is uploaded by its next save, which needs an edit.
-      await upload(copy).catch(() => {});
+      const original = sync()[project.id], raw = await readRecord('projects', project.id).catch(() => null);
+      if (original && raw !== null) remember(project.id, { revision: original.revision, stamp: stamp(raw) });
+      await serially(() => sendOne(copy.id)).catch(() => {});
       return copy;
     },
 
     async load(id) {
+      await adopted();
       const remote = await remoteGet(id);
       const mine = await local.load(id);
-      if (!remote || !remoteWins(id, { revision: remote.revision, updatedAt: remote.project.updatedAt }, mine ?? undefined)) {
-        if (remote !== undefined && mine) uploadStored(id);
+      const raw = mine ? await readRecord('projects', id) ?? undefined : undefined;
+      if (!remote || !remoteWins(id, { revision: remote.revision, updatedAt: remote.project.updatedAt }, mine ?? undefined, raw)) {
+        if (remote !== undefined && mine) void drain();
         return mine;
       }
       await local.save(remote.project);
-      remember(id, { revision: remote.revision });
+      remember(id, { revision: remote.revision, stamp: stamp(JSON.stringify(remote.project)) });
       return remote.project;
     },
 
     async list() {
+      await adopted();
       const mine = await local.list(), remote = await remoteList();
       if (!remote) return mine;
+      const plans: Record<string, string> = await storedPlans().catch(() => ({})), states = sync();
       const merged = new Map(mine.map(entry => [entry.id, entry]));
-      for (const entry of mine) uploadStored(entry.id);
       for (const entry of remote) {
+        if (states[entry.id]?.deleting) continue;
         const { sharedBy = null, everyone = false } = entry;
-        const shown = remoteWins(entry.id, entry, merged.get(entry.id)) ? { id: entry.id, name: entry.name, updatedAt: entry.updatedAt } : merged.get(entry.id)!;
+        const shown = remoteWins(entry.id, entry, merged.get(entry.id), plans[entry.id]) ? { id: entry.id, name: entry.name, updatedAt: entry.updatedAt } : merged.get(entry.id)!;
         merged.set(entry.id, { ...shown, sharedBy, everyone });
       }
+      void drain();
       return [...merged.values()];
     },
 
     async delete(id) {
+      await adopted();
       await local.delete(id);
-      newest.delete(id);
-      // After any upload still going, so the revision deleted is the one it got back.
+      // Behind any upload still going, so the revision deleted is the one it got back: the newer of that and
+      // what the list showed. Kept as `deleting` until the library confirms, so a delete with no signal goes later.
       await serially(async () => {
-        // The newer of what the list showed and what this browser's own last upload got back.
         const seen = [sync()[id]?.revision, listed.get(id)?.revision].filter((r): r is number => r !== undefined);
-        if (!seen.length) return;
-        const revision = Math.max(...seen);
-        const response = await call(at(id), { method: 'DELETE', headers: { 'If-Match': `"${revision}"` } });
-        if (response?.status === 412) throw new ProjectConflictError();
-        if (!response?.ok) throw new LibraryLocalOnlyError(LIBRARY_UNREACHABLE);
-        listed.delete(id);
-        remember(id, undefined);
+        if (!seen.length) { remember(id, undefined); return; }
+        remember(id, { revision: Math.max(...seen), deleting: true });
+        await sendOne(id);
       });
     },
 
     async duplicate(id) {
+      await adopted();
       const remote = await remoteGet(id);
       const mine = remote ? (await local.list()).find(entry => entry.id === id) : undefined;
-      const copy = remote && remoteWins(id, { revision: remote.revision, updatedAt: remote.project.updatedAt }, mine)
+      const raw = mine ? await readRecord('projects', id) ?? undefined : undefined;
+      const copy = remote && remoteWins(id, { revision: remote.revision, updatedAt: remote.project.updatedAt }, mine, raw)
         ? await local.saveCopy(remote.project, 'Copy')
         : await local.duplicate(id);
-      if (copy) await upload(copy).catch(() => {});
+      if (copy) await serially(() => sendOne(copy.id)).catch(() => {});
       return copy;
     },
 

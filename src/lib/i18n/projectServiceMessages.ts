@@ -21,7 +21,7 @@ const keys: ServiceKey[] = [
   'projectService.packageNotice', 'projectService.packageTracingNotice',
   'projectService.storageFull', 'projectService.storageUnavailable',
   'projectService.storageFailed', 'projectService.conflict',
-  'projectService.libraryTooLarge', 'projectService.libraryUnreachable', 'projectService.libraryWaiting', 'projectService.libraryNotShared',
+  'projectService.libraryTooLarge', 'projectService.librarySignIn', 'projectService.libraryWaiting', 'projectService.libraryNotShared',
   'projectService.openRetry', 'projectService.newId', 'projectService.changed',
   'projectService.newFailed', 'projectService.fileFailed',
   'projectService.backupJSON', 'projectService.backupFile', 'projectService.backupVersion',

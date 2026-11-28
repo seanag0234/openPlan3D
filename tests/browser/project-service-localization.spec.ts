@@ -22,7 +22,7 @@ for (const width of [1440, 390]) {
       // Keep the edit pending while using menus, as in project-opening.spec.ts.
       const timeout = window.setTimeout.bind(window);
       window.setTimeout = ((handler: TimerHandler, delay?: number, ...args: any[]) =>
-        timeout(handler, delay === 1000 ? 60_000 : delay, ...args)) as typeof window.setTimeout;
+        timeout(handler, delay === 250 ? 60_000 : delay, ...args)) as typeof window.setTimeout;
     }, source);
     await page.goto(`/editor?id=${source.id}`);
     await expect(page.getByRole('application')).toContainText('1 ambiente');
@@ -79,9 +79,8 @@ for (const width of [1440, 390]) {
     await expect(page.getByRole('alert')).toHaveCount(0);
     expect((await savedProjects(page))[source.id].name).toBe(backup.name);
     await importJSON(page);
-    // The saved plan carries the new name, so the file differs from it and is asked about.
-    await page.getByRole('dialog', { name: 'Você já tem esta planta' }).getByRole('button', { name: /Manter as duas/ }).click();
-    await expect(page.getByTitle('Clique para renomear', { exact: true })).toHaveText(`${source.name} (2)`);
+    // The file comes in as a new plan; the saved one carries the new name, so the file's name is free.
+    await expect(page.getByTitle('Clique para renomear', { exact: true })).toHaveText(source.name);
     expect((await savedProjects(page))[source.id].name).toBe(backup.name);
   });
 }

@@ -17,7 +17,7 @@ for (const [timer, shorten] of [['as it is', false], ['with its save timer at 50
       // Save sooner than the editor's 1,000 ms, so a save lands inside the opening.
       const timeout = window.setTimeout.bind(window);
       window.setTimeout = ((handler: TimerHandler, delay?: number, ...args: any[]) =>
-        timeout(handler, delay === 1000 ? 50 : delay, ...args)) as typeof window.setTimeout;
+        timeout(handler, delay === 250 ? 50 : delay, ...args)) as typeof window.setTimeout;
     }, shorten);
     await page.goto('/editor');
     await expect(page.locator('[data-bar="top"]')).toBeVisible();

@@ -14,7 +14,7 @@ async function seed(context: BrowserContext, neighbor = false) {
     localStorage.setItem('hasSeenWelcome', 'true');
     const timeout = window.setTimeout.bind(window);
     window.setTimeout = ((handler: TimerHandler, delay?: number, ...args: any[]) =>
-      timeout(handler, delay === 1000 ? 60_000 : delay, ...args)) as typeof window.setTimeout;
+      timeout(handler, delay === 250 ? 60_000 : delay, ...args)) as typeof window.setTimeout;
   }, { source, neighbor });
   return source;
 }

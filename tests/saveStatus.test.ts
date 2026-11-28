@@ -20,12 +20,12 @@ afterEach(() => { stop(); vi.useRealTimers(); });
 
 it('debounces edits into one local write and only then reports Saved', async () => {
   updateProjectName('A');
-  await vi.advanceTimersByTimeAsync(600);
+  await vi.advanceTimersByTimeAsync(150);
   updateProjectName('B');
   expect(get(saveState)).toBe('unsaved');
-  await vi.advanceTimersByTimeAsync(600);
+  await vi.advanceTimersByTimeAsync(150);
   expect(localStore.save).not.toHaveBeenCalled();
-  await vi.advanceTimersByTimeAsync(400);
+  await vi.advanceTimersByTimeAsync(100);
   expect(localStore.save).toHaveBeenCalledTimes(1);
   expect(get(saveState)).toBe('saved');
   expect(get(lastSavedAt)).toBeInstanceOf(Date);
