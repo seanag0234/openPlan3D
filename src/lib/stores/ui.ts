@@ -17,6 +17,3 @@ export const multiSelectMode = writable(false);
 export const planObstruction = writable<{ right: number; bottom: number }>({ right: 0, bottom: 0 });
 /** Bump to ask the plan to bring the selection into view. */
 export const revealSelection = writable(0);
-export type ImportAnswer = 'replace' | 'copy' | 'cancel';
-/** An import is waiting for the person to choose what happens to the plan it matches. */
-export const importQuestion = writable<{ name: string; resolve: (answer: ImportAnswer) => void } | null>(null);

@@ -2,7 +2,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { ipadLandscape, recordLabels, where } from './touch';
-import { savedProjects, storedRecords } from './storage';
+import { savedProjects } from './storage';
 import { openList } from './list';
 
 const fixture = resolve('tests/fixtures/room-with-boxes.openplan.json');
@@ -14,7 +14,7 @@ for (const [device, use] of [['mouse at 1366 px', { viewport: { width: 1366, hei
   test.describe(device, () => {
     test.use(use);
 
-    test('the same plan file twice is one plan; a changed plan is asked about', async ({ page }) => {
+    test('every time a plan file is opened it is a new plan, and the plans before it are untouched', async ({ page }) => {
       const touch = device === 'iPad';
       const press = (target: Locator) => touch ? target.tap() : target.click();
       const text = await readFile(fixture, 'utf8');
@@ -24,81 +24,43 @@ for (const [device, use] of [['mouse at 1366 px', { viewport: { width: 1366, hei
       });
       await recordLabels(page);
 
-      /** On the list: Open a plan file, with the made-up room. */
-      async function openFile() {
+      /** On the list: Open a plan file, with the made-up room. Returns the new plan's id. */
+      async function openFile(name: string) {
         await openList(page);
         const chooser = page.waitForEvent('filechooser');
         await press(page.getByRole('button', { name: 'Open a plan file' }));
         await (await chooser).setFiles({ name: 'room-with-boxes.openplan.json', mimeType: 'application/json', buffer: Buffer.from(text) });
+        await expect(page).toHaveURL(/\/editor\?id=/);
+        await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
+        const id = new URL(page.url()).searchParams.get('id')!;
+        expect(id).not.toBe(ID);
+        return id;
       }
-      async function inEditor(id = ID) {
-        await expect(page).toHaveURL(new RegExp(`/editor\\?id=${id}`));
-        await expect(page.getByRole('button', { name: 'Room with boxes', exact: true })).toBeVisible();
-      }
-      async function moveBoxA(page: Page) {
+      async function moveBoxA(page: Page, id: string) {
         const box = await where(page, 'Box A');
         await page.mouse.move(box.x, box.y);
         await page.mouse.down();
         await page.mouse.move(box.x + 60, box.y, { steps: 8 });
         await page.mouse.move(box.x + 120, box.y, { steps: 8 });
         await page.mouse.up();
-        await expect.poll(async () => boxA((await savedProjects(page))[ID]).position.x).toBeGreaterThan(160);
+        await expect.poll(async () => boxA((await savedProjects(page))[id]).position.x).toBeGreaterThan(160);
       }
-      const question = () => page.getByRole('dialog', { name: 'You already have this plan' });
 
-      await openFile();
-      await inEditor();
-      expect(Object.keys(await savedProjects(page))).toEqual([ID]);
+      const first = await openFile('Room with boxes');
+      expect(Object.keys(await savedProjects(page))).toEqual([first]);
 
-      // The same file again opens the same plan.
-      await openFile();
-      await inEditor();
-      await expect(question()).toHaveCount(0);
-      expect(Object.keys(await savedProjects(page))).toEqual([ID]);
+      // The same file again, unchanged: a second plan, numbered.
+      const second = await openFile('Room with boxes (2)');
+      await expect.poll(async () => Object.keys(await savedProjects(page)).sort()).toEqual([first, second].sort());
 
-      // Box A moved: the file is no longer the same as the plan, so it asks. Keep both.
-      await moveBoxA(page);
-      await openFile();
-      await expect(question()).toBeVisible();
-      await expect(question()).toContainText('“Room with boxes” is in your list, and this file is not the same as it.');
-      await press(question().getByRole('button', { name: /Keep both/ }));
-      await expect(page).toHaveURL(/\/editor\?id=/);
-      await expect(page.getByRole('button', { name: 'Room with boxes (2)', exact: true })).toBeVisible();
-      let stored = await savedProjects(page);
-      expect(Object.keys(stored)).toHaveLength(2);
-      expect(Object.values(stored).map((plan: any) => plan.name).sort()).toEqual(['Room with boxes', 'Room with boxes (2)']);
-      expect(boxA(stored[ID]).position.x).toBeGreaterThan(160);
-
-      // Mine opened again in the editor: its newest version is now the plan as it is.
-      await page.goto(`/editor?id=${ID}`);
-      await inEditor();
-      await expect.poll(async () => (await storedRecords(page, 'history'))[ID] ?? '').toContain('Session start');
-
-      // Once more, replacing mine: Box A is back where the file has it, and mine is a version named for it.
-      await openFile();
-      await press(question().getByRole('button', { name: /Replace mine with the file/ }));
-      await inEditor();
-      await expect.poll(async () => boxA((await savedProjects(page))[ID]).position.x).toBe(150);
-      expect(Object.keys(await savedProjects(page))).toHaveLength(2);
-      await expect.poll(async () => (await storedRecords(page, 'history'))[ID] ?? '').toContain('Before replacing with a file');
-      if (!touch) await press(page.getByRole('button', { name: 'Version History', exact: true }));
-      else {
-        await press(page.getByRole('button', { name: 'More actions', exact: true }));
-        await press(page.getByRole('button', { name: 'Version History', exact: true }));
-      }
-      const versions = page.getByRole('dialog', { name: 'Version History', exact: true });
-      await expect(versions.getByRole('group', { name: 'Before replacing with a file', exact: true })).toBeVisible();
-      await press(versions.getByRole('button', { name: 'Close', exact: true }));
-      await expect(versions).toBeHidden();
-
-      // Moved again, then Cancel: nothing changes.
-      await moveBoxA(page);
-      stored = await savedProjects(page);
-      await openFile();
-      await press(question().getByRole('button', { name: /Cancel/ }));
-      await expect(question()).toHaveCount(0);
-      await expect(page).toHaveURL(/\/$/);
-      expect(await savedProjects(page)).toEqual(stored);
+      // The second plan changed, then the file once more: a third plan, as the file has it.
+      await moveBoxA(page, second);
+      const third = await openFile('Room with boxes (3)');
+      await expect.poll(async () => Object.keys(await savedProjects(page))).toHaveLength(3);
+      const stored = await savedProjects(page);
+      expect(boxA(stored[second]).position.x).toBeGreaterThan(160);
+      expect(boxA(stored[first]).position.x).toBe(150);
+      expect(boxA(stored[third]).position.x).toBe(150);
     });
   });
 }

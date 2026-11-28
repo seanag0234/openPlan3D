@@ -1263,6 +1263,7 @@ export const pt = {
   "projectService.conflict": "Esta planta foi alterada ou excluída em outra aba. Salve sua versão como uma cópia, ou baixe uma cópia dela, para manter as duas.",
   "projectService.libraryTooLarge": "Este projeto é grande demais para a biblioteca online, então fica guardado só neste navegador. Baixe um backup JSON para levá-lo a outro dispositivo.",
   "projectService.libraryUnreachable": "Não foi possível acessar a biblioteca online, então esta alteração fica guardada só neste navegador. Tente novamente quando estiver online.",
+  "projectService.libraryWaiting": "Sem sinal: esta alteração está salva neste navegador e vai para a biblioteca online sozinha quando o sinal voltar.",
   "projectService.libraryNotShared": "Esta planta não está mais compartilhada com você, então esta alteração fica guardada só neste navegador. Duplique-a para manter sua própria cópia online.",
   "projectService.openUnsaved": "Não foi possível salvar sua planta atual.",
   "projectService.openRetry": "Tente salvar novamente, ou baixe uma cópia desta planta, antes de abrir outra planta.",

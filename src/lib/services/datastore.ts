@@ -20,6 +20,8 @@ export interface DataStore {
   getThumbnails(): Promise<Record<string, string>>;
   /** For a page going away before its save could finish: a copy the next load of this plan picks up. Synchronous. */
   stashUnsaved(project: Project): void;
+  /** Online library only: sends up every plan saved in this browser alone, from this page or an earlier one. */
+  uploadPending?(): void;
 }
 
 const UNSAVED_PREFIX = 'o3d_unsaved:';
@@ -272,6 +274,8 @@ export const localStore = createLocalStore();
 export const LIBRARY_TOO_LARGE = 'This plan is too large for the online library, so it is kept in this browser only. Download a JSON backup to move it to another device.';
 export const LIBRARY_NOT_SHARED = 'This plan is no longer shared with you, so this change is kept in this browser only. Duplicate it to keep your own copy online.';
 export const LIBRARY_UNREACHABLE = 'The online library could not be reached, so this change is kept in this browser only. Retry when you are online.';
+/** A save, unlike a delete, goes online by itself once the signal is back. */
+export const LIBRARY_WAITING = 'No signal: this change is saved in this browser, and goes to the online library by itself when the signal is back.';
 
 /** The browser copy is saved; the online library did not take the change. */
 export class LibraryLocalOnlyError extends Error {
@@ -337,7 +341,37 @@ export function createLibraryStore(local: DataStore, options: {
     return state && !state.pending ? true : time(remote.updatedAt) > time(mine.updatedAt);
   }
 
-  async function upload(project: Project) {
+  // One request to the library at a time, each sent with the revision the one before it got back: two saves
+  // in flight at once carry the same revision, and the library refuses the second as a conflict.
+  let queue: Promise<unknown> = Promise.resolve();
+  const newest = new Map<string, Project>();
+  function serially<T>(work: () => Promise<T>): Promise<T> {
+    const run = queue.then(work);
+    queue = run.catch(() => {});
+    return run;
+  }
+  /** A save overtaken by a newer one of the same plan before its turn leaves the upload to that one. */
+  function upload(project: Project): Promise<void> {
+    newest.set(project.id, project);
+    return serially(async () => {
+      if (newest.get(project.id) !== project) return;
+      try { await putOnline(project); } finally { if (newest.get(project.id) === project) newest.delete(project.id); }
+    });
+  }
+
+  /** This browser's copy of a plan the library lacks or is behind on (edits made with no signal, a restored backup,
+   *  an imported package, a plan from before the library) goes up without waiting for an edit. Read at its turn,
+   *  so it is the newest copy; a plan the library already took, or one a save is uploading, is left alone. */
+  function uploadStored(id: string) {
+    void serially(async () => {
+      const state = sync()[id];
+      if (newest.has(id) || (state && !state.pending)) return;
+      const raw = await readRecord('projects', id);
+      if (raw !== null) await putOnline(readProject(JSON.parse(raw)));
+    }).catch(() => {});
+  }
+
+  async function putOnline(project: Project) {
     const known = sync()[project.id]?.revision;
     const response = await call(at(project.id), {
       method: 'PUT',
@@ -347,7 +381,7 @@ export function createLibraryStore(local: DataStore, options: {
     if (response?.ok) { remember(project.id, { revision: revisionOf(response) }); return; }
     remember(project.id, { revision: known, pending: true });
     if (response?.status === 412) throw new ProjectConflictError();
-    throw new LibraryLocalOnlyError(response?.status === 413 ? LIBRARY_TOO_LARGE : response?.status === 403 ? LIBRARY_NOT_SHARED : LIBRARY_UNREACHABLE);
+    throw new LibraryLocalOnlyError(response?.status === 413 ? LIBRARY_TOO_LARGE : response?.status === 403 ? LIBRARY_NOT_SHARED : LIBRARY_WAITING);
   }
 
   return {
@@ -358,6 +392,10 @@ export function createLibraryStore(local: DataStore, options: {
     async save(project) {
       await local.save(project);
       await upload(project);
+    },
+
+    uploadPending() {
+      for (const [id, state] of Object.entries(sync())) if (state.pending) uploadStored(id);
     },
 
     async saveCopy(project, suffix) {
@@ -373,7 +411,10 @@ export function createLibraryStore(local: DataStore, options: {
     async load(id) {
       const remote = await remoteGet(id);
       const mine = await local.load(id);
-      if (!remote || !remoteWins(id, { revision: remote.revision, updatedAt: remote.project.updatedAt }, mine ?? undefined)) return mine;
+      if (!remote || !remoteWins(id, { revision: remote.revision, updatedAt: remote.project.updatedAt }, mine ?? undefined)) {
+        if (remote !== undefined && mine) uploadStored(id);
+        return mine;
+      }
       await local.save(remote.project);
       remember(id, { revision: remote.revision });
       return remote.project;
@@ -383,6 +424,7 @@ export function createLibraryStore(local: DataStore, options: {
       const mine = await local.list(), remote = await remoteList();
       if (!remote) return mine;
       const merged = new Map(mine.map(entry => [entry.id, entry]));
+      for (const entry of mine) uploadStored(entry.id);
       for (const entry of remote) {
         const { sharedBy = null, everyone = false } = entry;
         const shown = remoteWins(entry.id, entry, merged.get(entry.id)) ? { id: entry.id, name: entry.name, updatedAt: entry.updatedAt } : merged.get(entry.id)!;
@@ -393,13 +435,19 @@ export function createLibraryStore(local: DataStore, options: {
 
     async delete(id) {
       await local.delete(id);
-      const revision = listed.get(id)?.revision ?? sync()[id]?.revision;
-      if (revision === undefined) return;
-      const response = await call(at(id), { method: 'DELETE', headers: { 'If-Match': `"${revision}"` } });
-      if (response?.status === 412) throw new ProjectConflictError();
-      if (!response?.ok) throw new LibraryLocalOnlyError(LIBRARY_UNREACHABLE);
-      listed.delete(id);
-      remember(id, undefined);
+      newest.delete(id);
+      // After any upload still going, so the revision deleted is the one it got back.
+      await serially(async () => {
+        // The newer of what the list showed and what this browser's own last upload got back.
+        const seen = [sync()[id]?.revision, listed.get(id)?.revision].filter((r): r is number => r !== undefined);
+        if (!seen.length) return;
+        const revision = Math.max(...seen);
+        const response = await call(at(id), { method: 'DELETE', headers: { 'If-Match': `"${revision}"` } });
+        if (response?.status === 412) throw new ProjectConflictError();
+        if (!response?.ok) throw new LibraryLocalOnlyError(LIBRARY_UNREACHABLE);
+        listed.delete(id);
+        remember(id, undefined);
+      });
     },
 
     async duplicate(id) {

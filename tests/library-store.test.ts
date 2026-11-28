@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { get } from 'svelte/store';
 import {
   createLibraryStore, createLocalStore, localStore, LibraryLocalOnlyError, ProjectConflictError,
-  LIBRARY_TOO_LARGE, LIBRARY_UNREACHABLE, type DataStore,
+  LIBRARY_TOO_LARGE, LIBRARY_WAITING, type DataStore,
 } from '$lib/services/datastore';
 import { createDefaultProject, loadProject } from '$lib/stores/project';
 import { autoSave, markClean, saveError, saveState } from '$lib/stores/saveStatus';
@@ -85,8 +85,9 @@ describe('online plan library', () => {
     site.offline = false;
     const opened = await device.load(project.id);
     expect(opened?.name).toBe('Edited offline');
-    await device.save(opened!);
-    expect(await online(project.id)).toMatchObject({ project: { name: 'Edited offline' }, revision: '"2"' });
+    await vi.waitFor(async () => expect(await online(project.id)).toMatchObject({ project: { name: 'Edited offline' }, revision: '"2"' }));
+    await device.save({ ...opened!, name: 'Edited online' });
+    expect(await online(project.id)).toMatchObject({ project: { name: 'Edited online' }, revision: '"3"' });
   });
 
   it('refuses a stale save with ProjectConflictError and keeps both versions after Save as copy', async () => {
@@ -113,12 +114,56 @@ describe('online plan library', () => {
   it('keeps a save made with no signal in the browser, says so, and uploads it on the next save', async () => {
     const project = plan('Offline', '2026-11-01T10:00:00Z');
     site.offline = true;
-    await expect(device.save(project)).rejects.toThrow(LIBRARY_UNREACHABLE);
+    await expect(device.save(project)).rejects.toThrow(LIBRARY_WAITING);
     expect(await browser.has(project.id)).toBe(true);
     site.offline = false;
     expect(await online(project.id)).toBeNull();
     await device.save(project);
     expect(await online(project.id)).toMatchObject({ revision: '"1"' });
+  });
+
+  it('uploads saves that overlap on a slow network one after another, never as a conflict with itself', async () => {
+    const slow = createLibraryStore(browser, {
+      fetch: async (input, init) => { await new Promise(resolve => setTimeout(resolve, 20)); return site.fetch(input, init); },
+      storage: { getItem: key => remembered.get(key) ?? null, setItem: (key, value) => { remembered.set(key, value); } },
+    });
+    const remembered = new Map<string, string>();
+    const project = plan('Slow', '2026-11-01T10:00:00Z');
+    const first = slow.save(project);
+    const second = slow.save({ ...project, name: 'Slow v2' });
+    const third = slow.save({ ...project, name: 'Slow v3' });
+    await Promise.all([first, second, third]);
+    expect(await online(project.id)).toMatchObject({ project: { name: 'Slow v3' } });
+    await slow.save({ ...project, name: 'Slow v4' });
+    expect(await online(project.id)).toMatchObject({ project: { name: 'Slow v4' } });
+  });
+
+  it('sends a plan only this browser holds (a restored backup, an imported package) online when the list is shown', async () => {
+    const restored = plan('Restored', '2026-11-01T10:00:00Z');
+    await browser.save(restored);
+    await device.list();
+    await vi.waitFor(async () => expect(await online(restored.id)).toMatchObject({ project: { name: 'Restored' }, revision: '"1"' }));
+    await device.list();
+    await device.save({ ...restored, name: 'Restored v2' });
+    expect(await online(restored.id)).toMatchObject({ project: { name: 'Restored v2' }, revision: '"2"' });
+  });
+
+  it('sends up plans saved with no signal, with no edit, list or open since', async () => {
+    const project = plan('Kept', '2026-11-01T10:00:00Z');
+    await device.save(project);
+    site.offline = true;
+    await expect(device.save({ ...project, name: 'Kept offline' })).rejects.toThrow(LIBRARY_WAITING);
+    const fresh = plan('Made offline', '2026-11-01T10:00:00Z');
+    await expect(device.save(fresh)).rejects.toThrow(LIBRARY_WAITING);
+    device.uploadPending!();
+    site.offline = false;
+    device.uploadPending!();
+    await vi.waitFor(async () => {
+      expect(await online(project.id)).toMatchObject({ project: { name: 'Kept offline' }, revision: '"2"' });
+      expect(await online(fresh.id)).toMatchObject({ project: { name: 'Made offline' }, revision: '"1"' });
+    });
+    await device.save({ ...project, name: 'Kept v3' });
+    expect(await online(project.id)).toMatchObject({ revision: '"3"' });
   });
 
   it('deletes from both, and refuses to delete a revision it has not seen', async () => {
@@ -138,10 +183,10 @@ describe('online plan library', () => {
     const project = plan('Editor', '2026-11-01T10:00:00Z');
     loadProject(project);
     markClean();
-    vi.spyOn(localStore, 'save').mockRejectedValueOnce(new LibraryLocalOnlyError(LIBRARY_UNREACHABLE));
+    vi.spyOn(localStore, 'save').mockRejectedValueOnce(new LibraryLocalOnlyError(LIBRARY_WAITING));
     expect(await autoSave()).toBe(true);
     expect(get(saveState)).toBe('saved');
-    expect(get(saveError)).toBe(LIBRARY_UNREACHABLE);
+    expect(get(saveError)).toBe(LIBRARY_WAITING);
   });
 });
 

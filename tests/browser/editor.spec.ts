@@ -307,18 +307,11 @@ for (const width of [1440, 390]) {
     // JSON import must preserve the setting as well as local storage does.
     const listed = Object.keys(await savedProjects(page)).sort();
     await importJSON(page, { name: 'elevations.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(saved)) });
-    // The file is the saved plan itself, so the plan opens as it is: no copy, no question.
-    await page.waitForTimeout(1000);
-    await expect(page.getByRole('button', { name: saved.name, exact: true })).toBeVisible();
-    await expect(page.getByRole('dialog', { name: 'You already have this plan' })).toHaveCount(0);
-    expect(Object.keys(await savedProjects(page)).sort()).toEqual(listed);
-    expect((await exportJSON(page)).id).toBe(saved.id);
-    // Under another identity the same file is a plan the editor does not have, so it comes in from the file.
-    const fromFile = crypto.randomUUID();
-    await importJSON(page, { name: 'elevations-elsewhere.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ ...saved, id: fromFile })) });
+    // Even the saved plan's own file comes in as a new plan beside it.
+    await expect(page.getByRole('button', { name: `${saved.name} (2)`, exact: true })).toBeVisible();
     await expect.poll(async () => Object.keys(await savedProjects(page)).length).toBe(listed.length + 1);
     const opened = await exportJSON(page);
-    expect(opened.id).toBe(fromFile);
+    expect(opened.id).not.toBe(saved.id);
     expect(opened.floors.map((floor: { elevation: number }) => floor.elevation)).toEqual([-50.5, 425.5]);
     await selectFloor('Curved Upper');
     await page.getByRole('button', { name: '3D', exact: true }).click();

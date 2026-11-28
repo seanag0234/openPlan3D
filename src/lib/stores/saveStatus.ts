@@ -1,7 +1,7 @@
 import { writable, get } from 'svelte/store';
 import { currentProject, historyForJournal, loadProject, restoreHistory } from './project';
 import { buildJournal, journalFor, readUndoJournal, writeUndoJournal } from '$lib/services/undoJournal';
-import { dataStore, storageErrorMessage, ProjectConflictError, LibraryLocalOnlyError, PROJECTS_STORAGE_KEY, LIBRARY_CHANGE_KEY } from '$lib/services/datastore';
+import { dataStore, storageErrorMessage, ProjectConflictError, LibraryLocalOnlyError, LIBRARY_WAITING, PROJECTS_STORAGE_KEY, LIBRARY_CHANGE_KEY } from '$lib/services/datastore';
 import { saveSnapshot } from '$lib/stores/versionHistory';
 import type { Project } from '$lib/models/types';
 
@@ -22,6 +22,9 @@ let saveAttempt = 0;
 let lastProjectId: string | undefined;
 /** This tab has changes of its own that are not saved yet. */
 let ownEdits = false;
+/** The last save is in this browser only because the online library could not be reached. */
+let waitingForSignal = false;
+const RETRY_UPLOAD_MS = 30_000;
 
 /** One autosave owner per mounted editor. The caller must dispose on unmount. */
 export function initAutoSave() {
@@ -82,15 +85,26 @@ export function initAutoSave() {
     markClean();
     saveNotice.set('saving.caughtUp');
   };
+  // A save that stayed in this browser for want of a signal goes online by itself: when the signal comes back,
+  // when the tab comes back, and every half minute meanwhile. Nobody has to press Save. One saved by an earlier
+  // page (reloaded with no signal) goes up from the browser's copy, as do other plans saved with no signal.
+  const retryUpload = () => {
+    if (disposed || (typeof navigator !== 'undefined' && navigator.onLine === false)) return;
+    if (!waitingForSignal) { dataStore.uploadPending?.(); return; }
+    if (get(saveState) !== 'saved' || get(saveConflict)) return;
+    void autoSave();
+  };
   const onVisibility = () => {
     if (typeof document === 'undefined') return;
     if (document.visibilityState === 'hidden') stashUnsaved();
-    else if (document.visibilityState === 'visible') void catchUp().catch(() => {});
+    else if (document.visibilityState === 'visible') void catchUp().catch(() => {}).then(retryUpload);
   };
+  const retryTimer = setInterval(retryUpload, RETRY_UPLOAD_MS);
   if (typeof window !== 'undefined') {
     window.addEventListener('storage', onStorage);
     window.addEventListener('focus', checkCurrent);
     window.addEventListener('pagehide', stashUnsaved);
+    window.addEventListener('online', retryUpload);
   }
   // The document listened to, kept so `stop` removes from the same one.
   const doc = typeof document !== 'undefined' && typeof document.addEventListener === 'function' ? document : null;
@@ -99,10 +113,12 @@ export function initAutoSave() {
     disposed = true;
     unsubscribe();
     clearSaveTimer();
+    clearInterval(retryTimer);
     if (typeof window !== 'undefined') {
       window.removeEventListener('storage', onStorage);
       window.removeEventListener('focus', checkCurrent);
       window.removeEventListener('pagehide', stashUnsaved);
+      window.removeEventListener('online', retryUpload);
     }
     try { doc?.removeEventListener('visibilitychange', onVisibility); } catch {}
     if (stopWatching === stop) stopWatching = null;
@@ -185,6 +201,7 @@ async function persist(manual: boolean): Promise<boolean> {
       saveConflict.set(false);
       lastSavedAt.set(new Date());
       ownEdits = false;
+      waitingForSignal = notice === LIBRARY_WAITING;
       keepUndoSteps(p);
     }
     return true;
@@ -267,5 +284,6 @@ export function markClean() {
   lastSavedAt.set(null);
   lastProjectId = get(currentProject)?.id;
   ownEdits = false;
+  waitingForSignal = false;
   recallUndoSteps();
 }

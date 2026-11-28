@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { get } from 'svelte/store';
 import type { Project } from '$lib/models/types';
-import { localStore, ProjectConflictError } from '$lib/services/datastore';
+import { localStore, LibraryLocalOnlyError, LIBRARY_WAITING, ProjectConflictError } from '$lib/services/datastore';
 import { createDefaultProject, currentProject, updateProjectName } from '$lib/stores/project';
 import { autoSave, initAutoSave, lastSavedAt, manualSave, markClean, saveError, saveState, saveConflict, saveCurrentAsCopy, savingCopy } from '$lib/stores/saveStatus';
 
@@ -171,6 +171,25 @@ it('notifies about external project changes without replacing local work and rem
   stop(); expect(removed).toHaveBeenCalledWith('storage', expect.any(Function));
   events.dispatchEvent(Object.assign(new Event('storage'), { key: 'floorplan_projects' }));
   expect(check).toHaveBeenCalledOnce();
+});
+
+it('sends a save that stayed in this browser for want of a signal online by itself, when the signal returns and on a timer', async () => {
+  stop();
+  const events = new EventTarget(); vi.stubGlobal('window', events);
+  stop = initAutoSave();
+  vi.mocked(localStore.save).mockRejectedValueOnce(new LibraryLocalOnlyError(LIBRARY_WAITING)).mockRejectedValueOnce(new LibraryLocalOnlyError(LIBRARY_WAITING));
+  updateProjectName('No signal');
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(get(saveState)).toBe('saved'); expect(get(saveError)).toBe(LIBRARY_WAITING);
+  events.dispatchEvent(new Event('online'));
+  await vi.advanceTimersByTimeAsync(0);
+  expect(localStore.save).toHaveBeenCalledTimes(2);
+  expect(get(saveError)).toBe(LIBRARY_WAITING);
+  await vi.advanceTimersByTimeAsync(30_000);
+  expect(localStore.save).toHaveBeenCalledTimes(3);
+  expect(get(saveError)).toBeNull();
+  await vi.advanceTimersByTimeAsync(60_000);
+  expect(localStore.save).toHaveBeenCalledTimes(3);
 });
 
 it('ignores unrelated storage events and other project writes', () => {

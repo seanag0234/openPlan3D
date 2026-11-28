@@ -1,10 +1,9 @@
-import { savedProjects as library, storedRecords } from './storage';
+import { savedProjects as library } from './storage';
 import { expect, test, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-// Opening a plan file from inside a plan treats a plan already in the list as
-// the list of plans does: the same file opens it, a different one asks first.
+// Opening a plan file from inside a plan always makes a new plan, as the list of plans does.
 const fixture = resolve('tests/fixtures/native-import.openplan.json');
 async function seed(page: Page) {
   const source = JSON.parse(await readFile(fixture, 'utf8'));
@@ -45,53 +44,26 @@ async function renameAndSave(page: Page, id: string, name: string) {
   await expect(page.getByText('Saved ✓', { exact: true })).toBeVisible();
   await expect.poll(async () => (await library(page))[id]?.name).toBe(name);
 }
-const question = (page: Page) => page.getByRole('dialog', { name: 'You already have this plan' });
 const planName = (page: Page) => page.getByTitle('Click to rename', { exact: true });
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
-test('the same file as the open plan opens that plan, with no copy and no question', async ({ page }) => {
+test('the same file as the open plan comes in as a new plan beside it, numbered, and the open plan is untouched', async ({ page }) => {
   const plan = await seed(page);
+  const before = (await library(page))[plan.id];
   await importJSON(page);
-  // Nothing on screen changes when the file is the plan itself: give a copy the time it would take to appear.
-  await page.waitForTimeout(1500);
-  await expect(planName(page)).toHaveText(plan.name);
-  await expect(question(page)).toHaveCount(0);
-  expect((await exportJSON(page)).id).toBe(plan.id);
-  expect(Object.keys(await library(page))).toEqual([plan.id]);
-});
-
-test('a file that differs from the saved plan asks, and Cancel changes nothing', async ({ page }) => {
-  const plan = await seed(page);
-  await renameAndSave(page, plan.id, 'Renamed and saved');
-  await importJSON(page);
-  await expect(question(page)).toBeVisible();
-  await question(page).getByRole('button', { name: /Cancel/ }).click();
-  await expect(question(page)).toHaveCount(0);
-  await expect(planName(page)).toHaveText('Renamed and saved');
-  expect(Object.keys(await library(page))).toEqual([plan.id]);
-});
-
-test('Keep both brings the file in beside the plan, numbered', async ({ page }) => {
-  const plan = await seed(page);
-  await renameAndSave(page, plan.id, 'Renamed and saved');
-  await importJSON(page);
-  await question(page).getByRole('button', { name: /Keep both/ }).click();
   await expect(planName(page)).toHaveText(`${plan.name} (2)`);
+  const opened = await exportJSON(page);
+  expect(opened.id).not.toBe(plan.id);
+  await expect.poll(async () => Object.keys(await library(page)).sort()).toEqual([plan.id, opened.id].sort());
+  expect((await library(page))[plan.id]).toEqual(before);
+});
+
+test('a file of a plan renamed and saved since comes in as a new plan under the file\'s name', async ({ page }) => {
+  const plan = await seed(page);
+  await renameAndSave(page, plan.id, 'Renamed and saved');
+  await importJSON(page);
+  await expect(planName(page)).toHaveText(plan.name);
   await expect.poll(async () => Object.keys(await library(page))).toHaveLength(2);
   expect((await library(page))[plan.id].name).toBe('Renamed and saved');
-});
-
-test('Replace mine puts the file in its place and keeps mine as a version', async ({ page }) => {
-  const plan = await seed(page);
-  await renameAndSave(page, plan.id, 'Renamed and saved');
-  await importJSON(page);
-  await question(page).getByRole('button', { name: /Replace mine with the file/ }).click();
-  await expect(planName(page)).toHaveText(plan.name);
-  await expect.poll(async () => (await library(page))[plan.id]?.name).toBe(plan.name);
-  expect(Object.keys(await library(page))).toEqual([plan.id]);
-  await expect.poll(async () => (await storedRecords(page, 'history'))[plan.id] ?? '').toContain('Before replacing with a file');
-  await page.getByRole('button', { name: 'Version History', exact: true }).click();
-  const versions = page.getByRole('dialog', { name: 'Version History', exact: true });
-  await expect(versions.getByRole('group', { name: 'Before replacing with a file', exact: true })).toBeVisible();
 });

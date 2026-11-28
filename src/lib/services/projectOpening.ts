@@ -8,8 +8,6 @@ import { dataStore, ProjectConflictError } from './datastore';
 import { prepareToLeave } from './deployment';
 import { isLibraryBackup, LibraryBackupFileError } from './libraryRestore';
 import { isRoomPlanJson } from '$lib/utils/roomplanValidation';
-import { importQuestion, type ImportAnswer } from '$lib/stores/ui';
-import { saveSnapshot } from '$lib/stores/versionHistory';
 
 let latestRequest = 0;
 
@@ -114,52 +112,32 @@ export async function readPlanFile(file: File): Promise<unknown> {
   return createProjectFromRoomPlan(data, interchangeProjectName(data, file.name.replace(/\.json$/i, '')));
 }
 
-/** The plan as text without the moments it was made and last saved: two files of the same plan compare equal. */
-function content(project: Project): string {
-  const { createdAt: _created, updatedAt: _updated, ...rest } = project;
-  return JSON.stringify(rest);
-}
-
-/** "Room (2)" and "Room" both give "Room"; the first of "Room (2)", "Room (3)"… the list does not hold. */
-async function nextFreeName(name: string): Promise<string> {
-  const base = (name || 'Untitled Project').replace(/ \(\d+\)$/, '');
+/** The name itself when the list lacks it; otherwise the first of "Room (2)", "Room (3)"… it lacks, from the name without its number. */
+async function freeName(name: string): Promise<string> {
   const taken = new Set((await dataStore.list()).map(item => item.name));
+  if (!taken.has(name)) return name;
+  const base = name.replace(/ \(\d+\)$/, '');
   let n = 2;
   while (taken.has(`${base} (${n})`)) n++;
   return `${base} (${n})`;
 }
 
-/** Open a plan the person chose. A plan already in the list is opened as it is when the file matches it, and asked about when it differs. */
+/**
+ * Open a plan file the person chose, always as a new plan with an id of its own, even when the list holds the same
+ * plan: a file never reopens or saves over a plan, here or in the online library, where its id may be someone else's.
+ */
 export async function openPlanFile(readCandidate: () => unknown | Promise<unknown>, signal?: AbortSignal): Promise<Project | null> {
   if (signal?.aborted) return null;
   const candidate = readProject(await readCandidate());
   if (signal?.aborted) return null;
+  // Saved first, so the name the new plan gets is free of the one the open plan has now.
   if (!await prepareToLeave()) {
     if (signal?.aborted) return null;
     throw new Error(`Your current plan could not be saved. ${get(saveError) ?? 'Retry saving, or download a copy of this plan, before opening another plan.'}`);
   }
   if (signal?.aborted) return null;
-  if (!(await dataStore.has(candidate.id))) return openProject(() => candidate, 'import', signal);
-
-  const stored = await dataStore.load(candidate.id);
-  if (!stored) return openProject(() => candidate, 'import', signal);
-  if (content(stored) === content(candidate)) return openStoredProject(candidate.id, signal);
-
-  const answer = await new Promise<ImportAnswer>(resolve => importQuestion.set({ name: stored.name, resolve }));
-  importQuestion.set(null);
-  if (answer === 'cancel' || signal?.aborted) return null;
-  if (answer === 'copy') {
-    candidate.id = globalThis.crypto?.randomUUID?.() ?? `project-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-    candidate.name = await nextFreeName(candidate.name);
-    candidate.createdAt = new Date();
-    return openProject(() => candidate, 'import', signal);
-  }
-  // Replace: the plan she had stays in its list of versions.
-  await saveSnapshot(stored, 'Before replacing with a file', false);
-  if (signal?.aborted) return null;
-  candidate.updatedAt = new Date();
-  loadProject(candidate);
-  if (candidate.displaySettings) applyDisplaySettings(candidate.displaySettings);
-  await autoSave();
-  return candidate;
+  candidate.id = globalThis.crypto?.randomUUID?.() ?? `project-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  candidate.name = await freeName(candidate.name || 'Untitled Project');
+  candidate.createdAt = new Date();
+  return openProject(() => candidate, 'import', signal);
 }
