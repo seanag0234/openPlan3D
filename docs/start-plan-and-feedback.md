@@ -37,7 +37,7 @@ list of versions), keep both (the file comes in with a number after its name), o
 Every answer carries `Cache-Control: no-store`, and the file's path never appears in one. The file is read
 as it is on each request: replacing it changes what browsers that have not yet opened it receive.
 
-On Cloudflare Pages (`npm run build:static`) there is no server to read `START_PLAN_FILE`. The plan is the
+On Cloudflare Pages (`npm run build`) there is no server to read `START_PLAN_FILE`. The plan is the
 file `build/start-plan.json`, copied in after the build, and `functions/api/start-plan.ts` answers the same
 three ways. Changing the plan there needs a new deploy. With the online library on, each signed-in
 person gets their own copy (its id is the file's id plus a hash of their email), which joins their

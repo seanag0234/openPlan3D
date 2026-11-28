@@ -47,7 +47,7 @@ Run focused tests while developing, for example:
 ```sh
 npm test -- tests/rooms.test.ts
 npm run check
-npm run build
+npm run build:node
 npx playwright install --with-deps chromium firefox webkit
 npm run test:browser -- tests/browser/selection-clipboard.spec.ts --project=chromium
 ```

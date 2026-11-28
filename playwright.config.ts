@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// Use the real Node production build. Each test gets an empty browser profile;
+// Use the real Node production build (`npm run build:node`). Each test gets an empty browser profile;
 // no credentials or Firebase services are needed.
 export default defineConfig({
   testDir: './tests/browser',

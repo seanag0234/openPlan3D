@@ -122,7 +122,7 @@ and pull requests. Maintainers can use the [release checklist](docs/release-chec
 ```bash
 npm test
 npm run check
-npm run build
+npm run build:node
 npx playwright install --with-deps chromium firefox webkit
 npm run test:browser
 ```
