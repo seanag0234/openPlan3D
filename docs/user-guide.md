@@ -481,7 +481,7 @@ menu) has four tabs:
   exports, and with **Dimensions** or **External Dimensions** off those exports
   leave the wall lengths out (see [section 11](#what-the-2d-exports-show)).
 - **Appearance**: **Language** (English, Português) and **Theme** (Light,
-  Dark, System).
+  Dark, System). Light until you pick one; System follows your device.
 - **AI**: **Gemini API Key** ("Required for AI-powered photorealistic
   rendering. Your key is stored locally in your browser only - never sent to
   our servers.") and optional **OpenAI API Key** / provider settings. Only

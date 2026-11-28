@@ -61,14 +61,23 @@ async function openTab() {
 }
 
 describe('theme preference', () => {
-  it('starts with the system theme when site storage is blocked', async () => {
+  it('starts light, even on a dark device, until a theme is chosen', async () => {
     blockStorage();
     systemDark = true;
     const { themePreference } = await load();
-    expect(get(themePreference)).toBe('system');
-    expect(toggle).toHaveBeenLastCalledWith('dark', true);
-    switchSystemTheme(false);
+    expect(get(themePreference)).toBe('light');
     expect(toggle).toHaveBeenLastCalledWith('dark', false);
+    switchSystemTheme(false);
+    switchSystemTheme(true);
+    expect(toggle).toHaveBeenLastCalledWith('dark', false);
+  });
+
+  it('follows the device once System is chosen', async () => {
+    mockStorage();
+    const { themePreference } = await load();
+    themePreference.set('system');
+    switchSystemTheme(true);
+    expect(toggle).toHaveBeenLastCalledWith('dark', true);
   });
 
   it('applies a choice for the rest of the session when site storage is blocked', async () => {
@@ -135,7 +144,7 @@ describe('theme preference', () => {
     vi.stubGlobal('window', undefined);
     vi.stubGlobal('document', undefined);
     const { themePreference } = await load();
-    expect(get(themePreference)).toBe('system');
+    expect(get(themePreference)).toBe('light');
     expect(systemListeners).toHaveLength(0);
     expect(storageListeners).toHaveLength(0);
   });

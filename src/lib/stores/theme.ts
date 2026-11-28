@@ -27,8 +27,11 @@ function readStorage(key: string): string | null {
   }
 }
 
+/** Light until someone picks a theme, even on a device set to dark; System follows the device. */
+const DEFAULT_THEME: ThemePreference = 'light';
+
 function getStoredTheme(): ThemePreference {
-  return (readStorage('o3d_theme') as ThemePreference | null) || 'system';
+  return (readStorage('o3d_theme') as ThemePreference | null) || DEFAULT_THEME;
 }
 
 function resolveTheme(pref: ThemePreference): 'light' | 'dark' {
@@ -68,7 +71,7 @@ function createThemeStore() {
   }
   // Another tab saved a theme: apply it here as a reload would, so it also holds when the system theme changes.
   onStorage('o3d_theme', (newValue) => {
-    preference = (newValue as ThemePreference | null) || 'system';
+    preference = (newValue as ThemePreference | null) || DEFAULT_THEME;
     set(preference);
     applyTheme(preference);
   });
